@@ -205,21 +205,26 @@ func saveCache(source string, entry *cacheEntry) {
 // mirror setups; production builds leave it unset. The base must serve a
 // GitHub-style GET <base>/releases/latest payload.
 func sourceAPIURL(source string) string {
+	// 对号有自己的仓库（gitee.com/duihao/duihao），不能再去查 uniTerm 的 release：
+	// 那样会提示「发现新版本 v1.11.2」并引导用户装成 uniTerm。
+	if base := os.Getenv("DUIHAO_UPDATE_API_BASE"); base != "" {
+		return strings.TrimRight(base, "/") + "/releases/latest"
+	}
 	if base := os.Getenv("UNITERM_UPDATE_API_BASE"); base != "" {
 		return strings.TrimRight(base, "/") + "/releases/latest"
 	}
 	if source == "gitee" {
-		return "https://gitee.com/api/v5/repos/ys-l/uniterm/releases/latest"
+		return "https://gitee.com/api/v5/repos/duihao/duihao/releases/latest"
 	}
-	return "https://api.github.com/repos/ys-ll/uniterm/releases/latest"
+	return "https://api.github.com/repos/duihao/duihao/releases/latest"
 }
 
 // sourceReleaseURL returns the human-facing release page for a source.
 func sourceReleaseURL(source string) string {
 	if source == "gitee" {
-		return "https://gitee.com/ys-l/uniterm/releases/latest"
+		return "https://gitee.com/duihao/duihao/releases/latest"
 	}
-	return "https://github.com/ys-ll/uniterm/releases/latest"
+	return "https://github.com/duihao/duihao/releases/latest"
 }
 
 // fetchRelease fetches the latest release from a source, honouring the

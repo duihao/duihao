@@ -1,0 +1,23 @@
+对号 DUIHAO
+Copyright 2026 Duihao
+
+本产品包含源自 uniTerm 项目的软件。
+
+uniTerm
+Copyright 2025 uniTerm authors
+https://gitee.com/ys-l/uniterm
+Licensed under the Apache License, Version 2.0
+
+---
+
+This product includes software derived from the uniTerm project
+(https://gitee.com/ys-l/uniterm), licensed under the Apache License 2.0.
+The terminal engine, session layer, and other components inherited from
+uniTerm remain copyright their original authors. The "Duihao" business
+layer (backend/duihao/, editions/, and the corresponding frontend modules
+for plugins, sites, deployment, WebDAV drive, and scheduling) is original
+work of the Duihao project.
+
+Modifications to inherited files include rebranding (application identity,
+window title, icons, packaging parameters), removal of the AI gateway and
+IM channel modules, and integration with the Duihao plugin/site runtime.
