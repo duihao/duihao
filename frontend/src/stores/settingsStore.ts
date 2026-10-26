@@ -30,8 +30,9 @@ export const useSettingsStore = defineStore('settings', () => {
   // Used by the terminal to resolve FOLLOW_APP_THEME.
   const resolvedAppTheme = computed<'dark' | 'light'>(() => {
     if (settings.value.theme === 'light') return 'light'
+    if (settings.value.theme === 'duihao-light') return 'light'
     if (settings.value.theme === 'system') return systemPrefersDark.value ? 'dark' : 'light'
-    // 'dark' and 'deep-blue' are both dark.
+    // 'dark', 'deep-blue' and 'duihao-red' are all dark.
     return 'dark'
   })
 

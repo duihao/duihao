@@ -123,9 +123,9 @@ func detectExternalEditors() []ExternalEditorOption {
 	return out
 }
 
-// applyRoundedCorners is a no-op on Linux: window corners are handled by the
+// removeNativeWindowBorder is a no-op on Linux: window corners are handled by the
 // platform (the Windows build asks DWM for Win11 rounded corners instead).
-func applyRoundedCorners(unsafe.Pointer) {}
+func removeNativeWindowBorder(unsafe.Pointer) {}
 
 // openWithSystem opens the file with its default associated application via
 // xdg-open. Linux has no scriptable cross-desktop "open with" picker, so the

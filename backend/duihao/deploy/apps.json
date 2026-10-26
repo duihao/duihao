@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "apps": [
+    {
+      "id": "duihaocms",
+      "order": 1,
+      "name": "DuihaoCMS",
+      "version": "1.0.0",
+      "category": "cms",
+      "summary": "对号出品的企业站 CMS：栏目、内容、订单、表单、微信、多主题，PHP 原生零依赖",
+      "homepage": "https://duihao.com",
+      "license": "随对号授权使用",
+      "requires": {
+        "php": "8.0+",
+        "db": "mysql",
+        "extensions": ["pdo_mysql", "mbstring", "fileinfo"]
+      },
+      "sources": [
+        { "kind": "local", "hint": "选择 duihaocms-*.zip 安装包" },
+        { "kind": "bundled", "file": "duihaocms-v1.0.0.zip" }
+      ],
+      "install": {
+        "entry": "install.php",
+        "prefill": { "file": "data/deploy-prefill.php" },
+        "note": "安装向导里的数据库信息已由对号填好，只需设置管理员账号密码"
+      }
+    },
+    {
+      "id": "wordpress",
+      "order": 2,
+      "name": "WordPress",
+      "version": "latest",
+      "category": "cms",
+      "summary": "全球最流行的建站程序（中文版）。装好后自动生成 wp-config.php，直接进安装向导",
+      "homepage": "https://cn.wordpress.org",
+      "license": "GPLv2+",
+      "requires": {
+        "php": "7.4+",
+        "db": "mysql",
+        "extensions": ["pdo_mysql", "mbstring", "gd", "zip"]
+      },
+      "sources": [
+        { "kind": "url", "url": "https://cn.wordpress.org/latest-zh_CN.zip", "sha256": "" },
+        { "kind": "local", "hint": "选择 wordpress-*.zip 安装包" },
+        { "kind": "bundled", "file": "wordpress-latest-zh_CN.zip" }
+      ],
+      "install": {
+        "entry": "wp-admin/install.php",
+        "configFiles": [
+          {
+            "from": "wp-config-sample.php",
+            "to": "wp-config.php",
+            "defines": ["DB_NAME", "DB_USER", "DB_PASSWORD", "DB_HOST"],
+            "salts": true
+          }
+        ],
+        "note": "数据库已写入 wp-config.php，点「现在就开始」即可完成建站"
+      }
+    },
+    {
+      "id": "typecho",
+      "order": 3,
+      "name": "Typecho",
+      "version": "latest",
+      "category": "blog",
+      "summary": "轻量博客 / 极简建站，单文件安装，支持 SQLite 与 MySQL，资源占用极低",
+      "homepage": "https://typecho.org",
+      "license": "GPLv2",
+      "requires": {
+        "php": "7.4+",
+        "db": "sqlite|mysql",
+        "extensions": ["pdo_sqlite", "mbstring"]
+      },
+      "sources": [
+        { "kind": "url", "url": "https://github.com/typecho/typecho/releases/latest/download/typecho.zip", "sha256": "" },
+        { "kind": "local", "hint": "选择 typecho*.zip 安装包" },
+        { "kind": "bundled", "file": "typecho.zip" }
+      ],
+      "install": {
+        "entry": "install.php",
+        "note": "Typecho 自带数据库选择：可用站点绑定的 MySQL 库，也可直接用 SQLite"
+      }
+    },
+    {
+      "id": "custom",
+      "order": 99,
+      "name": "自定义程序",
+      "version": "—",
+      "category": "custom",
+      "summary": "任意 PHP 程序：选本地 zip 包 + 填安装入口（如 install.php），对号负责解压与目录整理",
+      "license": "按上游许可",
+      "requires": {
+        "php": "any",
+        "db": ""
+      },
+      "sources": [
+        { "kind": "local", "hint": "选择任意 PHP 程序的 zip 包" }
+      ],
+      "install": {
+        "entry": "index.php",
+        "note": "若程序自带安装向导，入口填 install.php 之类的相对路径"
+      }
+    }
+  ]
+}

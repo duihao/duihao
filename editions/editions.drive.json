@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "edition": "drive",
+  "name": "对号网盘",
+  "brand": {
+    "appName": "对号网盘"
+  },
+  "home": {
+    "plugin": "webdav",
+    "fallback": "connections"
+  },
+  "firstScreen": "connections",
+  "presetPlugins": ["webdav"],
+  "presetInstances": [
+    { "plugin": "webdav", "runtime": "builtin", "ports": { "dav": 9111 } }
+  ],
+  "bundledRuntimes": [],
+  "allowDownload": true
+}

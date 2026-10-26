@@ -6,11 +6,32 @@ import '@fontsource-variable/jetbrains-mono'
 import { ElDialog } from 'element-plus'
 import App from './App.vue'
 import './style.css'
-import { Window } from '@wailsio/runtime'
+import { Window, Events } from '@wailsio/runtime'
 import { useSettingsStore } from './stores/settingsStore'
 import { setLocale } from './i18n'
 
-Window.SetTitle('uniTerm')
+// M18-C：/?w=palette 是独立悬浮命令面板窗（用户定稿的主入口）—— 只挂
+// CommandPalette，不跑主窗口的 IME/右键菜单等全局副作用，也不改窗口标题
+// （标题参与后端 findMainWindow 匹配，不能覆盖成「对号」）。
+// /?w=float 是桌面常驻悬浮图标窗（48×48 圆形），只挂 FloatIcon。
+const wMode = new URLSearchParams(window.location.search).get('w')
+const isPaletteWindow = wMode === 'palette'
+const isFloatWindow = wMode === 'float'
+// /?w=floatmenu：悬浮球右键菜单窗（148×136 透明小窗，Go 侧摆在球正下方）
+const isFloatMenuWindow = wMode === 'floatmenu'
+
+if (!isPaletteWindow && !isFloatWindow && !isFloatMenuWindow) {
+  Window.SetTitle('对号')
+}
+
+// 独立面板窗/悬浮窗是独立 webview，index.html 的首帧主题只看
+// prefers-color-scheme；若 LoadSettings 稍慢或失败就会落到浅色底，面板在
+// 深色应用上看起来「泛白/半透明」。这里先用主窗口写下的缓存主题兜底
+// （settingsStore.init() 之后仍会用真实设置覆盖）。
+{
+  const cached = localStorage.getItem('appTheme')
+  if (cached) document.documentElement.dataset.theme = cached
+}
 
 // Set ElDialog draggable by default
 if (ElDialog.props) {
@@ -33,9 +54,48 @@ setLocale('system')
 // settings consumers are reactive (computed/watch/template), so values apply
 // themselves once init lands. applyTheme() on the loaded defaults runs before
 // mount anyway (init() calls it synchronously after its awaits settle).
-settingsStore.init()
+//
+// 只给主窗口跑完整 init：面板窗/悬浮窗只需主题，若也跑 init，一旦
+// LoadSettings 还没就绪就会用默认值（system→浅色）applyTheme，把 index.html
+// 与主窗口写下的 appTheme 缓存覆盖成浅色 —— 面板就会在深色应用上泛白。
+if (!isPaletteWindow && !isFloatWindow && !isFloatMenuWindow) {
+  settingsStore.init()
+}
 
-app.mount('#app')
+if (isPaletteWindow) {
+  import('./PaletteStandalone.vue').then(({ default: PaletteStandalone }) => {
+    const paletteApp = createApp(PaletteStandalone)
+    paletteApp.use(pinia)
+    paletteApp.use(ElementPlus)
+    paletteApp.mount('#app')
+  })
+} else if (isFloatWindow) {
+  import('./FloatIcon.vue').then(({ default: FloatIcon }) => {
+    const floatApp = createApp(FloatIcon)
+    floatApp.mount('#app')
+  })
+} else if (isFloatMenuWindow) {
+  import('./FloatMenu.vue').then(({ default: FloatMenu }) => {
+    const menuApp = createApp(FloatMenu)
+    menuApp.mount('#app')
+  })
+} else {
+  // 最大化/全屏 → 窗口直角（贴边不留圆角），还原 → 恢复 CSS 圆角。事件源是
+  // Go 侧窗口事件（events.Windows.*）的 app:win-shape 广播；启动即最大化/
+  // 全屏的场景用 IsMaximised/IsFullscreen 补一次初始状态。wails 有时会把
+  // payload 再包一层 {data:...}，两种形状都兼容。
+  const setWinSquare = (v: boolean) => {
+    document.documentElement.classList.toggle('win-square', v)
+  }
+  Events.On('app:win-shape', (ev: unknown) => {
+    const data = (ev as { data?: unknown } | null)?.data
+    setWinSquare(data === true || (data as { data?: boolean } | null)?.data === true)
+  })
+  void Promise.all([Window.IsMaximised(), Window.IsFullscreen()])
+    .then(([m, f]) => setWinSquare(!!m || !!f))
+    .catch(() => {})
+  app.mount('#app')
+}
 
 // Global IME guard: swallow keydown/keyup events consumed by an IME
 // composition (e.g. Enter confirming a candidate word) before any

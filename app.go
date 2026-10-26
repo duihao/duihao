@@ -12,6 +12,7 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/services/notifications"
 	"github.com/ys-ll/uniterm/backend/container"
 	"github.com/ys-ll/uniterm/backend/credentials"
+	"github.com/ys-ll/uniterm/backend/duihao/editionpkg"
 	"github.com/ys-ll/uniterm/backend/importer"
 	"github.com/ys-ll/uniterm/backend/k8s"
 	"github.com/ys-ll/uniterm/backend/log"
@@ -43,6 +44,9 @@ type App struct {
 	ctx                  context.Context
 	app                  *application.App
 	window               *application.WebviewWindow
+	paletteWin           *application.WebviewWindow // M18-C 独立悬浮命令面板窗（主入口）
+	floatWin             *application.WebviewWindow // M18-C 桌面悬浮球窗（44px 圆形）
+	floatMenuWin         *application.WebviewWindow // 悬浮球右键菜单窗（自绘圆角卡片，uTools 同款）
 	notifier             *notifications.NotificationService // system notifications (MCP approval prompts)
 	sessionManager       *session.SessionManager
 	k8sManager           *k8s.Manager
@@ -222,8 +226,113 @@ func (a *App) win() *application.WebviewWindow {
 	return a.window
 }
 
+// EditionHome 发行版首屏声明（M19 插件化产品线），供前端启动决策。
+type EditionHome struct {
+	Edition  string `json:"edition,omitempty"`
+	Name     string `json:"name,omitempty"`
+	Plugin   string `json:"plugin,omitempty"`
+	Fallback string `json:"fallback,omitempty"`
+	Hidden   []string `json:"hidden,omitempty"`
+}
+
+// GetEditionHome 读取 exe 同级 editions.json 的 home 声明；core 构建返回
+// 空 Plugin（前端走现状 StartTabContent）。零副作用：解析失败按无发行版处理。
+func (a *App) GetEditionHome() *EditionHome {
+	c, err := editionpkg.Current()
+	if err != nil || c == nil {
+		return &EditionHome{}
+	}
+	h := &EditionHome{Edition: c.Edition, Name: c.Name, Hidden: c.HideViews}
+	if c.Home != nil {
+		h.Plugin = c.Home.Plugin
+		h.Fallback = c.Home.Fallback
+	}
+	log.Writef("M19: edition=%s name=%s home=%s fallback=%s", c.Edition, c.Name, h.Plugin, h.Fallback)
+	return h
+}
+
+// PaletteNavigate 由独立面板窗（M18-C 主入口）调用：收起面板窗、唤起旧主
+// 窗口；view 非空时经 Wails 事件广播让主窗口切换视图（'settings' 复用既有
+// app:open-settings）。面板窗与主窗口各有一个 webview，window CustomEvent
+// 跨不过去，所以走后端事件广播。
+func (a *App) PaletteNavigate(view string) {
+	if a.paletteWin != nil {
+		a.paletteWin.Hide()
+	}
+	showMainWindow(a.window)
+	if view == "settings" {
+		a.emit("app:open-settings")
+		return
+	}
+	if view != "" {
+		a.emit("app:palette-nav", view)
+	}
+}
+
+// PaletteConnect 从命令面板发起连接：按 id 找到连接配置（SSH/FTP/RDP/数据库
+// 等），收起面板窗、唤起主窗口，并广播 app:palette-connect 让主窗口走既有
+// onConnect 落地为普通连接（建 Tab/面板/会话，与侧栏双击连接完全同路径）。
+func (a *App) PaletteConnect(connID string) {
+	if a.connectionStore == nil || connID == "" {
+		return
+	}
+	data, err := a.connectionStore.Load()
+	if err != nil {
+		return
+	}
+	for _, c := range data.Connections {
+		if c.ID != connID {
+			continue
+		}
+		if a.paletteWin != nil {
+			a.paletteWin.Hide()
+		}
+		showMainWindow(a.window)
+		a.emit("app:palette-connect", c)
+		return
+	}
+}
+
+// PaletteToggle 供桌面悬浮图标（/?w=float 小窗）与 Alt+Space / Ctrl+K 调用：
+// 切换独立悬浮面板窗（主入口）—— 可见则收起，否则显示、聚焦并广播
+// palette:open 让面板重建组件、输入框重新聚焦。
+func (a *App) PaletteToggle() {
+	if a.paletteWin == nil {
+		return
+	}
+	if a.paletteWin.IsVisible() {
+		a.paletteWin.Hide()
+		return
+	}
+	a.paletteWin.Show()
+	a.paletteWin.Focus()
+	a.emit("palette:open")
+}
+
+// PaletteAction 从独立面板窗执行「创建」类动作（新建连接/新建站点等）：
+// 收起面板窗、唤起旧主窗口，广播 app:palette-action 让主窗口打开对应表单。
+func (a *App) PaletteAction(name string) {
+	if name == "" {
+		return
+	}
+	if a.paletteWin != nil {
+		a.paletteWin.Hide()
+	}
+	showMainWindow(a.window)
+	a.emit("app:palette-action", name)
+}
+
 func (a *App) ServiceStartup(ctx context.Context, options application.ServiceOptions) error {
 	a.ctx = ctx
+
+	// 调试/验收开关：DUIHAO_SHOW_MAIN=1 时启动即显示主窗口。
+	// 正常启动仍按 M18-C 设计只有面板窗 + 悬浮球（主窗口 Hidden 常驻）。
+	if os.Getenv("DUIHAO_SHOW_MAIN") == "1" {
+		go func() {
+			time.Sleep(1500 * time.Millisecond)
+			showMainWindow(a.window)
+		}()
+	}
 
 	a.k8sManager.SetEventEmitter(func(name string, payload any) {
 		a.emit(name, payload)

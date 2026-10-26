@@ -5,11 +5,11 @@
 // nothing is cached yet. This module holds the pure decision logic; the
 // index.html script duplicates it inline because it must run before the
 // module graph loads — keep the two in sync.
-export type InitialTheme = 'dark' | 'light' | 'deep-blue'
+export type InitialTheme = 'dark' | 'light' | 'deep-blue' | 'duihao-red' | 'duihao-light'
 
 // The data-theme values style.css defines. 'system' is deliberately absent:
 // applyTheme() always caches the resolved concrete theme, never the setting.
-const VALID_THEMES: readonly string[] = ['dark', 'light', 'deep-blue']
+const VALID_THEMES: readonly string[] = ['dark', 'light', 'deep-blue', 'duihao-red', 'duihao-light']
 
 export function isValidAppTheme(value: string | null): value is InitialTheme {
   return value !== null && VALID_THEMES.includes(value)

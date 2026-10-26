@@ -1,7 +1,7 @@
 version: '3'
 
 vars:
-  APP_NAME: "uniTerm"
+  APP_NAME: "duihao"
   BIN_DIR: "bin"
   PACKAGE_MANAGER: '{{.PACKAGE_MANAGER | default "npm"}}'
   VITE_PORT: '{{.WAILS_VITE_PORT | default 9245}}'
@@ -35,6 +35,8 @@ tasks:
           VERSION: '{{.VERSION}}'
           ARCH: '{{.ARCH}}'
           EXTRA_TAGS: '{{.EXTRA_TAGS}}'
+          # M6: edition build passes its own version-info JSON for exe properties
+          INFO_JSON: '{{.INFO_JSON | default ""}}'
 
   package:
     summary: Packages a production build of the application
@@ -42,6 +44,9 @@ tasks:
       - task: "{{.GOOS}}:package"
         vars:
           VERSION: '{{.VERSION}}'
+          # M6 edition packaging: brand include + bundled editions.json
+          EDITION: '{{.EDITION | default ""}}'
+          EDITIONS_BUNDLE: '{{.EDITIONS_BUNDLE | default ""}}'
 
   run:
     summary: Runs the application

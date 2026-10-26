@@ -121,8 +121,8 @@ func detectExternalEditors() []ExternalEditorOption {
 
 // macBundleID is the app's bundle identifier. Wails derives the default
 // identifier from wails.json's "name" as com.wails.<name>, and this project
-// ships no custom build/darwin/Info.plist, so it resolves to com.wails.uniTerm.
-const macBundleID = "com.wails.uniTerm"
+// ships no custom build/darwin/Info.plist, so it is set explicitly here.
+const macBundleID = "cn.duihao.app"
 
 // configureMacKeyRepeat disables macOS's press-and-hold accent picker for this
 // app's bundle only, so that holding a key down produces continuous key-repeat
@@ -168,9 +168,9 @@ func (a *App) configureMacKeyRepeat() {
 	}()
 }
 
-// applyRoundedCorners is a no-op on macOS: window corners are handled by the
+// removeNativeWindowBorder is a no-op on macOS: window corners are handled by the
 // platform (the Windows build asks DWM for Win11 rounded corners instead).
-func applyRoundedCorners(unsafe.Pointer) {}
+func removeNativeWindowBorder(unsafe.Pointer) {}
 
 // systemPrefersDark reports whether macOS is in dark mode via the same global
 // preference (`AppleInterfaceStyle`) WKWebView consults for the CSS

@@ -67,10 +67,14 @@
   --font-ui: -apple-system, 'Microsoft YaHei', 'PingFang SC', 'Noto Sans CJK SC', 'WenQuanYi Micro Hei', sans-serif;
   --font-mono: 'JetBrains Mono Variable', monospace;
 
-  /* Spacing - two-tier radius: 4px controls, 8px surfaces */
-  --radius-sm: 0.25rem;
+  /* Spacing - two-tier radius: 8px controls & surfaces, 12px window */
+  --radius-sm: 0.5rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.5rem;
+
+  /* Window corner radius (CSS-drawn on the transparent window; maximised
+     windows switch to square via html.win-square). */
+  --win-radius: 0.75rem;
 
   /* Scrollbar */
   --scrollbar-thumb: rgba(255, 255, 255, 0.18);
@@ -103,6 +107,12 @@
   /* Element Plus sizing */
   --el-input-height: 1.75rem;
   --el-component-size: 1.75rem;
+
+  /* Element Plus radius: follow our control radius so EP controls match
+     native ones (default EP 4px reads sharper than our --radius-sm). */
+  --el-border-radius-base: var(--radius-sm);
+  --el-border-radius-small: 0.375rem;
+  --el-border-radius-round: 625rem;
 
   /* Element Plus font sizes: rem-based so EP text (tables, dialogs, etc.)
      follows the UI font size setting applied to the rem root. Baseline is
@@ -181,6 +191,148 @@
   --el-component-size: 1.75rem;
 }
 
+/* Duihao red - brand theme. Palette derives from the logo's magenta→red
+   gradient (#E01A83 → #F5133C): warm crimson-tinted dark surfaces with the
+   brand rose as accent. */
+[data-theme="duihao-red"] {
+  --bg-base: #170d13;
+  --bg-elevated: #20121a;
+  --bg-surface: #281722;
+  --bg-overlay: #301c2a;
+  --bg-hover: #3a2233;
+  --bg-active: #45283e;
+
+  --text-primary: #ffffff;
+  --text-secondary: #e3c9d3;
+  --text-muted: #b08a9a;
+  --text-disabled: #7d5f6e;
+
+  --accent: #f5305e;
+  --accent-glow: rgba(245, 48, 94, 0.2);
+  --accent-subtle: rgba(245, 48, 94, 0.1);
+
+  --info: #f472a6;
+  --info-subtle: rgba(244, 114, 166, 0.1);
+  --on-accent: #ffffff;
+
+  --chart-1: #fb7185;
+  --chart-2: #60a5fa;
+  --chart-3: #fbbf24;
+  --chart-4: #a78bfa;
+  --chart-4-alt: #f9a8d4;
+
+  --success: #34d399;
+  --success-dim: #059669;
+  --success-subtle: rgba(52, 211, 153, 0.06);
+  --success-glow: rgba(52, 211, 153, 0.15);
+  --warning: #f59e0b;
+  --warning-subtle: rgba(245, 158, 11, 0.1);
+  --warning-tab: rgba(245, 158, 11, 0.18);
+  --warning-tab-hover: rgba(245, 158, 11, 0.26);
+  --warning-tab-active: rgba(245, 158, 11, 0.24);
+  --error: #ff6b6b;
+  --error-subtle: rgba(255, 107, 107, 0.06);
+  --error-glow: rgba(255, 107, 107, 0.15);
+
+  --border-subtle: rgba(255, 255, 255, 0.16);
+  --border-hover: rgba(255, 255, 255, 0.22);
+
+  --shadow-sm: 0 1px 0.125rem rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.6);
+
+  --el-bg-color: #20121a;
+  --el-bg-color-page: #170d13;
+  --el-fill-color-blank: #281722;
+  --el-fill-color: #20121a;
+  --el-fill-color-light: #301c2a;
+  --el-fill-color-lighter: #3a2233;
+  --el-text-color-primary: #ffffff;
+  --el-text-color-regular: #e3c9d3;
+  --el-text-color-secondary: #b08a9a;
+  --el-text-color-placeholder: #7d5f6e;
+  --el-border-color: rgba(255, 255, 255, 0.14);
+  --el-border-color-light: rgba(255, 255, 255, 0.1);
+  --el-border-color-lighter: rgba(255, 255, 255, 0.08);
+
+  --el-input-height: 1.75rem;
+  --el-component-size: 1.75rem;
+}
+
+/* Duihao light - bright variant of the brand theme. Same logo gradient
+   (#E01A83 → #F5133C) as accent, but on warm rose-tinted light surfaces. */
+[data-theme="duihao-light"] {
+  --bg-base: #fffaf9;
+  --bg-elevated: #fdf3f2;
+  --bg-surface: #f9e9ea;
+  --bg-overlay: #f4dee0;
+  --bg-hover: #eed3d6;
+  --bg-active: #e5c4c9;
+
+  --text-primary: #200b10;
+  --text-secondary: #553941;
+  --text-muted: #84636c;
+  --text-disabled: #b2969d;
+
+  /* Accent: brand rose deepened for contrast on warm white */
+  --accent: #dd1553;
+  --accent-glow: rgba(221, 21, 83, 0.2);
+  --accent-subtle: rgba(221, 21, 83, 0.08);
+
+  --info: #c0148a;
+  --info-subtle: rgba(224, 26, 131, 0.08);
+  --on-accent: #ffffff;
+
+  --chart-1: #16a34a;
+  --chart-2: #2563eb;
+  --chart-3: #d97706;
+  --chart-4: #7c3aed;
+  --chart-4-alt: #a78bfa;
+
+  --success: #107c41;
+  --success-dim: #0b5e30;
+  --success-subtle: rgba(16, 124, 65, 0.06);
+  --success-glow: rgba(16, 124, 65, 0.15);
+  --warning: #e07b00;
+  --warning-subtle: rgba(224, 123, 0, 0.08);
+  --warning-tab: rgba(224, 123, 0, 0.16);
+  --warning-tab-hover: rgba(224, 123, 0, 0.24);
+  --warning-tab-active: rgba(224, 123, 0, 0.22);
+  --error: #d13438;
+  --error-subtle: rgba(209, 52, 56, 0.06);
+  --error-glow: rgba(209, 52, 56, 0.15);
+
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-hover: rgba(0, 0, 0, 0.13);
+
+  --scrim: rgba(255, 255, 255, 0.6);
+
+  --shadow-sm: 0 1px 0.1875rem rgba(32, 11, 16, 0.07);
+  --shadow-md: 0 0.25rem 0.875rem rgba(32, 11, 16, 0.09);
+  --shadow-lg: 0 0.5rem 1.75rem rgba(32, 11, 16, 0.11);
+
+  --el-bg-color: #fffaf9;
+  --el-bg-color-page: #fffaf9;
+  --el-fill-color-blank: #ffffff;
+  --el-fill-color: #fdf3f2;
+  --el-fill-color-light: #f9e9ea;
+  --el-fill-color-lighter: #f4dee0;
+  --el-text-color-primary: #200b10;
+  --el-text-color-regular: #553941;
+  --el-text-color-secondary: #84636c;
+  --el-text-color-placeholder: #b2969d;
+  --el-border-color: rgba(0, 0, 0, 0.09);
+  --el-border-color-light: rgba(0, 0, 0, 0.06);
+  --el-border-color-lighter: rgba(0, 0, 0, 0.05);
+
+  --el-input-height: 1.75rem;
+  --el-component-size: 1.75rem;
+
+  /* Scrollbar */
+  --scrollbar-thumb: rgba(0, 0, 0, 0.22);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.35);
+}
+
 [data-theme="light"] {
   /* Core palette - clean neutral grays */
   --bg-base: #ffffff;
@@ -228,8 +380,8 @@
   --error-glow: rgba(209, 52, 56, 0.15);
 
   /* Borders - cool light grays */
-  --border-subtle: rgba(0, 0, 0, 0.12);
-  --border-hover: rgba(0, 0, 0, 0.18);
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-hover: rgba(0, 0, 0, 0.13);
 
   /* Scrim - translucent white so dark loading text stays legible */
   --scrim: rgba(255, 255, 255, 0.6);
@@ -250,9 +402,9 @@
   --el-text-color-regular: #3d3d3d;
   --el-text-color-secondary: #6e6e6e;
   --el-text-color-placeholder: #8a8a8a;
-  --el-border-color: rgba(0, 0, 0, 0.12);
-  --el-border-color-light: rgba(0, 0, 0, 0.08);
-  --el-border-color-lighter: rgba(0, 0, 0, 0.06);
+  --el-border-color: rgba(0, 0, 0, 0.09);
+  --el-border-color-light: rgba(0, 0, 0, 0.06);
+  --el-border-color-lighter: rgba(0, 0, 0, 0.05);
 
   --el-input-height: 1.75rem;
   --el-component-size: 1.75rem;
@@ -343,33 +495,52 @@ html, body, #app {
 
 body {
   box-sizing: border-box;
-  /* 1px inner inset: WebView2's CSS viewport runs ~1 physical px past the
-     visible window at fractional DPI (125%/150% — wails' frameless
-     WM_NCCALCSIZE workaround), so anything painted at the very edge gets
-     clipped. Insetting the app root keeps its window frame line visible. */
-  padding: 1px;
+  /* Window canvas is transparent (BackgroundTypeTransparent in main.go) and
+     the rounded window shape is drawn by CSS: body clips everything —
+     including teleported el-dialog overlays and position:fixed layers, which
+     escape plain overflow:hidden — via contain:paint + border-radius. The
+     theme gradient lives on #app so it doesn't propagate to the canvas as a
+     square opaque fill (CSS background propagation rule). */
+  padding: 0;
+  border-radius: var(--win-radius);
+  contain: paint;
+  overflow: hidden;
   font-family: var(--font-ui);
-  background: var(--bg-base);
   color: var(--text-primary);
   user-select: none;
   -webkit-user-select: none;
+}
+
+#app {
+  border-radius: var(--win-radius);
+  overflow: hidden;
+}
+
+/* 最大化/全屏时直角：贴边不留圆角（html.win-square 由 main.ts 维护，事件源
+   是 Go 侧窗口事件的 app:win-shape 广播） */
+html.win-square body,
+html.win-square #app {
+  border-radius: 0;
 }
 
 /* Subtle vertical gradient instead of a flat fill so large empty areas don't
    read as a single dead slab. Always lighter at the top: the dark themes lift
    the top off --bg-base, while light's --bg-base is already white so it dims
    the bottom instead. The :not() arm covers the first paint before
-   applyTheme() sets data-theme. */
-html:not([data-theme]) body,
-[data-theme="dark"] body {
+   applyTheme() sets data-theme. (On #app, not body: body's background would
+   propagate to the root canvas and paint the corners square again.) */
+html:not([data-theme]) #app,
+[data-theme="dark"] #app {
   background: linear-gradient(180deg, color-mix(in srgb, var(--bg-surface) 40%, var(--bg-base)) 0%, var(--bg-base) 100%);
 }
 
-[data-theme="deep-blue"] body {
+[data-theme="deep-blue"] #app,
+[data-theme="duihao-red"] #app {
   background: linear-gradient(180deg, color-mix(in srgb, var(--bg-surface) 40%, var(--bg-base)) 0%, var(--bg-base) 100%);
 }
 
-[data-theme="light"] body {
+[data-theme="light"] #app,
+[data-theme="duihao-light"] #app {
   background: linear-gradient(180deg, var(--bg-base) 0%, color-mix(in srgb, var(--bg-base) 95%, #000) 100%);
 }
 
@@ -1087,6 +1258,26 @@ body::before {
   background: var(--accent) !important;
   border-color: var(--accent) !important;
   box-shadow: 0 0 0.75rem var(--accent-glow);
+}
+/* plain 变体：上面的实心 background !important 会盖掉 EP 的浅底，
+   而文字色仍是 accent → 红底红字（看得见背景、看不见字）。
+   plain 一律用「透明底 + accent 细边框 + accent 文字」，暗色主题下对比度最高。 */
+.el-button--primary.is-plain {
+  background: transparent !important;
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent) !important;
+  color: var(--accent) !important;
+}
+.el-button--primary.is-plain:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent) !important;
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+  box-shadow: none;
+}
+.el-button--primary.is-plain.is-disabled,
+.el-button--primary.is-plain:disabled {
+  background: transparent !important;
+  border-color: var(--border-subtle) !important;
+  color: var(--text-disabled) !important;
 }
 
 .el-dropdown-menu {

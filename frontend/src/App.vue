@@ -3,6 +3,7 @@
   <div class="app-container" :class="{ 'has-bg': bgVisible }">
     <div v-if="bgVisible" class="app-bg" :style="bgStyle"></div>
     <AppHeader
+      :compact="!!editionHome"
       @toggle-ai="aiStore.toggle"
       @toggle-sidebar="sidebarVisible = !sidebarVisible"
       @open-settings="openSettings"
@@ -13,7 +14,7 @@
       @new-local-terminal="createNewTab"
     />
     <div class="main-content">
-      <Sidebar ref="sidebarRef" :visible="sidebarVisible" @toggle="sidebarVisible = !sidebarVisible" @connect="onSidebarConnect" @connect-to-workspace="({ config, workspaceId }: any) => onConnect(config, undefined, undefined, true, workspaceId)" @create-workspace="(configs: any) => onCreateWorkspaceFromConfigs(configs)" @connect-only="onConnectOnly" />
+      <Sidebar v-if="!editionHome" ref="sidebarRef" :visible="sidebarVisible" @toggle="sidebarVisible = !sidebarVisible" @connect="onSidebarConnect" @connect-to-workspace="({ config, workspaceId }: any) => onConnect(config, undefined, undefined, true, workspaceId)" @create-workspace="(configs: any) => onCreateWorkspaceFromConfigs(configs)" @connect-only="onConnectOnly" />
       <div class="tab-area">
         <template v-if="activeTab">
           <KeepAlive>
@@ -103,6 +104,10 @@
               :key="activeTab.id"
               :tab="activeTab"
             />
+            <component
+              v-else-if="activeTab.type === 'start' && editionHome"
+              :is="HOME_VIEWS[editionHome]"
+            />
             <StartTabContent
               v-else-if="activeTab.type === 'start'"
               :key="activeTab.id"
@@ -122,7 +127,7 @@
           </KeepAlive>
         </template>
       </div>
-      <AISidebar ref="aiSidebarRef" @open-settings="openSettings" />
+      <AISidebar v-if="!editionHome" ref="aiSidebarRef" @open-settings="openSettings" />
     </div>
     <ConnectionForm v-model="showConnectionForm" :edit-config="editConfig" :default-group-id="pendingGroupId" @save="onSaveOnly" @connect="(c: ConnectionConfig, ko?: boolean) => { const wasEdit = !!editConfig?.id; editConfig = null; onConnect(c, ko, wasEdit) }" @connect-only="onConnectOnly" @cancel="editConfig = null" />
 
@@ -232,13 +237,14 @@ import { useDuplicateSession } from './composables/useDuplicateSession'
 import { useTunnelCredentials } from './composables/useTunnelCredentials'
 import type { ShortcutAction } from './types/settings'
 import { useI18n } from './i18n'
-import { CreateSession, CloseSession, RecordRecentConnection, GetPlatform, GetBackgroundImage, SessionStart, RelaunchApp, ResolveMCPApproval } from '../bindings/github.com/ys-ll/uniterm/app'
+import { CreateSession, CloseSession, RecordRecentConnection, GetPlatform, GetBackgroundImage, SessionStart, RelaunchApp, ResolveMCPApproval, PaletteToggle, GetEditionHome } from '../bindings/github.com/ys-ll/uniterm/app'
+import { HOME_VIEWS } from './homeviews/registry'
 import { waitForTerminalSize } from './services/terminalManager'
 import { msg } from './services/message'
 import { unregisterTransferRoute } from './services/transferTaskCenter'
 import type { ConnectionConfig } from './types/session'
 import type { PanelType } from './types/workspace'
-import { Application, Clipboard, Events } from '@wailsio/runtime'
+import { Application, Clipboard, Events, Window } from '@wailsio/runtime'
 import { parseQuickConnect } from './utils/quickConnect'
 import { getShellLabel as getShellLabelBase, parseWslFromShell } from './utils/shellLabel'
 import { reconnectFileTransferPanel } from './composables/usePanelReconnect'
@@ -337,7 +343,7 @@ function hasLiveSessions(): boolean {
 function onVisibilityChange() {
   if (document.visibilityState === 'hidden') {
     if (hasLiveSessions()) {
-      startAndroidKeepAlive('uniTerm', t('app.backgroundKeepAlive'))
+      startAndroidKeepAlive('对号', t('app.backgroundKeepAlive'))
     }
   } else {
     stopAndroidKeepAlive()
@@ -371,7 +377,21 @@ let uninstallFocusRestore: (() => void) | null = null
 // Unsubscribers for module-level Wails EventsOn listeners (FE-03).
 // Tray menu → open the settings tab (Go shows the window first).
 let unsubTrayOpenSettings: (() => void) | null = null
+let unsubPaletteNav: (() => void) | null = null
 let unsubTrayOpenAbout: (() => void) | null = null
+// M18 命令面板（独立面板窗为主入口）：Alt+Space / 悬浮球 / 主窗口 Ctrl+K
+// 都调后端 PaletteToggle 切换独立面板窗；主窗口不再内嵌 CommandPalette
+// 弹层（用户定稿：只有面板一个入口 UI，避免两套面板）。
+let unsubPaletteConnect: (() => void) | null = null
+let unsubPaletteAction: (() => void) | null = null
+function onPaletteShortcut(e: KeyboardEvent) {
+  if (!(e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey) || e.key.toLowerCase() !== 'k') return
+  const el = e.target as HTMLElement | null
+  if (el && el.closest('.xterm')) return // 终端里 Ctrl+K 属于 shell
+  e.preventDefault()
+  e.stopImmediatePropagation()
+  void PaletteToggle()
+}
 const { t, locale } = useI18n()
 const EL_LOCALE_MAP: Record<string, typeof enUs> = {
   'zh-CN': zhCn, 'zh-TW': zhTw, en: enUs, ja, ko, de, es, fr, ru,
@@ -442,7 +462,7 @@ async function checkCredentials() {
   // rejects and the placeholder status would wrongly pop the encryption
   // dialog. Skip the whole credential flow so the UI renders for debugging.
   if (!credStore.backendAvailable) {
-    console.warn('[uniTerm] Backend unreachable — browser debug mode: credential flow skipped')
+    console.warn('[Duihao] Backend unreachable — browser debug mode: credential flow skipped')
     return
   }
   if (credStore.firstRun || credStore.dataDirInfo.firstRun) {
@@ -453,6 +473,8 @@ async function checkCredentials() {
 }
 const showConnectionForm = ref(false)
 const sidebarVisible = ref(false)
+// M19 插件化产品线：专有版首页归属插件 id（'' = core 走现状 StartTabContent）
+const editionHome = ref('')
 const sidebarRef = ref<any>(null)
 const aiSidebarRef = ref<any>(null)
 
@@ -778,7 +800,21 @@ function onPlatformSystemShortcut(e: KeyboardEvent) {
 onMounted(async () => {
   connectionStore.load()
   aiStore.init()
-  updateCheck.initAutoCheck()
+
+  // M19 插件化产品线：专有版首屏决策。editions.json 声明 home.plugin 且
+  // 前端注册表有该插件视图 → 主窗口隐藏侧栏，start tab 渲染插件首页。
+  try {
+    const eh = await GetEditionHome()
+    if (eh?.plugin && HOME_VIEWS[eh.plugin]) {
+      editionHome.value = eh.plugin
+      sidebarVisible.value = false
+      // 专有版：窗口标题随发行版品牌（core 保持「对号」）
+      if (eh.name) { try { Window.SetTitle(eh.name) } catch { /* 非主窗口环境忽略 */ } }
+    }
+  } catch { /* core 构建无此绑定或读取失败：走现状 */ }
+
+  // 更新检查只在 core 版做：专有版是独立产品，不该提示主线仓库的新版本。
+  if (!editionHome.value) updateCheck.initAutoCheck()
 
   // Load local-only state (sidebar visibility, background image, etc.)
   await localStateStore.init()
@@ -831,6 +867,48 @@ onMounted(async () => {
   // Tray menu: "Settings" / "About" show the window (Go side) then land here.
   unsubTrayOpenSettings = Events.On('app:open-settings', () => openSettings())
   unsubTrayOpenAbout = Events.On('app:open-about', () => openSettings('about'))
+  // M18-C 独立面板窗的导航请求：后端 PaletteNavigate 广播，落地成窗口内
+  // 既有 CustomEvent（Sidebar 监听 app:set-sidebar-view 切面板）。
+  unsubPaletteNav = Events.On('app:palette-nav', (data: unknown) => {
+    let view = ''
+    if (typeof data === 'string') view = data
+    else if (data && typeof data === 'object') {
+      const d = data as { view?: string; data?: { view?: string } }
+      view = d.view || d.data?.view || ''
+    }
+    if (view) window.dispatchEvent(new CustomEvent('app:set-sidebar-view', { detail: { view } }))
+  })
+  // M18 面板「连接」快捷执行：后端 PaletteConnect 广播连接配置，走既有 onConnect
+  unsubPaletteConnect = Events.On('app:palette-connect', (data: unknown) => {
+    const c = (data && typeof data === 'object' && 'data' in (data as Record<string, unknown>)
+      ? (data as { data: unknown }).data
+      : data) as ConnectionConfig | undefined
+    if (c?.id) void onConnect(c)
+  })
+  // M18 面板「创建」动作（新建连接/站点）：后端 PaletteAction 广播，打开对应表单
+  unsubPaletteAction = Events.On('app:palette-action', (data: unknown) => {
+    let name = ''
+    if (typeof data === 'string') name = data
+    else if (data && typeof data === 'object') {
+      const d = data as { data?: unknown; name?: unknown }
+      name = typeof d.data === 'string' ? d.data : typeof d.name === 'string' ? d.name : ''
+    }
+    if (name === 'connection') {
+      pendingGroupId.value = undefined
+      editConfig.value = null
+      showConnectionForm.value = true
+    } else if (name === 'site') {
+      window.dispatchEvent(new CustomEvent('app:set-sidebar-view', { detail: { view: 'sites' } }))
+      // 等站点面板挂载后再发创建事件
+      nextTick(() => window.dispatchEvent(new CustomEvent('site:create')))
+    }
+  })
+  document.addEventListener('keydown', onPaletteShortcut, true)
+  // 导航请求（首页按钮 / 命令面板）同时确保侧栏展开：Sidebar 只切 activeView，
+  // 侧栏收起时面板切了也看不见 —— 这里统一兜底展开。
+  window.addEventListener('app:set-sidebar-view', () => {
+    sidebarVisible.value = true
+  })
   // MCP (external AI agents): approval dialogs + session takeover.
   unsubMcpApproval = Events.On('mcp:approval-request', (ev) => {
     mcpApprovalRequest.value = ev.data as MCPApprovalRequest
@@ -1078,10 +1156,14 @@ onUnmounted(() => {
   window.removeEventListener('input:contextmenu', onInputContextMenu)
   document.removeEventListener('wheel', onWheel, { capture: true })
   document.removeEventListener('keydown', onPlatformSystemShortcut, true)
+  document.removeEventListener('keydown', onPaletteShortcut, true)
   window.removeEventListener('panel:reconnect', onPanelReconnectEvent)
   // Wails EventsOn teardown (FE-03)
   unsubTrayOpenSettings?.()
   unsubTrayOpenAbout?.()
+  unsubPaletteNav?.()
+  unsubPaletteConnect?.()
+  unsubPaletteAction?.()
   unsubMcpApproval?.()
   unsubMcpSessionCreated?.()
   settingsStore.dispose?.()

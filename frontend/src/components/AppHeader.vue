@@ -15,13 +15,13 @@
     />
 
     <!-- Connections button (icon only, leftmost) -->
-    <button class="header-btn" @click="emit('toggle-sidebar')" :title="t('header.connections') + shortcutSuffix('toggleSidebar')">
+    <button v-if="!props.compact" class="header-btn" @click="emit('toggle-sidebar')" :title="t('header.connections') + shortcutSuffix('toggleSidebar')">
       <el-icon><PanelLeft :size="'0.875rem'" /></el-icon>
     </button>
 
 
     <!-- Tabs list -->
-    <div class="header-tabs">
+    <div v-if="!props.compact" class="header-tabs">
       <TabsList
         @close-tab="(id: string) => emit('close-tab', id)"
         @close-tab-batch="(ids: string[]) => emit('close-tab-batch', ids)"
@@ -32,7 +32,7 @@
     </div>
 
     <!-- AI button -->
-    <button class="header-btn" @click="emit('toggle-ai')" :title="t('header.ai') + shortcutSuffix('focusAI')">
+    <button v-if="!props.compact" class="header-btn" @click="emit('toggle-ai')" :title="t('header.ai') + shortcutSuffix('focusAI')">
       <el-icon><Bot :size="'0.875rem'" /></el-icon>
     </button>
 
@@ -146,13 +146,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, h } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { Menu as MenuIcon, PanelLeft, Bot } from '@lucide/vue'
-import { ElMessageBox, ElCheckbox } from 'element-plus'
 import { useI18n } from '../i18n'
-import { useTabStore } from '../stores/tabStore'
-import { usePanelStore } from '../stores/panelStore'
-import { useSessionStore } from '../stores/sessionStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { formatKeyBinding } from '../composables/useKeyboardShortcuts'
 import { useLocalStateStore } from '../stores/localStateStore'
@@ -168,13 +164,10 @@ import Menu from './Menu.vue'
 import MenuItem from './MenuItem.vue'
 import MenuSubmenu from './MenuSubmenu.vue'
 import MenuDivider from './MenuDivider.vue'
-import { Application, Screens, System, Window } from '@wailsio/runtime'
+import { Screens, System, Window } from '@wailsio/runtime'
 import { SaveWindowState } from '../../bindings/github.com/ys-ll/uniterm/app'
 
 const { t } = useI18n()
-const tabStore = useTabStore()
-const panelStore = usePanelStore()
-const sessionStore = useSessionStore()
 const settingsStore = useSettingsStore()
 const localStateStore = useLocalStateStore()
 // Window frame is fixed at startup (Wails limitation): the OS title bar only
@@ -204,6 +197,8 @@ const themeOptions = computed(() => [
   { value: 'system' as const, label: t('settings.themeSystem') },
   { value: 'dark' as const, label: t('settings.themeDark') },
   { value: 'deep-blue' as const, label: t('settings.themeDeepBlue') },
+  { value: 'duihao-red' as const, label: t('settings.themeDuihaoRed') },
+  { value: 'duihao-light' as const, label: t('settings.themeDuihaoLight') },
   { value: 'light' as const, label: t('settings.themeLight') },
 ])
 
@@ -282,17 +277,9 @@ function menuShortcut(action: ShortcutAction): string {
   return formatKeyBinding(b, isMac)
 }
 
-const hasActiveConnections = computed(() =>
-  tabStore.tabs.some(t => {
-    if (t.type === 'start' || t.type === 'settings') return false
-    const panelIds = t.type === 'workspace' ? t.panelIds : 'panelId' in t ? [t.panelId] : []
-    return panelIds.some(pid => {
-      const p = panelStore.getPanel(pid)
-      if (!p?.sessionId) return false
-      return sessionStore.getStatus(p.sessionId) === 'connected'
-    })
-  })
-)
+// M19 插件化产品线：compact = 专有版「单品」模式（主页面 = 插件首页）。
+// 隐藏 Tab 条、连接按钮与 AI 侧栏入口，顶栏只留窗口控制 / 设置菜单。
+const props = defineProps<{ compact?: boolean }>()
 
 const emit = defineEmits<{
   'toggle-ai': []
@@ -383,34 +370,15 @@ async function saveWindowState() {
 }
 
 async function onClose() {
-  if (hasActiveConnections.value) {
-    if (!settingsStore.settings.closeAppPrompt) {
-      // skip dialog, proceed to quit
-    } else {
-      const dontShowAgain = ref(false)
-
-      try {
-        await ElMessageBox.confirm(
-          h('div', { style: 'display:flex;flex-direction:column;gap:0.625rem' }, [
-            h('span', t('app.closeConfirm')),
-            h(ElCheckbox, {
-              'onUpdate:modelValue': (v: boolean) => { dontShowAgain.value = v }
-            }, () => t('app.dontShowAgain'))
-          ]),
-          t('app.closeTitle'),
-          { confirmButtonText: t('tab.close'), cancelButtonText: t('conn.cancel'), type: 'warning' }
-        )
-      } catch {
-        return // user cancelled
-      }
-      if (dontShowAgain.value) {
-        settingsStore.settings.closeAppPrompt = false
-        settingsStore.save()
-      }
-    }
+  // 点 ✕ 收缩到托盘而不是退出：只隐藏窗口，服务、实例与连接全部保持，
+  // 与托盘菜单「隐藏到托盘」行为一致。真正的退出入口是托盘菜单「退出」
+  // （Go 侧 app.Quit()）。原「有活动连接时确认退出」对话框随退出语义
+  // 一起移除 —— 隐藏不会中断任何连接。
+  try {
+    await Window.Hide()
+  } catch {
+    // ignore
   }
-  await saveWindowState()
-  Application.Quit()
 }
 
 function onDblClick(e: MouseEvent) {
@@ -451,11 +419,10 @@ onUnmounted(() => {
 .app-header {
   display: flex;
   align-items: center;
-  height: 2.75rem;
+  height: 2.375rem;
   padding: 0 0.5rem;
   gap: 0.125rem;
   background: var(--bg-elevated);
-  border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
   position: relative;
   z-index: 10;

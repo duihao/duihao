@@ -9,6 +9,7 @@ require (
 	github.com/creack/pty v1.1.24
 	github.com/danieljoos/wincred v1.2.3
 	github.com/ebitengine/purego v0.11.2
+	github.com/fclairamb/ftpserverlib v0.32.4
 	github.com/go-git/go-git/v5 v5.19.2
 	github.com/go-sql-driver/mysql v1.10.0
 	github.com/google/uuid v1.6.0
@@ -27,6 +28,7 @@ require (
 	github.com/rhnvrm/simples3 v0.11.1
 	github.com/rqlite/gorqlite v0.0.0-20260504155303-50d445fd0ab9
 	github.com/sijms/go-ora/v2 v2.9.0
+	github.com/spf13/afero v1.15.0
 	github.com/studio-b12/gowebdav v0.12.0
 	github.com/unixshells/mosh-go v0.5.2
 	github.com/wailsapp/wails/v3 v3.0.0-beta.27

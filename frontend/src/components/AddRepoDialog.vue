@@ -73,7 +73,7 @@
           <el-form-item :label="t('conn.s3Bucket')">
             <el-input
               v-model="s3Bucket"
-              placeholder="uniTerm-sync"
+              placeholder="duihao-sync"
             />
           </el-form-item>
 
@@ -111,7 +111,7 @@
         <el-form-item :label="t('addRepo.basePath')">
           <el-input
             v-model="remotePath"
-            placeholder="uniTerm-sync"
+            placeholder="duihao-sync"
           />
         </el-form-item>
       </template>

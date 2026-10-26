@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 2,
+  "id": "redis",
+  "name": "Redis",
+  "category": "cache",
+  "kind": "process",
+  "description": "内存缓存 / 键值存储。Windows 官方无发行版，使用 tporadowski 维护的 BSD 构建（5.0.14.1）。仅监听 127.0.0.1，无密码，持久化关闭。",
+  "homepage": "https://github.com/tporadowski/redis",
+  "license": "BSD-3-Clause",
+  "versions": [
+    {
+      "version": "5.0.14.1",
+      "source": "url",
+      "platforms": {
+        "windows-amd64": {
+          "url": "https://gh-proxy.com/https://github.com/tporadowski/redis/releases/download/v5.0.14.1/Redis-x64-5.0.14.1.zip",
+          "urls": [
+            "https://github.com/tporadowski/redis/releases/download/v5.0.14.1/Redis-x64-5.0.14.1.zip",
+            "https://ghfast.top/https://github.com/tporadowski/redis/releases/download/v5.0.14.1/Redis-x64-5.0.14.1.zip"
+          ],
+          "sha256": "",
+          "size": 0
+        }
+      }
+    }
+  ],
+  "requires": {
+    "runlib": [],
+    "host": []
+  },
+  "bin": {
+    "windows-amd64": "redis-server.exe"
+  },
+  "ports": [
+    {
+      "name": "redis",
+      "pool": "misc"
+    }
+  ],
+  "workers": 0,
+  "lifecycle": {
+    "install": [
+      {
+        "action": "mkdir",
+        "path": "{dir}/data"
+      },
+      {
+        "action": "write",
+        "dst": "{dir}/redis.conf",
+        "from": "bind {set:redis.bind}\nport {port:redis}\ntimeout {set:redis.timeout}\nmaxclients {set:redis.maxclients}\ndatabases {set:redis.databases}\nmaxmemory {set:redis.maxmemory}mb\n{setif:redis.requirepass:requirepass {set:redis.requirepass}}\ndir {dir}/data\nsave \"\"\nappendonly no\nprotected-mode yes\nmaxmemory-policy allkeys-lru\n"
+      }
+    ]
+  },
+  "start": {
+    "args": [
+      "{dir}/redis.conf"
+    ]
+  },
+  "stop": {
+    "type": "signal",
+    "graceful": 3
+  },
+  "health": {
+    "type": "tcp",
+    "target": "127.0.0.1:{port:redis}",
+    "interval": 10
+  },
+  "config": {
+    "signature": "2026-10-22-m8-settings"
+  },
+  "settings": {
+    "configFile": "redis.conf",
+    "restart": true,
+    "groups": [
+      {
+        "title": "基本配置",
+        "fields": [
+          {
+            "key": "redis.bind",
+            "label": "绑定 IP",
+            "type": "text",
+            "default": "127.0.0.1",
+            "hint": "0.0.0.0 = 允许局域网访问（注意安全）"
+          },
+          {
+            "key": "redis.port",
+            "label": "绑定端口",
+            "type": "number",
+            "default": "6379",
+            "portRole": "redis",
+            "min": 1,
+            "max": 65535
+          },
+          {
+            "key": "redis.timeout",
+            "label": "连接超时",
+            "type": "number",
+            "default": "65",
+            "unit": "秒",
+            "hint": "0 = 不限制"
+          },
+          {
+            "key": "redis.maxclients",
+            "label": "最大连接数",
+            "type": "number",
+            "default": "10000"
+          },
+          {
+            "key": "redis.databases",
+            "label": "数据库数量",
+            "type": "number",
+            "default": "16"
+          },
+          {
+            "key": "redis.requirepass",
+            "label": "密码",
+            "type": "password",
+            "hint": "留空 = 无密码"
+          },
+          {
+            "key": "redis.maxmemory",
+            "label": "最大内存",
+            "type": "number",
+            "default": "1024",
+            "unit": "MB"
+          }
+        ]
+      }
+    ]
+  },
+  "manage": {
+    "panel": "redis"
+  }
+}

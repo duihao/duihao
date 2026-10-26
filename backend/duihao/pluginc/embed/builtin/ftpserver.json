@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 2,
+  "id": "ftpserver",
+  "name": "FTPServer",
+  "category": "transfer",
+  "kind": "embedded",
+  "description": "内置 FTP 服务（Go 实现，MIT：ftpserverlib）。用于把网站目录、本地网盘文件通过 FTP 客户端上传下载；默认仅监听 127.0.0.1，需账号密码登录。",
+  "homepage": "https://github.com/fclairamb/ftpserverlib",
+  "license": "MIT",
+  "requires": {
+    "runlib": [],
+    "host": []
+  },
+  "ports": [
+    {
+      "name": "ftp",
+      "pool": "ftp",
+      "default": 2121
+    }
+  ],
+  "workers": 0,
+  "lifecycle": {
+    "install": [
+      {
+        "action": "mkdir",
+        "path": "{dir}/www"
+      }
+    ]
+  },
+  "settings": {
+    "restart": true,
+    "groups": [
+      {
+        "title": "基本配置",
+        "fields": [
+          {
+            "key": "ftp.bind",
+            "label": "监听地址",
+            "type": "select",
+            "default": "127.0.0.1",
+            "options": [
+              "127.0.0.1",
+              "0.0.0.0"
+            ],
+            "hint": "127.0.0.1 = 只有本机可连；0.0.0.0 = 局域网可连（FTP 明文传输，公网务必配合防火墙）"
+          },
+          {
+            "key": "ftp.port",
+            "label": "端口",
+            "type": "number",
+            "default": "2121",
+            "min": 1,
+            "max": 65535,
+            "portRole": "ftp",
+            "hint": "默认 2121，避免与系统 FTP（21）冲突"
+          },
+          {
+            "key": "ftp.user",
+            "label": "用户名",
+            "type": "text",
+            "default": "duihao"
+          },
+          {
+            "key": "ftp.password",
+            "label": "密码",
+            "type": "password",
+            "default": "duihao",
+            "hint": "请改成自己的密码；密码为空将拒绝启动（避免根目录对同网段完全敞开）"
+          },
+          {
+            "key": "ftp.welcome",
+            "label": "欢迎信息",
+            "type": "text",
+            "default": "对号 FTP 服务"
+          },
+          {
+            "key": "ftp.idle",
+            "label": "空闲超时",
+            "type": "number",
+            "default": "900",
+            "unit": "秒",
+            "min": 30,
+            "max": 86400,
+            "hint": "超过该时长无操作自动断开"
+          }
+        ]
+      },
+      {
+        "title": "目录与权限",
+        "fields": [
+          {
+            "key": "ftp.root",
+            "label": "根目录",
+            "type": "text",
+            "default": "{dir}/www",
+            "hint": "绝对路径；{dir} 表示本实例数据目录。要给站点上传就把这里改成站点根目录"
+          },
+          {
+            "key": "ftp.readonly",
+            "label": "只读模式",
+            "type": "switch",
+            "default": "0",
+            "hint": "开启后只能下载，禁止上传 / 改名 / 删除"
+          }
+        ]
+      },
+      {
+        "title": "传输（被动模式）",
+        "fields": [
+          {
+            "key": "ftp.pasv_start",
+            "label": "PASV 起始端口",
+            "type": "number",
+            "default": "2130",
+            "min": 1,
+            "max": 65535,
+            "hint": "客户端默认用被动模式，数据连接走这个区间"
+          },
+          {
+            "key": "ftp.pasv_end",
+            "label": "PASV 结束端口",
+            "type": "number",
+            "default": "2190",
+            "min": 1,
+            "max": 65535
+          },
+          {
+            "key": "ftp.public_host",
+            "label": "PASV 公网 IP",
+            "type": "text",
+            "default": "",
+            "hint": "填了以后 PASV 回包用这个 IP（NAT / 端口映射场景需要），留空自动用客户端连接地址"
+          },
+          {
+            "key": "ftp.disable_active",
+            "label": "禁用主动模式",
+            "type": "switch",
+            "default": "1",
+            "hint": "主动模式会让服务端回连客户端，安全风险高，建议保持禁用"
+          },
+          {
+            "key": "ftp.disable_mlsd",
+            "label": "禁用 MLSD",
+            "type": "switch",
+            "default": "0",
+            "hint": "老旧客户端不支持 MLSD 时可打开（列表会退化为 LIST）"
+          }
+        ]
+      }
+    ]
+  },
+  "manage": {
+    "panel": "ftp"
+  }
+}

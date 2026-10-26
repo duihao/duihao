@@ -34,6 +34,8 @@
               <el-select v-model="settingsStore.settings.theme" @change="settingsStore.save()">
                 <el-option :label="t('settings.themeDark')" value="dark" />
                 <el-option :label="t('settings.themeDeepBlue')" value="deep-blue" />
+                <el-option :label="t('settings.themeDuihaoRed')" value="duihao-red" />
+                <el-option :label="t('settings.themeDuihaoLight')" value="duihao-light" />
                 <el-option :label="t('settings.themeLight')" value="light" />
                 <el-option :label="t('settings.themeSystem')" value="system" />
               </el-select>
@@ -968,27 +970,15 @@
       <div v-if="settingsStore.activeCategory === 'about'" class="settings-section">
         <h2 class="section-title">{{ t('settings.about') }}</h2>
         <div class="about-content">
-          <div class="about-appname">uniTerm</div>
+          <div class="about-appname">对号</div>
           <p class="about-desc">{{ t('settings.aboutDesc') }}</p>
           <div class="about-version">
             {{ t('settings.version') }}: {{ updateCheck.updateInfo?.current || '...' }}
           </div>
           <div class="about-links">
-            <a href="#" class="about-link" @click.prevent="Browser.OpenURL('https://uniterm.net')">
+            <a href="#" class="about-link" @click.prevent="Browser.OpenURL('https://duihao.cn')">
               <Globe :size="'0.875rem'" class="about-link-icon" />
               {{ t('settings.homepage') }}
-            </a>
-            <a href="#" class="about-link" @click.prevent="Browser.OpenURL(locale === 'zh-CN' ? 'https://uniterm.net/guide/zh/introduction' : 'https://uniterm.net/guide/en/introduction')">
-              <BookOpen :size="'0.875rem'" class="about-link-icon" />
-              {{ t('settings.userManual') }}
-            </a>
-            <a href="#" class="about-link" @click.prevent="Browser.OpenURL('https://github.com/ys-ll/uniterm')">
-              <GitHubLogo class="about-link-icon" />
-              GitHub
-            </a>
-            <a href="#" class="about-link" @click.prevent="Browser.OpenURL('https://gitee.com/ys-l/uniterm')">
-              <GiteeLogo class="about-link-icon" />
-              Gitee
             </a>
           </div>
           <!-- In-app update download is desktop-only; mobile updates via APK -->
@@ -1651,8 +1641,6 @@ import { backendErrorText } from '../utils/backendError'
 import { getShellLabel as getShellLabelBase } from '../utils/shellLabel'
 import SkillsManager from './SkillsManager.vue'
 import CommandsManager from './CommandsManager.vue'
-import GitHubLogo from './icons/GitHubLogo.vue'
-import GiteeLogo from './icons/GiteeLogo.vue'
 import type { AIModelConfig, ShortcutAction, KeyBinding, KeyboardSettings } from '../types/settings'
 import { DEFAULT_MCP_SETTINGS } from '../types/mcp'
 import type { MCPStatus } from '../types/mcp'
@@ -2870,7 +2858,7 @@ const modelForm = reactive({
   model: '',
   apiKey: '',
   protocol: 'anthropic' as 'anthropic' | 'openai' | 'responses',
-  userAgent: 'uniTerm' as string,
+  userAgent: 'Duihao' as string,
   proxyId: '' as string,
 })
 
@@ -2973,7 +2961,7 @@ function resetModelForm() {
   modelForm.model = ''
   modelForm.apiKey = ''
   modelForm.protocol = 'anthropic'
-  modelForm.userAgent = 'uniTerm'
+  modelForm.userAgent = 'Duihao'
   modelForm.proxyId = ''
   modelSuggestions.value = []
 }

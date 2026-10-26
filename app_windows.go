@@ -23,6 +23,7 @@ import (
 	"unsafe"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/ys-ll/uniterm/backend/log"
 	"github.com/ys-ll/uniterm/backend/platform"
 	"github.com/ys-ll/uniterm/backend/session"
 	"golang.org/x/sys/windows"
@@ -344,10 +345,83 @@ func parseWSLDistros(raw []byte) []string {
 
 const (
 	GWLP_WNDPROC     = ^uintptr(3)
+	GWL_STYLE        = ^uintptr(16)
+	GWL_EXSTYLE      = ^uintptr(19)
+	WM_CLOSE         = 0x0010
 	WM_ENTERSIZEMOVE = 0x0231
 	WM_EXITSIZEMOVE  = 0x0232
 	WM_SIZE          = 0x0005
+
+	// 原生 caption 位（保留常量备用；不用改 style 去 caption，会破坏 wails
+	// 的 WM_NCCALCSIZE 计算导致启动即崩——改用 CloseButtonState: ButtonHidden）
+	WS_BORDER   = 0x00800000
+	WS_DLGFRAME = 0x00400000
+	WS_CAPTION  = 0x00C00000
+	WS_SYSMENU  = 0x00080000
+
+	WS_EX_TOOLWINDOW = 0x00000080
+	WS_EX_APPWINDOW  = 0x00040000
+	SM_CXSCREEN      = 0
+	SM_CYSCREEN      = 1
+	SWP_NOSIZE       = 0x0001
+	SWP_NOMOVE       = 0x0002
+	SWP_NOZORDER     = 0x0004
+	SWP_FRAMECHANGED = 0x0020
 )
+
+// styleToolWindow gives the M18-C palette window WS_EX_TOOLWINDOW so it stays
+// out of the taskbar and Alt+Tab, like uTools' floating panel.
+func styleToolWindow(hwnd uintptr) {
+	user32 := windows.NewLazySystemDLL("user32.dll")
+	pGet := user32.NewProc("GetWindowLongPtrW")
+	pSet := user32.NewProc("SetWindowLongPtrW")
+	pSetWindowPos := user32.NewProc("SetWindowPos")
+	st, _, _ := pGet.Call(hwnd, GWL_EXSTYLE)
+	// 只加 TOOLWINDOW 不够：wails 创建无 owner 的无边框窗口时会带 WS_EX_APPWINDOW
+	// （0x40000），它会强制出现任务栏按钮、压过 TOOLWINDOW —— 必须同时清掉。
+	st = (st | WS_EX_TOOLWINDOW) &^ WS_EX_APPWINDOW
+	pSet.Call(hwnd, GWL_EXSTYLE, st)
+	pSetWindowPos.Call(hwnd, 0, 0, 0, 0, 0, SWP_NOMOVE|SWP_NOSIZE|SWP_NOZORDER|SWP_FRAMECHANGED)
+}
+
+// positionPaletteTopCenter places the frameless palette window top-center on
+// the primary screen (uTools shows its panel the same way).
+func positionPaletteTopCenter(hwnd uintptr, w, h int) {
+	user32 := windows.NewLazySystemDLL("user32.dll")
+	pGet := user32.NewProc("GetSystemMetrics")
+	pSetWindowPos := user32.NewProc("SetWindowPos")
+	sw, _, _ := pGet.Call(SM_CXSCREEN)
+	sh, _, _ := pGet.Call(SM_CYSCREEN)
+	if sw == 0 || sh == 0 {
+		return
+	}
+	x := (int(sw) - w) / 2
+	y := int(sh) / 6
+	pSetWindowPos.Call(hwnd, 0, uintptr(x), uintptr(y), 0, 0, SWP_NOSIZE|SWP_NOZORDER)
+}
+
+// forceWindowSize re-applies the intended w×h (logical px, DPI-scaled) to a
+// small window whose creation size was clamped up by SM_CXMINTRACK (≈136px).
+// Position is left untouched — the frontend owns the floating button's spot.
+func forceWindowSize(hwnd uintptr, w, h int) {
+	if hwnd == 0 {
+		return
+	}
+	user32 := windows.NewLazySystemDLL("user32.dll")
+	if pGetDpi := user32.NewProc("GetDpiForWindow"); true {
+		if dpi, _, _ := pGetDpi.Call(hwnd); dpi >= 96 {
+			w = w * int(dpi) / 96
+			h = h * int(dpi) / 96
+		}
+	}
+	user32.NewProc("SetWindowPos").Call(hwnd, 0, 0, 0, uintptr(w), uintptr(h),
+		SWP_NOMOVE|SWP_NOZORDER)
+}
+
+// positionFloatingIcon was removed: the floating button's position is now
+// owned by the frontend (FloatIcon onMounted restores the remembered spot or
+// computes the default), so the Go first-show hook can no longer clobber the
+// user's last drag position.
 
 func (a *App) findMainWindow() uintptr {
 	pid := windows.GetCurrentProcessId()
@@ -365,9 +439,12 @@ func (a *App) findMainWindow() uintptr {
 			return 1 // continue
 		}
 		// Verify it has our window title so we don't pick up invisible helper windows.
+		// M19：专有版会把标题改成「对号网盘」等品牌名 —— 用前缀匹配，同时排除
+		// 面板/悬浮/菜单等其他 webview（它们的标题形如「对号 · 面板」）。
 		buf := make([]uint16, 256)
 		procGetWindowTextW.Call(uintptr(hwnd), uintptr(unsafe.Pointer(&buf[0])), 255)
-		if windows.UTF16ToString(buf) == "uniTerm" {
+		title := windows.UTF16ToString(buf)
+		if strings.HasPrefix(title, "对号") && !strings.Contains(title, " · ") {
 			result = uintptr(hwnd)
 			return 0 // stop
 		}
@@ -420,6 +497,17 @@ func (a *App) subclassMainWindow() {
 
 	cb := windows.NewCallback(func(hwnd windows.HWND, msg uint32, wparam, lparam uintptr) uintptr {
 		switch msg {
+		case WM_CLOSE:
+			// 点右上角 ✕ 收缩到托盘而不是退出。必须在消息层拦截：wails
+			// beta.27 内置的 WindowClosing 监听会把窗口强制真关（置
+			// unconditionallyClose 后走 DefWindowProc），事件层 OnWindowEvent
+			// 拦不住。这里在消息到达 wails 之前把 WM_CLOSE 改成隐藏窗口，
+			// 行为与托盘菜单「隐藏到托盘」一致；真正的退出走托盘「退出」
+			// （app.Quit() 直接销毁应用，不发 WM_CLOSE）。
+			if w := a.win(); w != nil {
+				w.Hide()
+			}
+			return 0
 		case WM_ENTERSIZEMOVE:
 			a.inSizeMove = true
 		case WM_EXITSIZEMOVE:
@@ -621,22 +709,37 @@ func detectExternalEditors() []ExternalEditorOption {
 // fine.
 const (
 	dwmwaWindowCornerPreference = 33
-	dwmwcpRound                 = 2
+	dwmwaBorderColor            = 34
+	dwmwcpDoNotRound            = 1
+	// DWMWA_COLOR_NONE: tells DWM to draw no border at all. The window shape
+	// is CSS-drawn, so the native 1px frame line (white in light Windows
+	// themes) would otherwise trace a square outline over the rounded corners.
+	dwmwaColorNone = 0xFFFFFFFE
 )
 
 var procDwmSetWindowAttribute = syscall.NewLazyDLL("dwmapi.dll").NewProc("DwmSetWindowAttribute")
 
-// applyRoundedCorners sets DWMWCP_ROUND on the given HWND.
-func applyRoundedCorners(hwnd unsafe.Pointer) {
+// removeNativeWindowBorder strips the native window chrome on the given HWND:
+// DWMWCP_DONOTROUND (the window shape is CSS-drawn on a transparent window)
+// and DWMWA_BORDER_COLOR = DWMWA_COLOR_NONE (no 1px DWM frame line, which
+// shows as a white square outline around rounded corners in light themes).
+func removeNativeWindowBorder(hwnd unsafe.Pointer) {
 	if hwnd == nil {
 		return
 	}
-	preference := uint32(dwmwcpRound)
+	preference := uint32(dwmwcpDoNotRound)
 	_, _, _ = procDwmSetWindowAttribute.Call(
 		uintptr(hwnd),
 		dwmwaWindowCornerPreference,
 		uintptr(unsafe.Pointer(&preference)),
 		unsafe.Sizeof(preference),
+	)
+	border := uint32(dwmwaColorNone)
+	_, _, _ = procDwmSetWindowAttribute.Call(
+		uintptr(hwnd),
+		dwmwaBorderColor,
+		uintptr(unsafe.Pointer(&border)),
+		unsafe.Sizeof(border),
 	)
 }
 
@@ -685,11 +788,13 @@ func applyTrayIcon(tray *application.SystemTray) {
 	tray.SetIcon(trayIconPNG())
 }
 
-// trayIconPNG returns the tray icon bytes, pre-scaled to the exact OS
-// small-icon size (SM_CXSMICON — 16px at 100% DPI, 20/24px at higher scaling)
-// with a box filter. wails otherwise hands the raw PNG to
-// CreateIconFromResourceEx and GDI's rescale is what made the icon look
-// mushy. Called once during tray setup; per-monitor DPI changes are not
+// trayIconPNG returns the tray icon bytes. The build ships one PNG per OS
+// small-icon size (SM_CXSMICON — 16px at 100% DPI, 20/24/32 at higher
+// scaling), each pre-rendered on its exact pixel grid by
+// scripts/gen_tray_icons.py: strokes fill whole pixels and edges stay crisp,
+// which rescaling a single large PNG can never achieve. Falls back to
+// box-filtering the 64px legacy tray PNG for any size without an exact
+// entry. Called once during tray setup; per-monitor DPI changes are not
 // re-rendered (rare for a tray icon).
 func trayIconPNG() []byte {
 	user32 := windows.NewLazySystemDLL("user32.dll")
@@ -698,7 +803,11 @@ func trayIconPNG() []byte {
 	if size == 0 {
 		size = 16
 	}
-	return scalePNG(appIconTrayPNG, int(size), int(size))
+	n := int(size)
+	if b, err := appIconTraySet.ReadFile(fmt.Sprintf("build/tray/tray-%02d.png", n)); err == nil {
+		return b
+	}
+	return scalePNG(appIconTrayPNG, n, n)
 }
 
 // scalePNG decodes a PNG and box-filter downsamples it to w×h, returning the
@@ -1007,4 +1116,171 @@ func readClipboardHDROP() ([]string, error) {
 		return nil, fmt.Errorf("CF_HDROP holds no files")
 	}
 	return names, nil
+}
+
+// 悬浮球右键菜单：显示 / 定位 / 隐藏自绘菜单窗（uTools 同款圆角卡片）。
+// 不用原生 TrackPopupMenu 的原因：系统菜单做不出圆角卡片观感，且锚点只能
+// 取窗口矩形（球窗被误拉大时离球很远）。
+const (
+	floatMenuMain = 1 // 主窗口
+	floatMenuSet  = 2 // 设置
+	floatMenuQuit = 3 // 退出
+
+	floatMenuW   = 96  // 菜单窗逻辑宽（与 main.go 创建尺寸一致，含 14px 阴影留白）
+	floatMenuH   = 164 // 菜单窗逻辑高（同上）
+	floatMenuGap = 6   // 球底到菜单顶的间距（逻辑 px）
+)
+
+// 菜单收起监听：每次弹出换一代，旧协程自行退出。
+var (
+	floatMenuWatchMu  sync.Mutex
+	floatMenuWatchGen int
+)
+
+// ShowFloatMenu 把菜单窗摆到悬浮球正下方并显示。坐标按窗口 DPI 从物理像素
+// 换算回 DIP（wails 的 SetPosition 用 DIP，内部再转物理像素）。
+func (a *App) ShowFloatMenu() error {
+	fw, mw := a.floatWin, a.floatMenuWin
+	if fw == nil || mw == nil || fw.NativeWindow() == nil {
+		return fmt.Errorf("windows not ready")
+	}
+	hwnd := uintptr(fw.NativeWindow())
+
+	user32 := windows.NewLazySystemDLL("user32.dll")
+	type rect struct{ L, T, R, B int32 }
+	var rc rect
+	user32.NewProc("GetWindowRect").Call(hwnd, uintptr(unsafe.Pointer(&rc)))
+	dpi, _, _ := user32.NewProc("GetDpiForWindow").Call(hwnd)
+	if dpi < 96 {
+		dpi = 96
+	}
+	scale := 96.0 / float64(dpi)
+	ballW := float64(rc.R-rc.L) * scale
+	leftDip := float64(rc.L) * scale
+	bottomDip := float64(rc.B) * scale
+
+	// 水平居中于球；靠屏幕边时钳回屏内
+	x := leftDip + ballW/2 - floatMenuW/2
+	screenW, screenH := windowWorkAreaDIP(mw)
+	if screenW > 0 && x+floatMenuW > float64(screenW) {
+		x = float64(screenW - floatMenuW)
+	}
+	if x < 0 {
+		x = 0
+	}
+	// 默认贴球下方；下方放不下（球在屏幕底部）就翻到球上方 —— 否则菜单
+	// 会整个掉到屏幕外，看起来像「没弹出来」。
+	y := bottomDip + floatMenuGap
+	ballTopDip := float64(rc.T) * scale
+	if screenH > 0 && y+floatMenuH > float64(screenH) {
+		y = ballTopDip - floatMenuH - floatMenuGap
+	}
+	if y < 0 {
+		y = 0
+	}
+
+	mw.SetPosition(int(x), int(y))
+	if !mw.IsVisible() {
+		mw.Show()
+	}
+	mw.Focus()
+	// wails 的 Focus() 对 HiddenOnTaskbar + AlwaysOnTop 的小窗不总能拿到前台
+	// （前台锁），拿不到就收不到 focus 事件、菜单会被自己的失焦逻辑判成
+	// 「已经点到别处」而立刻收起。这里补一次 SetForegroundWindow。
+	if mwHwnd := mw.NativeWindow(); mwHwnd != nil {
+		user32.NewProc("SetForegroundWindow").Call(uintptr(mwHwnd))
+	}
+	log.Writef("FLOATMENU: show at %d,%d (ball %d,%d dpi=%d)", int(x), int(y), rc.L, rc.T, dpi)
+	a.watchFloatMenuDismiss()
+	return nil
+}
+
+// watchFloatMenuDismiss 轮询前台窗口决定何时收起菜单窗。
+// 为什么不用前端的 blur 事件：这个 HiddenOnTaskbar + AlwaysOnTop 的小窗经常
+// 拿不到/守不住前台（wails Focus 与 SetForegroundWindow 都可能被系统驳回），
+// 收不到 focus 事件或立刻被夺焦，菜单就会「闪一下就没」。
+// 判定：前台既不是本进程任何窗口、也不是桌面时，连续两次（400ms）才收起，
+// 避免切换瞬间误杀；点本进程其它窗口（球/面板/主窗）不算离开。
+func (a *App) watchFloatMenuDismiss() {
+	floatMenuWatchMu.Lock()
+	floatMenuWatchGen++
+	gen := floatMenuWatchGen
+	floatMenuWatchMu.Unlock()
+
+	user32 := windows.NewLazySystemDLL("user32.dll")
+	getForeground := user32.NewProc("GetForegroundWindow")
+	getPID := user32.NewProc("GetWindowThreadProcessId")
+
+	go func() {
+		time.Sleep(400 * time.Millisecond) // 刚弹出的宽限期
+		misses := 0
+		for {
+			time.Sleep(200 * time.Millisecond)
+			floatMenuWatchMu.Lock()
+			stale := gen != floatMenuWatchGen
+			floatMenuWatchMu.Unlock()
+			if stale {
+				return
+			}
+			mw := a.floatMenuWin
+			if mw == nil || !mw.IsVisible() {
+				return
+			}
+			fg, _, _ := getForeground.Call()
+			away := true
+			if fg != 0 {
+				var pid uint32
+				getPID.Call(fg, uintptr(unsafe.Pointer(&pid)))
+				away = int(pid) != os.Getpid()
+			}
+			if away {
+				misses++
+			} else {
+				misses = 0
+			}
+			if misses >= 2 {
+				a.HideFloatMenu()
+				return
+			}
+		}
+	}()
+}
+
+// HideFloatMenu 收起菜单窗（选完菜单项 / 失焦 / 再次按住球时调用）。
+func (a *App) HideFloatMenu() {
+	if a.floatMenuWin != nil && a.floatMenuWin.IsVisible() {
+		a.floatMenuWin.Hide()
+	}
+}
+
+// FloatMenuAction 执行菜单项：1 主窗口 / 2 设置 / 3 退出。先收菜单再动作。
+func (a *App) FloatMenuAction(cmd int) {
+	a.HideFloatMenu()
+	switch cmd {
+	case floatMenuMain:
+		a.PaletteNavigate("")
+	case floatMenuSet:
+		a.PaletteNavigate("settings")
+	case floatMenuQuit:
+		a.QuitApp()
+	}
+}
+
+// windowWorkAreaDIP 返回主屏工作区的逻辑宽高（DIP，与 SetPosition 同口径），
+// 用于把菜单钳在屏内。取工作区而非整屏：任务栏那一侧也别压住。
+func windowWorkAreaDIP(w *application.WebviewWindow) (int, int) {
+	if w == nil || w.NativeWindow() == nil {
+		return 0, 0
+	}
+	hwnd := uintptr(w.NativeWindow())
+	user32 := windows.NewLazySystemDLL("user32.dll")
+	type rect struct{ L, T, R, B int32 }
+	var rc rect
+	// SPI_GETWORKAREA = 0x0030，取主屏工作区（多屏时悬浮球通常在主屏）
+	user32.NewProc("SystemParametersInfoW").Call(0x0030, 0, uintptr(unsafe.Pointer(&rc)), 0)
+	dpi, _, _ := user32.NewProc("GetDpiForWindow").Call(hwnd)
+	if dpi < 96 {
+		dpi = 96
+	}
+	return int(float64(rc.R-rc.L) * 96.0 / float64(dpi)), int(float64(rc.B-rc.T) * 96.0 / float64(dpi))
 }

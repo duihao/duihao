@@ -12,7 +12,10 @@
 
     <div class="start-content" :style="contentStyle">
       <!-- Branding -->
-      <div class="start-brand" v-show="!searchQuery.trim()">uniTerm</div>
+      <div class="start-brand-block" v-show="!searchQuery.trim()">
+        <div class="start-brand">对号</div>
+        <div class="start-slogan">{{ t('startTab.slogan') }}</div>
+      </div>
 
       <!-- Search row -->
     <div class="start-search-row">
@@ -25,7 +28,7 @@
         ref="searchInputRef"
         v-model="searchQuery"
         class="start-search-input"
-        :placeholder="t('sidebar.searchPlaceholder')"
+        :placeholder="t('startTab.searchPlaceholder')"
         clearable
         @keydown="onSearchKeydown"
       />
@@ -62,6 +65,16 @@
           </MenuItem>
         </Menu>
       </div>
+
+      <!-- Feature entries (sites / plugins) as same-style buttons -->
+      <button class="start-action-btn" @click="navTo('sites')">
+        <el-icon><Globe :size="'0.875rem'" /></el-icon>
+        {{ t('startTab.featureSites') }}
+      </button>
+      <button class="start-action-btn" @click="navTo('plugins')">
+        <el-icon><Puzzle :size="'0.875rem'" /></el-icon>
+        {{ t('startTab.featurePlugins') }}
+      </button>
 
     </div>
 
@@ -291,8 +304,13 @@
 
     <!-- Empty state -->
     <div v-if="connectionStore.connections.length === 0" class="start-empty-state">
-      <span class="empty-icon">📋</span>
-      <p>{{ t('startTab.noConnections') }}</p>
+      <div class="empty-logo">对号</div>
+      <div class="empty-title">{{ t('startTab.emptyTitle') }}</div>
+      <div class="empty-desc">{{ t('startTab.emptyDesc') }}</div>
+      <button class="empty-action" @click="emit('new-connection')">
+        <el-icon><Plus :size="'0.875rem'" /></el-icon>
+        {{ t('header.newConnection') }}
+      </button>
     </div>
     </div>
 
@@ -366,7 +384,7 @@ import { connectionTypeIcon as connTypeIcon, connectionTypeLabel as connTypeLabe
 import { getShellLabel as getShellLabelBase } from '../utils/shellLabel'
 import { START_PAGE_BLOCK_LABEL_KEYS, type StartPageBlock } from '../types/settings'
 import MenuItem from './MenuItem.vue'
-import { Filter, Plus, Laptop, Server, Folder, FolderOpen, Zap, MoreHorizontal, ChevronDown, ChevronUp, Settings, Star, LayoutDashboard } from '@lucide/vue'
+import { Filter, Plus, Laptop, Server, Folder, FolderOpen, Zap, MoreHorizontal, ChevronDown, ChevronUp, Settings, Star, LayoutDashboard, Globe, Puzzle } from '@lucide/vue'
 
 const props = defineProps<{
   tab: StartTab
@@ -390,6 +408,11 @@ const connectionStore = useConnectionStore()
 const favoriteStore = useFavoriteStore()
 const tabStore = useTabStore()
 const settingsStore = useSettingsStore()
+
+// 功能入口：复用命令面板同款「切换侧栏面板」事件（Sidebar 监听 app:set-sidebar-view）
+function navTo(view: string) {
+  window.dispatchEvent(new CustomEvent('app:set-sidebar-view', { detail: { view } }))
+}
 
 // ── Default local shell ──
 const effectiveDefaultShell = computed(() => {
@@ -1187,14 +1210,27 @@ function doEditConnection(config: ConnectionConfig | null) {
   margin: 0 auto;
 }
 
+.start-brand-block {
+  margin-top: 4rem;
+  margin-bottom: 2.25rem;
+  user-select: none;
+}
+
 .start-brand {
   text-align: center;
   font-size: 2rem;
   font-weight: 700;
-  color: var(--accent);
-  margin-top: 4rem;
-  margin-bottom: 2.25rem;
-  user-select: none;
+  color: var(--text-primary);
+  letter-spacing: 0.125rem;
+  line-height: 1.2;
+}
+
+.start-slogan {
+  text-align: center;
+  margin-top: 0.625rem;
+  font-size: 0.8125rem;
+  letter-spacing: 0.25rem;
+  color: var(--text-muted);
 }
 
 .start-search-row {
@@ -1208,7 +1244,8 @@ function doEditConnection(config: ConnectionConfig | null) {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 0.875rem;
+  height: 2.5rem;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   background: var(--bg-surface);
@@ -1238,7 +1275,7 @@ function doEditConnection(config: ConnectionConfig | null) {
   display: flex;
   flex-direction: column;
 }
-.start-tab.start-all-hidden .start-brand {
+.start-tab.start-all-hidden .start-brand-block {
   margin-top: 0;
   margin-bottom: 1.25rem;
 }
@@ -1272,7 +1309,8 @@ function doEditConnection(config: ConnectionConfig | null) {
 .start-search-input .el-input__wrapper {
   background-color: var(--bg-surface) !important;
   box-shadow: 0 0 0 1px var(--border-subtle) inset !important;
-  padding: 0.25rem 0.875rem !important;
+  padding: 0.25rem 1rem !important;
+  height: 2.5rem;
   border-radius: var(--radius-sm) !important;
 }
 .start-search-input .el-input__wrapper.is-focus {
@@ -1280,7 +1318,7 @@ function doEditConnection(config: ConnectionConfig | null) {
 }
 .start-search-input .el-input__inner {
   font-family: inherit !important;
-  font-size: 0.8125rem !important;
+  font-size: 0.9375rem !important;
   color: var(--text-primary) !important;
 }
 .start-search-input .el-input__inner::placeholder {
@@ -1419,6 +1457,7 @@ function doEditConnection(config: ConnectionConfig | null) {
   gap: 0.375rem;
   font-size: 0.75rem;
   color: var(--text-disabled);
+  opacity: 0.8;
   text-transform: uppercase;
   letter-spacing: 1px;
   margin-top: 1.5rem;
@@ -1461,7 +1500,7 @@ function doEditConnection(config: ConnectionConfig | null) {
   width: 15rem;
 }
 .start-card:hover {
-  border-color: var(--accent);
+  border-color: var(--border-hover);
 }
 .card-more-btn {
   display: none;
@@ -1627,11 +1666,39 @@ function doEditConnection(config: ConnectionConfig | null) {
   font-size: 0.875rem;
   margin-top: 3rem;
 }
-.empty-icon {
-  font-size: 3rem;
-  display: block;
+.empty-logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.125rem;
+  color: var(--text-primary);
+  opacity: 0.22;
   margin-bottom: 1rem;
-  opacity: 0.3;
+}
+.empty-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 0.375rem;
+}
+.empty-desc {
+  font-size: 0.8125rem;
+  color: var(--text-disabled);
+  margin-bottom: 1.25rem;
+}
+.empty-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.4375rem 1.25rem;
+  border: 1px solid var(--text-primary);
+  border-radius: var(--radius-sm);
+  background: var(--text-primary);
+  color: var(--bg-base);
+  font-size: 0.8125rem;
+  transition: opacity 0.15s;
+}
+.empty-action:hover {
+  opacity: 0.85;
 }
 
 </style>

@@ -5,12 +5,12 @@ version: '3'
 
 # This information is used to generate the build assets.
 info:
-  companyName: "uniTerm"
-  productName: "uniTerm"
-  productIdentifier: "net.uniterm.uniterm"
-  description: "uniTerm - a multi-protocol remote connection terminal"
-  copyright: "(c) uniTerm"
-  comments: "uniTerm"
+  companyName: "Duihao"
+  productName: "对号"
+  productIdentifier: "cn.duihao.app"
+  description: "对号 Duihao - 多协议远程连接与本地服务管理桌面软件"
+  copyright: "(c) Duihao"
+  comments: "对号 Duihao"
   version: "0.1.0"
   # cfBundleIconName: "appicon" # The macOS icon name in Assets.car icon bundles (optional)
   #                               # Should match the name of your .icon file without the extension

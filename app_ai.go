@@ -134,7 +134,7 @@ func (a *App) ChatCompletion(apiKey, baseURL, model string, requestJSON string, 
 	}
 
 	if userAgent == "" {
-		userAgent = "uniTerm"
+		userAgent = "Duihao"
 	}
 
 	// Attachment guard rail: validate image blocks before anything is sent so
@@ -1472,7 +1472,7 @@ func (a *App) FetchModels(apiKey, baseURL, protocol string, proxyID string) ([]M
 	} else {
 		req.Header.Set("Authorization", "Bearer "+apiKey)
 	}
-	req.Header.Set("User-Agent", "uniTerm")
+	req.Header.Set("User-Agent", "Duihao")
 
 	// F-208: share the same transport as the LLM clients so the model
 	// list call also benefits from the keep-alive pool; the request

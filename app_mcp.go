@@ -864,17 +864,17 @@ type mcpNotifyStrings struct {
 }
 
 var mcpNotifyLabels = map[string]mcpNotifyStrings{
-	"en":    {"uniTerm · MCP approval request", "%s requests to run a command — confirm in uniTerm", "%s requests a new connection — confirm in uniTerm"},
-	"zh-CN": {"uniTerm · MCP 审批请求", "%s 请求执行命令,请在 uniTerm 中确认", "%s 请求建立新连接,请在 uniTerm 中确认"},
-	"zh-TW": {"uniTerm · MCP 審批請求", "%s 請求執行命令,請在 uniTerm 中確認", "%s 請求建立新連線,請在 uniTerm 中確認"},
-	"ja":    {"uniTerm · MCP承認リクエスト", "%s がコマンド実行を要求しています。uniTerm で確認してください", "%s が新しい接続を要求しています。uniTerm で確認してください"},
-	"ko":    {"uniTerm · MCP 승인 요청", "%s이(가) 명령 실행을 요청했습니다. uniTerm에서 확인해 주세요", "%s이(가) 새 연결을 요청했습니다. uniTerm에서 확인해 주세요"},
-	"de":    {"uniTerm · MCP-Freigabe-Anfrage", "%s möchte einen Befehl ausführen — in uniTerm bestätigen", "%s möchte eine neue Verbindung öffnen — in uniTerm bestätigen"},
-	"es":    {"uniTerm · Solicitud de aprobación MCP", "%s solicita ejecutar un comando; confírmalo en uniTerm", "%s solicita una nueva conexión; confírmalo en uniTerm"},
-	"fr":    {"uniTerm · Demande d'approbation MCP", "%s demande à exécuter une commande — à confirmer dans uniTerm", "%s demande une nouvelle connexion — à confirmer dans uniTerm"},
-	"ru":    {"uniTerm · запрос на одобрение MCP", "%s запрашивает выполнение команды — подтвердите в uniTerm", "%s запрашивает новое подключение — подтвердите в uniTerm"},
-	"pt":    {"uniTerm · Solicitação de aprovação MCP", "%s solicita executar um comando — confirme no uniTerm", "%s solicita uma nova conexão — confirme no uniTerm"},
-	"vi":    {"uniTerm · Yêu cầu phê duyệt MCP", "%s yêu cầu chạy lệnh — xác nhận trong uniTerm", "%s yêu cầu kết nối mới — xác nhận trong uniTerm"},
+	"en":    {"Duihao · MCP approval request", "%s requests to run a command — confirm in Duihao", "%s requests a new connection — confirm in Duihao"},
+	"zh-CN": {"对号 · MCP 审批请求", "%s 请求执行命令,请在对号中确认", "%s 请求建立新连接,请在对号中确认"},
+	"zh-TW": {"對號 · MCP 審批請求", "%s 請求執行命令,請在對號中確認", "%s 請求建立新連線,請在對號中確認"},
+	"ja":    {"Duihao · MCP承認リクエスト", "%s がコマンド実行を要求しています。Duihao で確認してください", "%s が新しい接続を要求しています。Duihao で確認してください"},
+	"ko":    {"Duihao · MCP 승인 요청", "%s이(가) 명령 실행을 요청했습니다. Duihao에서 확인해 주세요", "%s이(가) 새 연결을 요청했습니다. Duihao에서 확인해 주세요"},
+	"de":    {"Duihao · MCP-Freigabe-Anfrage", "%s möchte einen Befehl ausführen — in Duihao bestätigen", "%s möchte eine neue Verbindung öffnen — in Duihao bestätigen"},
+	"es":    {"Duihao · Solicitud de aprobación MCP", "%s solicita ejecutar un comando; confírmalo en Duihao", "%s solicita una nueva conexión — confírmalo en Duihao"},
+	"fr":    {"Duihao · Demande d'approbation MCP", "%s demande à exécuter une commande — à confirmer dans Duihao", "%s demande une nouvelle connexion — à confirmer dans Duihao"},
+	"ru":    {"Duihao · запрос на одобрение MCP", "%s запрашивает выполнение команды — подтвердите в Duihao", "%s запрашивает новое подключение — подтвердите в Duihao"},
+	"pt":    {"Duihao · Solicitação de aprovação MCP", "%s solicita executar um comando — confirme no Duihao", "%s solicita uma nova conexão — confirme no Duihao"},
+	"vi":    {"Duihao · Yêu cầu phê duyệt MCP", "%s yêu cầu chạy lệnh — xác nhận trong Duihao", "%s yêu cầu kết nối mới — xác nhận trong Duihao"},
 }
 
 // mcpNotifyStringsFor returns the string set for lang, English fallback.

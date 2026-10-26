@@ -17,7 +17,7 @@
 
       <div class="theme-preview" :style="previewStyle">
         <div class="theme-preview-line">
-          <span :style="{ color: draft.colors.green }">user@host</span><span :style="{ color: draft.colors.foreground }">:</span><span :style="{ color: draft.colors.blue }">~/uniterm</span><span :style="{ color: draft.colors.foreground }">$ ls -la</span>
+          <span :style="{ color: draft.colors.green }">user@host</span><span :style="{ color: draft.colors.foreground }">:</span><span :style="{ color: draft.colors.blue }">~/duihao</span><span :style="{ color: draft.colors.foreground }">$ ls -la</span>
         </div>
         <div class="theme-preview-line">
           <span :style="{ color: draft.colors.brightBlack }">total 32</span>

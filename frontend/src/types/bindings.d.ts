@@ -4,3 +4,7 @@
 declare module '*/bindings/github.com/ys-ll/uniterm/app';
 declare module '*/bindings/github.com/ys-ll/uniterm/backend/store/models';
 declare module '*/bindings/github.com/ys-ll/uniterm/backend/sync/models';
+declare module '*/bindings/github.com/ys-ll/uniterm/backend/duihao/service';
+declare module '*/bindings/github.com/ys-ll/uniterm/backend/duihao/service/*';
+declare module '*/bindings/github.com/ys-ll/uniterm/backend/duihao/service/models';
+declare module '*/bindings/github.com/ys-ll/uniterm/backend/duihao/instance/models';

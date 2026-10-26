@@ -14,6 +14,8 @@
       <button v-if="tabVisible('quickCommands')" class="sidebar-tab" :class="{ active: activeView === 'quickCommands' }" @click="activeView = 'quickCommands'" :title="quickCommandsTitle"><el-icon><Zap :size="'0.875rem'" /></el-icon></button>
       <button v-if="tabVisible('history')" class="sidebar-tab" :class="{ active: activeView === 'history' }" @click="activeView = 'history'" :title="t('quickCommands.historyTab')"><el-icon><Clock :size="'0.875rem'" /></el-icon></button>
       <button v-if="tabVisible('personalization')" class="sidebar-tab" :class="{ active: activeView === 'personalization' }" @click="activeView = 'personalization'" :title="t('sidebar.personalization')"><el-icon><Palette :size="'0.875rem'" /></el-icon></button>
+      <button v-if="tabVisible('plugins')" class="sidebar-tab" :class="{ active: activeView === 'plugins' }" @click="activeView = 'plugins'" :title="t('sidebar.plugins')"><el-icon><Puzzle :size="'0.875rem'" /></el-icon></button>
+      <button v-if="tabVisible('sites')" class="sidebar-tab" :class="{ active: activeView === 'sites' }" @click="activeView = 'sites'" :title="t('sidebar.sites')"><el-icon><Globe :size="'0.875rem'" /></el-icon></button>
       <button class="icon-btn" @click="emit('toggle')" :title="t('sidebar.collapse')"><el-icon><X :size="'0.875rem'" /></el-icon></button>
     </div>
 
@@ -219,6 +221,9 @@
 
     <FileSidebar v-if="activeView === 'files'" />
 
+    <PluginCenterPanel v-if="activeView === 'plugins'" />
+    <SitePanel v-if="activeView === 'sites'" />
+
     <MonitorOverviewSidebar v-if="activeView === 'monitor'" />
 
     <template v-if="activeView === 'personalization'">
@@ -229,6 +234,8 @@
           <el-select v-model="settingsStore.settings.theme" @change="settingsStore.save()">
             <el-option :label="t('settings.themeDark')" value="dark" />
             <el-option :label="t('settings.themeDeepBlue')" value="deep-blue" />
+            <el-option :label="t('settings.themeDuihaoRed')" value="duihao-red" />
+            <el-option :label="t('settings.themeDuihaoLight')" value="duihao-light" />
             <el-option :label="t('settings.themeLight')" value="light" />
             <el-option :label="t('settings.themeSystem')" value="system" />
           </el-select>
@@ -407,7 +414,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, watch, nextTick, provide } from 'vue'
-import { X, ChevronRight, ChevronDown, Filter, Check, Network, Zap, Clock, Plus, Palette, SquareTerminal, Activity, Pencil, MoreHorizontal, FolderTree, ArrowRightLeft, Star } from '@lucide/vue'
+import { X, ChevronRight, ChevronDown, Filter, Check, Network, Zap, Clock, Plus, Palette, SquareTerminal, Activity, Pencil, MoreHorizontal, FolderTree, ArrowRightLeft, Star, Puzzle, Globe } from '@lucide/vue'
 import { getShellLabel as getShellLabelBase } from '../utils/shellLabel'
 import { useConnectionStore } from '../stores/connectionStore'
 import { useFavoriteStore } from '../stores/favoriteStore'
@@ -422,6 +429,8 @@ import ImportDialog from './ImportDialog.vue'
 import QuickCommandsPanel from './QuickCommandsPanel.vue'
 import TunnelsPanel from './TunnelsPanel.vue'
 import HistoryPanel from './HistoryPanel.vue'
+import PluginCenterPanel from './PluginCenterPanel.vue'
+import SitePanel from './SitePanel.vue'
 import FileSidebar from './FileSidebar.vue'
 import MonitorOverviewSidebar from './MonitorOverviewSidebar.vue'
 import { useCompanionStore } from '../stores/companionStore'
@@ -490,7 +499,7 @@ const showForm = ref(false)
 const showExportDialog = ref(false)
 const showImportDialog = ref(false)
 const editConfig = ref<ConnectionConfig | undefined>(undefined)
-const activeView = ref<'connections' | 'quickCommands' | 'history' | 'personalization' | 'files' | 'monitor' | 'tunnels'>('connections')
+const activeView = ref<'connections' | 'quickCommands' | 'history' | 'personalization' | 'files' | 'monitor' | 'tunnels' | 'plugins' | 'sites'>('connections')
 const quickCommandsRef = ref<InstanceType<typeof QuickCommandsPanel> | null>(null)
 
 function openQuickCommands() {
@@ -515,6 +524,18 @@ function onMonitorTabClick() {
   const pid = companionStore.getActiveSshPanelId()
   if (pid) companionStore.ensureMonitor(pid).catch(() => {})
 }
+
+// M18 命令面板：跨组件切换侧栏视图（palette 直达某面板）
+function onSetSidebarView(e: Event) {
+  const v = (e as CustomEvent).detail?.view as string | undefined
+  const allowed = ['connections', 'quickCommands', 'history', 'personalization', 'files', 'monitor', 'tunnels', 'plugins', 'sites']
+  if (!v || !allowed.includes(v)) return
+  if (v === 'files') onFilesTabClick()
+  else if (v === 'monitor') onMonitorTabClick()
+  else activeView.value = v as typeof activeView.value
+}
+window.addEventListener('app:set-sidebar-view', onSetSidebarView)
+onUnmounted(() => window.removeEventListener('app:set-sidebar-view', onSetSidebarView))
 // If the companion panel hides itself (collapse button), fall back to connections view.
 watch(
   () => [companionStore.filesVisible, companionStore.monitorVisible],
@@ -854,7 +875,8 @@ watch(searchQuery, (q) => {
 
 // ── Resize ──
 const SIDEBAR_MIN_WIDTH = 240
-const SIDEBAR_MAX_WIDTH = 400
+// 运行时/网站面板需要更宽：上限放宽到 520，用户可拖宽看完整卡片
+const SIDEBAR_MAX_WIDTH = 520
 const sidebarWidth = ref(SIDEBAR_MIN_WIDTH)
 const isResizing = ref(false)
 const sidebarEl = ref<HTMLDivElement>()

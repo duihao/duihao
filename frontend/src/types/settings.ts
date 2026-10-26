@@ -5,8 +5,8 @@ export const SUPPORTED_LOCALES = [
 
 export type Locale = typeof SUPPORTED_LOCALES[number]
 export type Language = Locale | 'system'
-export type Theme = 'dark' | 'deep-blue' | 'light' | 'system'
-export type TerminalTheme = 'uniterm-dark' | 'uniterm-light' | 'solarized-dark' | 'solarized-light' | 'monokai' | 'dracula' | 'molokai' | 'tomorrow-night' | 'tomorrow-night-bright' | 'tomorrow' | 'one-dark' | 'one-light' | 'github-dark' | 'github-light' | 'gotham' | 'hybrid' | 'nord' | 'gruvbox-dark' | 'gruvbox-light' | 'catppuccin-mocha' | 'catppuccin-latte' | 'tokyo-night' | 'tokyo-day' | 'rose-pine' | 'rose-pine-dawn' | 'everforest-dark' | 'everforest-light' | 'xshell-xterm' | 'xshell-ansi-black' | 'xshell-new-black' | 'mobaxterm-default' | 'mobaxterm-ubuntu' | 'finalshell-dark' | 'finalshell-light'
+export type Theme = 'dark' | 'deep-blue' | 'duihao-red' | 'duihao-light' | 'light' | 'system'
+export type TerminalTheme = 'uniterm-dark' | 'uniterm-light' | 'duihao-dark' | 'duihao-night' | 'solarized-dark' | 'solarized-light' | 'monokai' | 'dracula' | 'molokai' | 'tomorrow-night' | 'tomorrow-night-bright' | 'tomorrow' | 'one-dark' | 'one-light' | 'github-dark' | 'github-light' | 'gotham' | 'hybrid' | 'nord' | 'gruvbox-dark' | 'gruvbox-light' | 'catppuccin-mocha' | 'catppuccin-latte' | 'tokyo-night' | 'tokyo-day' | 'rose-pine' | 'rose-pine-dawn' | 'everforest-dark' | 'everforest-light' | 'xshell-xterm' | 'xshell-ansi-black' | 'xshell-new-black' | 'mobaxterm-default' | 'mobaxterm-ubuntu' | 'finalshell-dark' | 'finalshell-light'
 
 // Magic value for `AppSettings.terminal.theme`: the effective built-in theme
 // is derived from the current app theme (dark / deep-blue -> uniterm-dark,
@@ -348,6 +348,8 @@ export const SIDEBAR_TAB_DEFAULTS: Record<string, boolean> = {
   quickCommands: true,
   history: true,
   personalization: true,
+  plugins: true,
+  sites: true,
 }
 
 // Canonical sidebar tab order shared by the tab-strip context menu and the
@@ -360,6 +362,8 @@ export const SIDEBAR_TAB_ORDER: { key: string; labelKey: string }[] = [
   { key: 'quickCommands', labelKey: 'quickCommands.quickCommandsTab' },
   { key: 'history', labelKey: 'quickCommands.historyTab' },
   { key: 'personalization', labelKey: 'sidebar.personalization' },
+  { key: 'plugins', labelKey: 'sidebar.plugins' },
+  { key: 'sites', labelKey: 'sidebar.sites' },
 ]
 
 // Platform UI text baseline: macOS native text runs larger than the
@@ -438,6 +442,8 @@ export interface TerminalThemeEntry { label: string; value: string; type: 'dark'
 export const TERMINAL_THEMES: TerminalThemeEntry[] = [
   { label: 'uniTerm Dark', value: 'uniterm-dark', type: 'dark' },
   { label: 'uniTerm Light', value: 'uniterm-light', type: 'light' },
+  { label: 'Duihao Dark', value: 'duihao-dark', type: 'dark' },
+  { label: 'Duihao Night', value: 'duihao-night', type: 'dark' },
   { label: 'Solarized Dark', value: 'solarized-dark', type: 'dark' },
   { label: 'Solarized Light', value: 'solarized-light', type: 'light' },
   { label: 'Monokai', value: 'monokai', type: 'dark' },

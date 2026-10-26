@@ -89,3 +89,6 @@ build/android/app/src/main/jniLibs/
 build/android/gen/
 build/android/overlay.json
 build/android/local.properties
+
+# Local debug leftovers (probe HTML, chrome profiles)
+tmp/

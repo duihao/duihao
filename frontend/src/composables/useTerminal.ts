@@ -110,6 +110,59 @@ export function getXtermTheme(name: string, customThemes?: CustomTerminalTheme[]
         brightCyan: '#006064',
         brightWhite: '#424242'
       }
+    // Brand palettes. Both are tuned against the app's duihao-red theme so the
+    // terminal block blends into the chrome: `duihao-dark` uses the same
+    // #170d13 base and rose accent (#f5305e) as --bg-base / --accent, while
+    // `duihao-night` drops one more stop into near-black with desaturated
+    // foreground and a magenta cursor for low-light sessions.
+    case 'duihao-dark':
+      return {
+        background: '#170d13',
+        foreground: '#f0dde4',
+        cursor: '#f5305e',
+        cursorAccent: '#170d13',
+        selectionBackground: 'rgba(245, 48, 94, 0.28)',
+        black: '#2a1a23',
+        red: '#f5305e',
+        green: '#3ecf8e',
+        yellow: '#f2b544',
+        blue: '#6aa9ff',
+        magenta: '#f472a6',
+        cyan: '#56cfe1',
+        white: '#e3c9d3',
+        brightBlack: '#7d5f6e',
+        brightRed: '#ff7a92',
+        brightGreen: '#6ee7b7',
+        brightYellow: '#ffd479',
+        brightBlue: '#9cc7ff',
+        brightMagenta: '#ffa8c8',
+        brightCyan: '#8be9f0',
+        brightWhite: '#fff5f8'
+      }
+    case 'duihao-night':
+      return {
+        background: '#0b0609',
+        foreground: '#bfa9b3',
+        cursor: '#e01a83',
+        cursorAccent: '#0b0609',
+        selectionBackground: 'rgba(224, 26, 131, 0.24)',
+        black: '#1a1118',
+        red: '#e05a72',
+        green: '#45b98f',
+        yellow: '#cf9c46',
+        blue: '#628fc4',
+        magenta: '#cc6699',
+        cyan: '#4fa8ac',
+        white: '#b5a3ab',
+        brightBlack: '#5c4a53',
+        brightRed: '#f07a8c',
+        brightGreen: '#5fd3a8',
+        brightYellow: '#e8b95c',
+        brightBlue: '#82aadd',
+        brightMagenta: '#e082ae',
+        brightCyan: '#6cc4c6',
+        brightWhite: '#e0d2d8'
+      }
     case 'solarized-dark':
       return {
         background: '#002b36',

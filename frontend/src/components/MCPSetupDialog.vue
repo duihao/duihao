@@ -79,13 +79,13 @@ const clients = computed(() => [
     id: 'claude',
     label: 'Claude Code',
     hint: t('mcp.claudeHint'),
-    config: `claude mcp add --transport http uniterm ${url.value} \\\n  --header "Authorization: Bearer ${props.token}"`,
+    config: `claude mcp add --transport http duihao ${url.value} \\\n  --header "Authorization: Bearer ${props.token}"`,
   },
   {
     id: 'codex',
     label: 'Codex',
     hint: t('mcp.codexHint'),
-    config: `[mcp_servers.uniterm]\nurl = "${url.value}"\nhttp_headers = { "Authorization" = "Bearer ${props.token}" }`,
+    config: `[mcp_servers.duihao]\nurl = "${url.value}"\nhttp_headers = { "Authorization" = "Bearer ${props.token}" }`,
   },
   {
     id: 'zcode',
@@ -94,7 +94,7 @@ const clients = computed(() => [
     config: JSON.stringify({
       mcp: {
         servers: {
-          uniterm: {
+          duihao: {
             type: 'http',
             url: url.value,
             headers: { Authorization: `Bearer ${props.token}` },
@@ -109,7 +109,7 @@ const clients = computed(() => [
     hint: t('mcp.traeHint'),
     config: JSON.stringify({
       mcpServers: {
-        uniterm: {
+        duihao: {
           url: url.value,
           headers: { Authorization: `Bearer ${props.token}` },
         },
@@ -122,7 +122,7 @@ const clients = computed(() => [
     hint: t('mcp.workbuddyHint'),
     config: JSON.stringify({
       mcpServers: {
-        uniterm: {
+        duihao: {
           type: 'streamableHttp',
           url: url.value,
           headers: { Authorization: `Bearer ${props.token}` },
@@ -137,14 +137,14 @@ const clients = computed(() => [
     // Cordis overlay YAML snippet; token kept via env indirection (DSH's own
     // doc pattern) so the secret isn't inline in the config file.
     config: [
-      '- id: mcp-uniterm',
+      '- id: mcp-duihao',
       "  name: '@deepseek-ai/dsh-mcp-client'",
       '  config:',
-      '    serverName: uniterm',
+      '    serverName: duihao',
       '    transport: streamable-http',
       `    url: ${url.value}`,
       '    headers:',
-      '      Authorization: !!js `Bearer ${process.env.UNITERM_MCP_TOKEN}`',
+      '      Authorization: !!js `Bearer ${process.env.DUIHAO_MCP_TOKEN}`',
       '    toolCallTimeoutMs: 130000',
     ].join('\n'),
   },
@@ -152,7 +152,7 @@ const clients = computed(() => [
     id: 'kimi',
     label: 'Kimi',
     hint: t('mcp.kimiHint'),
-    config: `kimi mcp add --transport http uniterm ${url.value} \\\n  --header "Authorization: Bearer ${props.token}"`,
+    config: `kimi mcp add --transport http duihao ${url.value} \\\n  --header "Authorization: Bearer ${props.token}"`,
   },
   {
     id: 'gemini',
@@ -160,7 +160,7 @@ const clients = computed(() => [
     hint: t('mcp.geminiHint'),
     config: JSON.stringify({
       mcpServers: {
-        uniterm: {
+        duihao: {
           type: 'http',
           url: url.value,
           headers: { Authorization: `Bearer ${props.token}` },

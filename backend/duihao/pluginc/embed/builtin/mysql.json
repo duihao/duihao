@@ -1,0 +1,323 @@
+{
+  "schemaVersion": 2,
+  "id": "mysql",
+  "name": "MySQL",
+  "category": "database",
+  "kind": "process",
+  "description": "关系型数据库。首次装配执行 mysqld --initialize-insecure（root 空密码，仅监听 127.0.0.1）。GPLv2 —— 默认不内置进安装包，走下载器模式。",
+  "homepage": "https://dev.mysql.com",
+  "license": "GPL-2.0",
+  "versions": [
+    {
+      "version": "8.0.40",
+      "source": "url",
+      "platforms": {
+        "windows-amd64": {
+          "url": "https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-8.0.40-winx64.zip",
+          "sha256": "",
+          "size": 0
+        }
+      }
+    },
+    {
+      "version": "8.4.4",
+      "source": "url",
+      "platforms": {
+        "windows-amd64": {
+          "url": "https://dev.mysql.com/get/Downloads/MySQL-8.4/mysql-8.4.4-winx64.zip",
+          "sha256": "",
+          "size": 0
+        }
+      }
+    },
+    {
+      "version": "5.7.44",
+      "source": "url",
+      "platforms": {
+        "windows-amd64": {
+          "url": "https://dev.mysql.com/get/Downloads/MySQL-5.7/mysql-5.7.44-winx64.zip",
+          "sha256": "",
+          "size": 0
+        }
+      }
+    }
+  ],
+  "requires": {
+    "runlib": [],
+    "host": []
+  },
+  "bin": {
+    "windows-amd64": "bin/mysqld.exe"
+  },
+  "ports": [
+    {
+      "name": "db",
+      "pool": "db"
+    }
+  ],
+  "workers": 0,
+  "lifecycle": {
+    "install": [
+      {
+        "action": "mkdir",
+        "path": "{dir}/data"
+      },
+      {
+        "action": "write",
+        "dst": "{dir}/my.ini",
+        "from": "[mysqld]\nbasedir={runtime}\ndatadir={dir}/data\nport={port:db}\nbind-address=127.0.0.1\ncharacter-set-server={set:mysql.charset}\ndefault-storage-engine={set:mysql.engine}\n{setif:mysql.skip_name_resolve:skip-name-resolve}\n{setif:mysql.skip_networking:skip-networking}\n{setif:mysql.log_error:log-error={dir}/logs/mysql.err}\n{setif:mysql.binlog:log-bin=mysql-bin}\n{setif:mysql.slow_query_log:slow_query_log=1\nlong_query_time=2}\nmax_connections={set:mysql.max_connections}\nthread_cache_size={set:mysql.thread_cache_size}\ntable_open_cache={set:mysql.table_open_cache}\nwait_timeout={set:mysql.wait_timeout}\nsort_buffer_size={set:mysql.sort_buffer_size}K\nread_buffer_size={set:mysql.read_buffer_size}K\nmax_allowed_packet={set:mysql.max_allowed_packet}M\ntmp_table_size={set:mysql.tmp_table_size}M\nmax_heap_table_size={set:mysql.max_heap_table_size}M\nkey_buffer_size={set:mysql.key_buffer_size}M\ninnodb_buffer_pool_size={set:mysql.innodb_buffer_pool_size}M\ninnodb_log_buffer_size={set:mysql.innodb_log_buffer_size}M\n{setifver:8.0.30:innodb_redo_log_capacity={set:mysql.innodb_redo_log_capacity}M}\ninnodb_flush_log_at_trx_commit={set:mysql.innodb_flush_log_at_trx_commit}\ninnodb_lock_wait_timeout={set:mysql.innodb_lock_wait_timeout}\nmyisam_max_sort_file_size={set:mysql.myisam_max_sort_file_size}G\nmyisam_sort_buffer_size={set:mysql.myisam_sort_buffer_size}M\n\n[client]\nport={port:db}\ndefault-character-set={set:mysql.charset}\n"
+      },
+      {
+        "action": "write",
+        "dst": "{dir}/init-admin.sql",
+        "from": "-- Duihao admin entry: allow root over TCP on loopback only.\n-- root is created for 'localhost' by --initialize-insecure; with skip-name-resolve\n-- a 127.0.0.1 client never matches it, so the admin UI gets error 1130.\nCREATE USER IF NOT EXISTS 'root'@'127.0.0.1' IDENTIFIED BY '';\nGRANT ALL PRIVILEGES ON *.* TO 'root'@'127.0.0.1' WITH GRANT OPTION;\nFLUSH PRIVILEGES;\n"
+      },
+      {
+        "action": "exec-once",
+        "cmd": "{bin}",
+        "args": [
+          "--defaults-file={dir}/my.ini",
+          "--initialize-insecure",
+          "--console"
+        ],
+        "idempotentBy": "{dir}/data/ibdata1"
+      }
+    ]
+  },
+  "start": {
+    "args": [
+      "--defaults-file={dir}/my.ini",
+      "--init-file={dir}/init-admin.sql",
+      "--console"
+    ]
+  },
+  "stop": {
+    "type": "signal",
+    "graceful": 8
+  },
+  "health": {
+    "type": "tcp",
+    "target": "127.0.0.1:{port:db}",
+    "interval": 10
+  },
+  "config": {
+    "signature": "2026-10-22-m13-multiver"
+  },
+  "settings": {
+    "configFile": "my.ini",
+    "restart": true,
+    "groups": [
+      {
+        "title": "基本配置",
+        "fields": [
+          {
+            "key": "mysql.port",
+            "label": "启动端口",
+            "type": "number",
+            "default": "3306",
+            "portRole": "db",
+            "min": 1,
+            "max": 65535
+          },
+          {
+            "key": "mysql.charset",
+            "label": "字符集",
+            "type": "select",
+            "default": "utf8mb4",
+            "options": [
+              "utf8mb4",
+              "utf8",
+              "gbk",
+              "latin1"
+            ]
+          },
+          {
+            "key": "mysql.engine",
+            "label": "默认引擎",
+            "type": "select",
+            "default": "InnoDB",
+            "options": [
+              "InnoDB",
+              "MyISAM"
+            ]
+          },
+          {
+            "key": "mysql.skip_name_resolve",
+            "label": "禁止域名解析",
+            "type": "switch",
+            "default": "1",
+            "hint": "跳过主机名解析，连接更快"
+          },
+          {
+            "key": "mysql.skip_networking",
+            "label": "禁止 TCP 连接",
+            "type": "switch",
+            "default": "0",
+            "hint": "仅允许本机命名管道/共享内存"
+          },
+          {
+            "key": "mysql.log_error",
+            "label": "错误日志",
+            "type": "switch",
+            "default": "1"
+          },
+          {
+            "key": "mysql.binlog",
+            "label": "BIN 日志",
+            "type": "switch",
+            "default": "0"
+          },
+          {
+            "key": "mysql.slow_query_log",
+            "label": "慢查询日志",
+            "type": "switch",
+            "default": "0"
+          }
+        ]
+      },
+      {
+        "title": "性能配置",
+        "fields": [
+          {
+            "key": "mysql.max_connections",
+            "label": "最大连接",
+            "type": "number",
+            "default": "1000",
+            "min": 10,
+            "max": 100000
+          },
+          {
+            "key": "mysql.thread_cache_size",
+            "label": "线程缓存",
+            "type": "number",
+            "default": "16"
+          },
+          {
+            "key": "mysql.table_open_cache",
+            "label": "表缓存数",
+            "type": "number",
+            "default": "256"
+          },
+          {
+            "key": "mysql.wait_timeout",
+            "label": "等待超时",
+            "type": "number",
+            "default": "120",
+            "unit": "秒"
+          },
+          {
+            "key": "mysql.sort_buffer_size",
+            "label": "排序缓冲",
+            "type": "number",
+            "default": "256",
+            "unit": "K"
+          },
+          {
+            "key": "mysql.read_buffer_size",
+            "label": "预读缓冲",
+            "type": "number",
+            "default": "512",
+            "unit": "K"
+          },
+          {
+            "key": "mysql.max_allowed_packet",
+            "label": "单数据包",
+            "type": "number",
+            "default": "16",
+            "unit": "M"
+          },
+          {
+            "key": "mysql.tmp_table_size",
+            "label": "临时表量",
+            "type": "number",
+            "default": "64",
+            "unit": "M"
+          },
+          {
+            "key": "mysql.max_heap_table_size",
+            "label": "最大表量",
+            "type": "number",
+            "default": "64",
+            "unit": "M"
+          },
+          {
+            "key": "mysql.key_buffer_size",
+            "label": "索引缓冲",
+            "type": "number",
+            "default": "32",
+            "unit": "M"
+          }
+        ]
+      },
+      {
+        "title": "参数配置",
+        "fields": [
+          {
+            "key": "mysql.innodb_thread_concurrency",
+            "label": "INNODB 并发线程",
+            "type": "number",
+            "default": "0",
+            "hint": "0 = 不限制"
+          },
+          {
+            "key": "mysql.innodb_flush_log_at_trx_commit",
+            "label": "日志清洗",
+            "type": "select",
+            "default": "1",
+            "options": [
+              "0",
+              "1",
+              "2"
+            ],
+            "hint": "1=每次提交落盘(最安全) 2=每秒 0=不控"
+          },
+          {
+            "key": "mysql.innodb_lock_wait_timeout",
+            "label": "锁定超时",
+            "type": "number",
+            "default": "120",
+            "unit": "秒"
+          },
+          {
+            "key": "mysql.innodb_buffer_pool_size",
+            "label": "INNODB 缓冲大小",
+            "type": "number",
+            "default": "128",
+            "unit": "M"
+          },
+          {
+            "key": "mysql.innodb_log_buffer_size",
+            "label": "INNODB 日志缓存",
+            "type": "number",
+            "default": "16",
+            "unit": "M"
+          },
+          {
+            "key": "mysql.innodb_redo_log_capacity",
+            "label": "INNODB 日志大小",
+            "type": "number",
+            "default": "256",
+            "unit": "M"
+          },
+          {
+            "key": "mysql.myisam_max_sort_file_size",
+            "label": "MYISAM 最大文件",
+            "type": "number",
+            "default": "64",
+            "unit": "G"
+          },
+          {
+            "key": "mysql.myisam_sort_buffer_size",
+            "label": "MYISAM 缓冲大小",
+            "type": "number",
+            "default": "32",
+            "unit": "M"
+          }
+        ]
+      }
+    ]
+  },
+  "manage": {
+    "panel": "mysql"
+  }
+}

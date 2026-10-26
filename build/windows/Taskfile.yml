@@ -31,6 +31,7 @@ tasks:
           OBFUSCATED: '{{.OBFUSCATED}}'
           GARBLE_ARGS: '{{.GARBLE_ARGS}}'
           VERSION: '{{.VERSION}}'
+          INFO_JSON: '{{.INFO_JSON | default ""}}'
     vars:
       # Default to CGO_ENABLED=0 if not explicitly set
       CGO_ENABLED: '{{.CGO_ENABLED | default "0"}}'
@@ -60,6 +61,7 @@ tasks:
       - task: generate:syso
         vars:
           ARCH: '{{.ARCH}}'
+          INFO_JSON: '{{.INFO_JSON | default ""}}'
       - '{{if eq .OBFUSCATED "true"}}garble {{.GARBLE_ARGS}} build{{else}}go build{{end}} {{.BUILD_FLAGS}} -o "{{.BIN_DIR}}/{{.APP_NAME}}.exe"'
       - cmd: powershell Remove-item *.syso
         platforms: [windows]
@@ -109,6 +111,8 @@ tasks:
       - task: '{{if eq (.FORMAT | default "nsis") "msix"}}create:msix:package{{else}}create:nsis:installer{{end}}'
         vars:
           INSTALL_SCOPE: '{{.INSTALL_SCOPE | default "machine"}}'
+          EDITION: '{{.EDITION | default ""}}'
+          EDITIONS_BUNDLE: '{{.EDITIONS_BUNDLE | default ""}}'
     vars:
       FORMAT: '{{.FORMAT | default "nsis"}}'
       INSTALL_SCOPE: '{{.INSTALL_SCOPE | default "machine"}}'
@@ -117,31 +121,43 @@ tasks:
     summary: Generates Windows `.syso` file
     dir: build
     cmds:
-      - wails3 generate syso -arch {{.ARCH}} -icon windows/icon.ico -manifest windows/wails.exe.manifest -info windows/info.json -out ../wails_windows_{{.ARCH}}.syso
+      - wails3 generate syso -arch {{.ARCH}} -icon windows/icon.ico -manifest windows/wails.exe.manifest -info "{{.INFO_JSON}}" -out ../wails_windows_{{.ARCH}}.syso
     vars:
       ARCH: '{{.ARCH | default ARCH}}'
+      # M6: editions pass their own version-info JSON (ProductName / description
+      # shown in exe properties); core keeps the default.
+      INFO_JSON: '{{.INFO_JSON | default "windows/info.json"}}'
 
   create:nsis:installer:
     summary: Creates an NSIS installer
-    dir: build/windows/nsis
+    dir: build/windows/installer
     deps:
       - task: build
+        vars:
+          INFO_JSON: '{{.INFO_JSON | default ""}}'
     preconditions:
       - sh: '[ "{{.INSTALL_SCOPE}}" = "user" ] || [ "{{.INSTALL_SCOPE}}" = "machine" ]'
         msg: "INSTALL_SCOPE must be 'user' or 'machine', got '{{.INSTALL_SCOPE}}'"
     cmds:
       # Create the Microsoft WebView2 bootstrapper if it doesn't exist
-      - wails3 generate webview2bootstrapper -dir "{{.ROOT_DIR}}/build/windows/nsis"
+      - wails3 generate webview2bootstrapper -dir "{{.ROOT_DIR}}/build/windows/installer"
       - |
         {{if eq OS "windows"}}
-        makensis {{if eq .INSTALL_SCOPE "user"}}-DWAILS_INSTALL_SCOPE=user -DREQUEST_EXECUTION_LEVEL=user {{end}}-DARG_WAILS_{{.ARG_FLAG}}_BINARY="{{.ROOT_DIR}}\{{.BIN_DIR}}\{{.APP_NAME}}.exe" project.nsi
+        makensis {{if .VERSION}}-DVERSION={{.VERSION}} {{end}}{{if eq .INSTALL_SCOPE "user"}}-DWAILS_INSTALL_SCOPE=user -DREQUEST_EXECUTION_LEVEL=user {{end}}{{if .EDITION}}-DEDITION=1 {{end}}{{if .EDITIONS_BUNDLE}}-DEDITIONS_BUNDLE=1 {{end}}-DARG_WAILS_{{.ARG_FLAG}}_BINARY="{{.ROOT_DIR}}\{{.BIN_DIR}}\{{.APP_NAME}}.exe" project.nsi
         {{else}}
-        makensis {{if eq .INSTALL_SCOPE "user"}}-DWAILS_INSTALL_SCOPE=user -DREQUEST_EXECUTION_LEVEL=user {{end}}-DARG_WAILS_{{.ARG_FLAG}}_BINARY="{{.ROOT_DIR}}/{{.BIN_DIR}}/{{.APP_NAME}}.exe" project.nsi
+        makensis {{if .VERSION}}-DVERSION={{.VERSION}} {{end}}{{if eq .INSTALL_SCOPE "user"}}-DWAILS_INSTALL_SCOPE=user -DREQUEST_EXECUTION_LEVEL=user {{end}}{{if .EDITION}}-DEDITION=1 {{end}}{{if .EDITIONS_BUNDLE}}-DEDITIONS_BUNDLE=1 {{end}}-DARG_WAILS_{{.ARG_FLAG}}_BINARY="{{.ROOT_DIR}}/{{.BIN_DIR}}/{{.APP_NAME}}.exe" project.nsi
         {{end}}
     vars:
       ARCH: '{{.ARCH | default ARCH}}'
       ARG_FLAG: '{{if eq .ARCH "amd64"}}AMD64{{else}}ARM64{{end}}'
       INSTALL_SCOPE: '{{.INSTALL_SCOPE | default "machine"}}'
+      VERSION: '{{.VERSION | default ""}}'
+      # M6: brand of a dedicated edition. `EDITION=true` makes project.nsi
+      # !include edition.nsh from this directory (UTF-8 brand defines written by
+      # editions/build-*.ps1), so Chinese product names never travel through the
+      # console code page. `EDITIONS_BUNDLE=true` packs bin\editions.json.
+      EDITION: '{{.EDITION | default ""}}'
+      EDITIONS_BUNDLE: '{{.EDITIONS_BUNDLE | default ""}}'
 
   create:msix:package:
     summary: Creates an MSIX package
