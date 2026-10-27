@@ -17,7 +17,8 @@
       },
       "sources": [
         { "kind": "local", "hint": "选择 duihaocms-*.zip 安装包" },
-        { "kind": "bundled", "file": "duihaocms-v1.0.0.zip" }
+        { "kind": "bundled", "file": "duihaocms-v1.0.0.zip" },
+        { "kind": "url", "url": "https://gitee.com/duihao/duihaocms/releases/download/v1.0.0/duihaocms-v1.0.0.zip", "sha256": "0aaddc29818d405e9ce0fad91083a6100abef088675609bebc743bec36fff9c3" }
       ],
       "install": {
         "entry": "install.php",
