@@ -1,0 +1,100 @@
+{{define "body"}}
+<section class="bm" id="bm-home">
+  <!-- 顶部：大时钟 + 日期（含农历） + 搜索（引擎下拉 / 网址直达） -->
+  <div class="bm-hero">
+    <div class="bm-clock" id="clock">--:--:--</div>
+    <div class="bm-dateline"><span id="dateline"></span></div>
+
+    <div class="bm-search">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="q" placeholder="搜索或输入网址，回车打开" autocomplete="off">
+      <select id="engine" title="搜索引擎">
+        <option value="https://www.baidu.com/s?wd=">百度</option>
+        <option value="https://www.bing.com/search?q=">必应</option>
+        <option value="https://www.google.com/search?q=">谷歌</option>
+        <option value="https://www.sogou.com/web?query=">搜狗</option>
+        <option value="https://www.so.com/s?q=">360</option>
+      </select>
+    </div>
+
+    <!-- 操作区：收藏管理 / 三种展示方式 / 添加网站（就放在搜索框下面） -->
+    <div class="bm-ops">
+      <button id="btn-manage" class="bm-ghost">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+        收藏管理
+      </button>
+      <!-- 段名（用户定稿）：图标 / 竖卡 / 横卡（原来的「图标墙 / 竖版卡片 / 横版卡片」太长，挤） -->
+      <div class="bm-seg" id="viewseg" role="group" aria-label="展示方式">
+        <button data-view="icon" class="on">图标</button>
+        <button data-view="vcard">竖卡</button>
+        <button data-view="card">横卡</button>
+      </div>
+      <button id="btn-add-site" class="bm-ghost">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        添加网站
+      </button>
+    </div>
+  </div>
+
+  <!-- 展示区：图标墙 / 竖版卡片 / 横版卡片（同一容器按状态切换渲染） -->
+  <div class="bm-board" id="board"></div>
+  <div class="bm-empty muted" id="empty" hidden>还没有收藏。点上方「添加网站」添加第一个。</div>
+</section>
+
+<!-- 管理弹窗：分组与网址的增删改（不再整页切换） -->
+<div class="mask" id="manage-mask" hidden>
+  <div class="dlg bm-mdlg">
+    <div class="bm-manage-head">
+      <h3>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
+        收藏管理
+      </h3>
+      <div class="acts">
+        <button id="btn-add-group" class="lg-primary">+ 添加网站分类</button>
+        <button id="btn-manage-close" class="ghost-btn">关闭</button>
+      </div>
+    </div>
+    <div id="mgroups"></div>
+    <div class="bm-manage-foot">
+      <button id="btn-import" class="ghost-btn">导入书签（浏览器 HTML 或「名称,网址」行）</button>
+    </div>
+  </div>
+</div>
+
+<!-- 通用输入弹窗：新增/重命名分类、导入书签（替代浏览器原生 prompt） -->
+<div class="mask" id="ask-mask" hidden>
+  <div class="dlg bm-dlg bm-ask">
+    <h3 id="ask-title">新建分类</h3>
+    <input id="ask-input" autocomplete="off" placeholder="给分类起个名字，例如「常用工具」">
+    <textarea id="ask-text" rows="9" placeholder="粘贴浏览器导出的书签 HTML，或每行一条「名称,网址」" hidden></textarea>
+    <p class="bm-ask-hint" id="ask-hint" hidden>
+      · 浏览器「书签管理器 → 导出书签」得到的 .html 文件，全选复制粘贴即可；
+      · 也可以每行写一条「名称,网址」或单独一个网址。重复的网址会自动跳过。
+    </p>
+    <div class="btns">
+      <button id="ask-cancel">取消</button>
+      <button id="ask-ok" class="primary">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 添加 / 编辑网站弹窗 -->
+<div class="mask" id="mark-mask" hidden>
+  <div class="dlg bm-dlg">
+    <h3 id="mark-title">添加网站</h3>
+    <label class="bm-f">网站名称<input id="f-name" placeholder="请输入网站名称" autocomplete="off"></label>
+    <label class="bm-f">URL<input id="f-url" placeholder="请输入网站地址，例如 https://example.com" autocomplete="off"></label>
+    <label class="bm-f">描述<input id="f-descr" placeholder="请输入网站描述" autocomplete="off"></label>
+    <label class="bm-f">账号<input id="f-account" placeholder="请输入账号" autocomplete="off"></label>
+    <label class="bm-f">密码提示<input id="f-pwd" placeholder="请输入部分密码不要全输入，敏感字符用*号代替" autocomplete="off"></label>
+    <p class="bm-hint">建议仅记录部分密码，并用*号代替敏感字符。这不是密码保险箱。</p>
+    <label class="bm-f">所属分类<select id="f-group"></select></label>
+    <div class="btns">
+      <button id="mark-cancel">取消</button>
+      <button id="mark-ok" class="primary">确定</button>
+    </div>
+  </div>
+</div>
+
+<script src="/-ui/apps/home.js"></script>
+{{end}}

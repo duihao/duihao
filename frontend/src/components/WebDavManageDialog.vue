@@ -2,20 +2,69 @@
   <el-dialog
     v-model="visible"
     :title="t('davm.title', { name: instanceName || instanceId })"
-    width="56rem"
-    top="7vh"
-    class="davm-dialog"
+    :width="standalone ? '100%' : '56rem'"
+    :top="standalone ? '0' : '7vh'"
+    :modal="!standalone"
+    :show-close="!standalone"
+    :close-on-click-modal="!standalone"
+    :lock-scroll="!standalone"
+    :draggable="!standalone"
+    :class="['davm-dialog', { 'davm-standalone': standalone }]"
+    :style="standalone ? standaloneBoxStyle : undefined"
+    :body-class="standalone ? 'davm-body-plain' : ''"
     destroy-on-close
   >
-    <!-- 连接信息卡：往哪挂载一目了然 -->
+    <!-- 标题栏：弹窗模式 = 标题 + 右上「独立窗口打开」（M20 分离入口）；
+         standalone = ManageTitleBar 自绘顶栏（拖动/最小化/关闭）——顶栏随弹窗
+         本体走，不存在被遮罩层盖住的问题。 -->
+    <template #header="{ titleId, titleClass }">
+      <ManageTitleBar
+        v-if="standalone"
+        panel="webdav"
+        :title="t('davm.title', { name: instanceName || instanceId })"
+      />
+      <div v-else class="davm-head">
+        <span :id="titleId" :class="titleClass">{{ t('davm.title', { name: instanceName || instanceId }) }}</span>
+        <el-button size="small" text class="davm-detach" @click="detach">⧉ {{ t('mw.detach') }}</el-button>
+      </div>
+    </template>
+    <!-- 连接信息卡：往哪访问一目了然。地址本身可点 = 用系统默认浏览器打开。
+         实例启停放在这一行右端（原先单占一行太旷）。 -->
     <div class="davm-conn">
       <div class="davm-conn-row">
         <span class="davm-conn-label">{{ t('davm.connUrl') }}</span>
-        <code class="davm-conn-url" :class="{ off: !conn?.running }">{{ conn?.url || '—' }}</code>
+        <a
+          v-if="conn?.running && conn?.url"
+          class="davm-conn-url davm-conn-link"
+          :href="conn.url"
+          :title="t('davm.openExternal')"
+          @click.prevent="openExternal"
+        >{{ conn.url }}</a>
+        <code v-else class="davm-conn-url" :class="{ off: !conn?.running }">{{ conn?.url || '—' }}</code>
         <el-button size="small" text @click="copyUrl">{{ t('davm.copy') }}</el-button>
-        <span v-if="conn && !conn.running" class="davm-conn-hint">{{ t('davm.needStart') }}</span>
+        <span v-if="conn && !conn.running" class="davm-conn-hint davm-conn-hint-inline">{{ t('davm.needStart') }}</span>
+        <InstancePower class="mng-inline-end" :instance-id="instanceId" @changed="onPowerChanged" />
       </div>
       <div class="davm-conn-hint">{{ t('davm.connHint') }}</div>
+    </div>
+
+    <!-- NAS 账号：管理员 + 自动创建的默认共享。密码可查看（本机密文解出）。 -->
+    <div v-if="hub" class="davm-conn davm-hub">
+      <div class="davm-conn-row">
+        <span class="davm-conn-label">{{ t('davm.hubTitle') }}</span>
+        <code class="davm-conn-url">{{ hub.adminUid }}</code>
+        <code class="davm-conn-url davm-pass" :class="{ off: !hubShow.admin }">{{ hubShow.admin ? (hub.adminPass || '—') : mask }}</code>
+        <el-button size="small" text @click="hubShow.admin = !hubShow.admin">{{ hubShow.admin ? t('davm.hubHide') : t('davm.hubShow') }}</el-button>
+        <el-button size="small" text @click="copyText(hub.adminPass)">{{ t('davm.copy') }}</el-button>
+      </div>
+      <div v-if="hub.shareUser" class="davm-conn-row">
+        <span class="davm-conn-label">{{ t('davm.hubShare') }}</span>
+        <code class="davm-conn-url">{{ hub.shareUser }}</code>
+        <code class="davm-conn-url davm-pass" :class="{ off: !hubShow.share }">{{ hubShow.share ? (hub.sharePass || '—') : mask }}</code>
+        <el-button size="small" text @click="hubShow.share = !hubShow.share">{{ hubShow.share ? t('davm.hubHide') : t('davm.hubShow') }}</el-button>
+        <el-button size="small" text @click="copyText(hub.sharePass)">{{ t('davm.copy') }}</el-button>
+      </div>
+      <div class="davm-conn-hint">{{ t('davm.hubHint') }}</div>
     </div>
 
     <div class="davm-bar">
@@ -29,7 +78,13 @@
       </div>
     </div>
 
-    <el-table :data="filtered" size="small" height="40vh" :empty-text="t('davm.noShares')">
+    <el-table
+      :data="filtered"
+      size="small"
+      :height="standalone ? '100%' : '40vh'"
+      class="davm-table"
+      :empty-text="t('davm.noShares')"
+    >
       <el-table-column prop="user" :label="t('davm.colUser')" min-width="120" show-overflow-tooltip />
       <el-table-column prop="name" :label="t('davm.colName')" min-width="100" show-overflow-tooltip>
         <template #default="{ row }">{{ row.name || '—' }}</template>
@@ -58,9 +113,10 @@
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item command="browse">{{ t('davbrowse.browse') }}</el-dropdown-item>
+                <el-dropdown-item command="quick" :disabled="!row.enabled">{{ t('davq.action') }}</el-dropdown-item>
                 <el-dropdown-item command="password">{{ t('davm.changePwd') }}</el-dropdown-item>
                 <el-dropdown-item command="toggle">{{ row.enabled ? t('davm.disable') : t('davm.enable') }}</el-dropdown-item>
-                <el-dropdown-item command="delete" divided>{{ t('davm.delete') }}</el-dropdown-item>
+                <el-dropdown-item command="delete" divided :disabled="row.id === firstShareId" :title="row.id === firstShareId ? t('davm.firstLocked') : ''">{{ t('davm.delete') }}</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -73,7 +129,7 @@
       <div class="davm-form">
         <div class="davm-row">
           <span class="davm-label">{{ t('davm.user') }}</span>
-          <el-input v-model="form.user" size="small" placeholder="duihao" />
+          <el-input v-model="form.user" size="small" placeholder="admin" />
         </div>
         <div class="davm-row" v-if="!editing">
           <span class="davm-label">{{ t('davm.password') }}</span>
@@ -151,21 +207,52 @@
       :share-name="browseShare.name"
       :readonly="!!browseShare.readonly"
     />
+
+    <!-- 扫码快传：手机扫码自动登录该共享 -->
+    <DavQuickDialog
+      v-if="quickUser"
+      v-model:visible="quickOpen"
+      :instance-id="instanceId"
+      :user="quickUser"
+    />
   </el-dialog>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Browser } from '@wailsio/runtime'
 import { useI18n } from '../i18n'
-import { OpenDirectoryDialog } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { OpenDirectoryDialog, OpenManageWindow } from '../../bindings/github.com/ys-ll/uniterm/app'
 import {
   ListWebDavShares, CreateWebDavShare, UpdateWebDavShare, SetWebDavSharePassword,
-  DeleteWebDavShare, GetWebDavConnInfo, ListWebDavSiteRoots,
+  DeleteWebDavShare, GetWebDavConnInfo, ListWebDavSiteRoots, HubAccountInfo,
 } from '../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/webdavservice'
 import DavBrowseDialog from './DavBrowseDialog.vue'
+import DavQuickDialog from './DavQuickDialog.vue'
+import ManageTitleBar from './ManageTitleBar.vue'
+import InstancePower from './InstancePower.vue'
 
-const props = defineProps<{ instanceId: string; instanceName?: string }>()
+const props = defineProps<{ instanceId: string; instanceName?: string; standalone?: boolean }>()
+
+// standalone（独立窗口）里的弹窗外壳：全靠内联样式撑满内容区。
+// 内联样式优先级最高，不会被 Element Plus 自带的 margin-top / 圆角 / 阴影 /
+// 16px 内边距压过去（之前用 class + !important 的写法在打包后没生效，导致
+// 弹窗只按内容高度收尾、底下露出一条带阴影的空区）。
+const standaloneBoxStyle: Record<string, string> = {
+  margin: '0',
+  width: '100%',
+  height: '100%',
+  maxHeight: 'none',
+  minHeight: '0',
+  padding: '0',
+  borderRadius: '0',
+  boxShadow: 'none',
+  background: 'var(--bg-elevated)',
+  display: 'flex',
+  flexDirection: 'column',
+  overflow: 'hidden'
+}
 const visible = defineModel<boolean>('visible', { default: false })
 const { t } = useI18n()
 
@@ -174,9 +261,24 @@ const busy = ref(false)
 const filter = ref('')
 const mask = '••••••'
 const shares = ref<any[]>([])
+// 第一个创建的共享账号（CreatedAt 最早，空值视为最早）——后端禁止删除，
+// 这里同步把删除入口置灰，用户不用点了才知道。
+const firstShareId = computed(() => {
+  const list = shares.value || []
+  if (!list.length) return ''
+  const earlier = (a: string, b: string) => (!a ? !!b : !!b && a < b)
+  let best = list[0]
+  for (const sh of list) {
+    if (earlier(sh.createdAt, best.createdAt)) best = sh
+  }
+  return best.id
+})
 const conn = ref<any>(null)
 const siteRoots = ref<any[]>([])
 const sitePick = ref('')
+// NAS 账号（管理员 + 自动创建的默认共享）：连接管理里可查看密码
+const hub = ref<any>(null)
+const hubShow = reactive({ admin: false, share: false })
 
 const filtered = computed(() => {
   const q = filter.value.trim().toLowerCase()
@@ -195,6 +297,10 @@ const form = reactive({ id: '', user: '', password: '', name: '', root: '', read
 const browseOpen = ref(false)
 const browseShare = ref<any>(null)
 
+// 扫码快传
+const quickOpen = ref(false)
+const quickUser = ref('')
+
 const pwdOpen = ref(false)
 const pwdTarget = reactive({ id: '', user: '', password: '' })
 
@@ -207,6 +313,7 @@ async function reload() {
   try {
     shares.value = (await ListWebDavShares(props.instanceId)) as unknown as any[]
     try { conn.value = await GetWebDavConnInfo(props.instanceId) } catch { conn.value = null }
+    try { hub.value = await HubAccountInfo(props.instanceId) } catch { hub.value = null }
     if (!siteRoots.value.length) {
       try { siteRoots.value = (await ListWebDavSiteRoots()) as unknown as any[] } catch { siteRoots.value = [] }
     }
@@ -220,6 +327,21 @@ async function reload() {
 function errText(e: unknown): string {
   if (e instanceof Error) return e.message
   return String(e).replace(/^Error:\s*/, '')
+}
+
+// 顶部启停后：等进程真正起停完成再刷连接信息（否则拿到的还是旧状态）
+function onPowerChanged() {
+  window.setTimeout(() => { void reload() }, 700)
+}
+
+// 分离为独立窗口：开窗成功后收起弹窗（窗口里是同一个面板，状态各自独立加载）
+async function detach() {
+  try {
+    await OpenManageWindow('webdav', props.instanceId, props.instanceName || '')
+    visible.value = false
+  } catch (e) {
+    ElMessage.error(errText(e))
+  }
 }
 
 function randomPassword(): string {
@@ -239,6 +361,30 @@ async function copyUrl() {
     ElMessage.success(t('davm.copied'))
   } catch {
     ElMessage.warning(url)
+  }
+}
+
+// NAS 账号密码复制（管理员 / 默认共享共用）
+async function copyText(v?: string) {
+  const s = String(v || '')
+  if (!s) return
+  try {
+    await navigator.clipboard.writeText(s)
+    ElMessage.success(t('davm.copied'))
+  } catch {
+    ElMessage.warning(s)
+  }
+}
+
+// 系统默认浏览器打开（地址行本身是链接，点它 = 这个）
+async function openExternal() {
+  const url = String(conn.value?.url || '')
+  if (!url || !conn.value?.running) return
+  try {
+    // Wails 3.0.0 起 Browser 命名空间只导出 OpenURL（旧名 BrowserOpenURL 已移除）
+    await Browser.OpenURL(url)
+  } catch {
+    window.open(url, '_blank')
   }
 }
 
@@ -307,6 +453,11 @@ function onAction(cmd: string, row: any) {
     browseOpen.value = true
     return
   }
+  if (cmd === 'quick') {
+    quickUser.value = row.user
+    quickOpen.value = true
+    return
+  }
   if (cmd === 'password') {
     pwdTarget.id = row.id
     pwdTarget.user = row.user
@@ -364,12 +515,22 @@ async function doDelete(row: any) {
 </script>
 
 <style scoped>
+/* standalone（M20 独立窗口）的外壳样式全部走内联（见 standaloneBoxStyle）与
+   Element Plus 的 header-class / body-class 钩子（见 ManageStandalone.vue 的
+   全局块）。这里不再用 :deep 改写弹窗自身盒子——scoped 深选择器在独立窗里
+   命中不稳定，之前就是它没生效导致弹窗收在窗中间。 */
 .davm-conn { border: 1px solid var(--border-color); border-radius: 8px; padding: 0.5rem 0.75rem; margin-bottom: 0.75rem; background: var(--bg-subtle, rgba(127, 127, 127, 0.04)); }
+.davm-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.davm-detach { flex-shrink: 0; }
 .davm-conn-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .davm-conn-label { font-size: 0.75rem; color: var(--text-secondary); flex-shrink: 0; }
 .davm-conn-url { font-size: 0.8125rem; font-family: var(--font-mono, monospace); padding: 0.125rem 0.375rem; border-radius: 4px; background: rgba(127, 127, 127, 0.1); }
 .davm-conn-url.off { opacity: 0.5; }
+/* 可点状态的地址：链接样式，其余观感与 code 一致 */
+a.davm-conn-link { color: var(--accent); text-decoration: none; cursor: pointer; }
+a.davm-conn-link:hover { text-decoration: underline; }
 .davm-conn-hint { font-size: 0.6875rem; color: var(--text-muted); line-height: 1.5; margin-top: 0.25rem; }
+.davm-conn-hint-inline { margin-top: 0; }
 .davm-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
 .davm-bar-left, .davm-bar-right { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .davm-search { width: 12rem; }
@@ -385,4 +546,7 @@ async function doDelete(row: any) {
 .davm-root { flex: 1; display: flex; gap: 0.375rem; min-width: 0; flex-wrap: wrap; }
 .davm-root :deep(.el-input) { flex: 1 1 12rem; }
 .davm-site { width: 100%; }
+/* NAS 账号区：账号与密码并排；密码未显示时用圆点占位 */
+.davm-hub .davm-pass { font-family: var(--font-mono); }
+.davm-hub .davm-pass.off { letter-spacing: 0.2em; }
 </style>

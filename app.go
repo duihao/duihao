@@ -13,6 +13,7 @@ import (
 	"github.com/ys-ll/uniterm/backend/container"
 	"github.com/ys-ll/uniterm/backend/credentials"
 	"github.com/ys-ll/uniterm/backend/duihao/editionpkg"
+	"github.com/ys-ll/uniterm/backend/duihao/webdavd"
 	"github.com/ys-ll/uniterm/backend/importer"
 	"github.com/ys-ll/uniterm/backend/k8s"
 	"github.com/ys-ll/uniterm/backend/log"
@@ -44,9 +45,11 @@ type App struct {
 	ctx                  context.Context
 	app                  *application.App
 	window               *application.WebviewWindow
-	paletteWin           *application.WebviewWindow // M18-C 独立悬浮命令面板窗（主入口）
-	floatWin             *application.WebviewWindow // M18-C 桌面悬浮球窗（44px 圆形）
-	floatMenuWin         *application.WebviewWindow // 悬浮球右键菜单窗（自绘圆角卡片，uTools 同款）
+	nasWin               *application.WebviewWindow         // M23 NAS 主窗（/?w=nas，竖版 330，默认打开）
+	nasHwnd              uintptr                            // NAS 主窗原生句柄（与 IT 工具窗同名「对号」，用来把两者分开）
+	paletteWin           *application.WebviewWindow         // M18-C 独立悬浮命令面板窗（主入口）
+	floatWin             *application.WebviewWindow         // M18-C 桌面悬浮球窗（44px 圆形）
+	floatMenuWin         *application.WebviewWindow         // 悬浮球右键菜单窗（自绘圆角卡片，uTools 同款）
 	notifier             *notifications.NotificationService // system notifications (MCP approval prompts)
 	sessionManager       *session.SessionManager
 	k8sManager           *k8s.Manager
@@ -228,10 +231,10 @@ func (a *App) win() *application.WebviewWindow {
 
 // EditionHome 发行版首屏声明（M19 插件化产品线），供前端启动决策。
 type EditionHome struct {
-	Edition  string `json:"edition,omitempty"`
-	Name     string `json:"name,omitempty"`
-	Plugin   string `json:"plugin,omitempty"`
-	Fallback string `json:"fallback,omitempty"`
+	Edition  string   `json:"edition,omitempty"`
+	Name     string   `json:"name,omitempty"`
+	Plugin   string   `json:"plugin,omitempty"`
+	Fallback string   `json:"fallback,omitempty"`
 	Hidden   []string `json:"hidden,omitempty"`
 }
 
@@ -258,6 +261,11 @@ func (a *App) GetEditionHome() *EditionHome {
 func (a *App) PaletteNavigate(view string) {
 	if a.paletteWin != nil {
 		a.paletteWin.Hide()
+	}
+	// view = "nas"：面板里「我的 NAS」——直接唤 NAS 主窗，不动 IT 工具窗。
+	if view == "nas" {
+		a.ShowNasWindow()
+		return
 	}
 	showMainWindow(a.window)
 	if view == "settings" {
@@ -370,6 +378,10 @@ func (a *App) ServiceStartup(ctx context.Context, options application.ServiceOpt
 		}
 	}()
 
+	// 语音提醒到点 → 屏幕右上角弹一张卡片（声音由 webdavd 的调度器负责，
+	// 这里只接管「视觉那一半」）。必须在 webdavd 起服务之前接好。
+	a.initVoiceNotifier()
+
 	// Discover the main HWND for native keyboard capture and window state tracking
 	a.mainHwnd = a.findMainWindow()
 	a.subclassMainWindow()
@@ -432,6 +444,9 @@ func (a *App) initStores(dataDir string, upgrade bool) {
 		if settings, err := ss.Load(); err == nil {
 			a.SetDefaultSessionLogDir(settings.Terminal.SessionLogDir)
 			a.setSessionLogFilename(settings.Terminal.SessionLogFilename)
+			// NAS 网页的主题跟桌面端一致：启动就把值推过去，页面首帧的
+			// <html data-theme> 直接是对的（否则要先浅后深闪一下）。
+			webdavd.SetAppTheme(settings.Theme)
 		}
 	}
 
@@ -710,10 +725,9 @@ func (a *App) saveWindowStateFromRuntime() {
 	if a.window == nil {
 		return
 	}
-	// Do not save geometry when minimised — the position is off-screen
-	// (-32000, -32000 on Windows) and the size is the tiny taskbar thumbnail,
-	// which would restore incorrectly.
-	if a.win().IsMinimised() {
+	// 窗口几何只属于「IT 工具」主窗口。NAS 主窗（/?w=nas）是另一个窗口，
+	// 尺寸固定、位置贴右，不参与这里的记忆。
+	if a.win() == nil || a.win().IsMinimised() {
 		return
 	}
 	ls, err := a.localStateStore.Load()
@@ -724,6 +738,212 @@ func (a *App) saveWindowStateFromRuntime() {
 	ls.WindowWidth, ls.WindowHeight = a.window.Size()
 	ls.WindowMaximised = a.window.IsMaximised()
 	_ = a.localStateStore.Save(ls)
+}
+
+// nasWin 取 NAS 主窗（未创建时为 nil）。
+func (a *App) nasWindow() *application.WebviewWindow {
+	return a.nasWin
+}
+
+// ShowNasWindow 显示并聚焦 NAS 主窗（悬浮菜单「主窗」、托盘、命令面板都走它）。
+// 主窗是常驻的：关闭按钮被拦成隐藏，所以这里只要 Show + Focus。
+//
+// 这里**不再**先判 IsVisible 再 Show：Show 对已显示的窗口是幂等的，而
+// IsVisible 在某些状态下（比如刚被隐藏、或窗口已销毁）会给出误导性的值，
+// 一旦判成 true 就整段跳过，用户看到的是「点了没反应」。
+//
+// 每次弹出都重新贴右（用户定稿：弹出即居右）：窗口可能被拖到别处、或被系统
+// 还原到别的位置，所以摆位放在 Show **之前** —— 先摆好再显示，不会出现「先在
+// 中间闪一下再跳到右边」。
+func (a *App) ShowNasWindow() {
+	win := a.nasWindow()
+	if win == nil {
+		return
+	}
+	a.placeNasWindow(win)
+	win.Show()
+	win.UnMinimise()
+	win.Focus()
+	// Show 之后系统/wails 可能把窗口摆回创建时的默认位，显示后再补几拍归位。
+	a.nudgeNasPlacement(win)
+}
+
+// ToggleNasWindow 显隐切换 NAS 主窗（全局热键的「主窗」语义）。
+func (a *App) ToggleNasWindow() {
+	win := a.nasWindow()
+	if win == nil {
+		return
+	}
+	if win.IsVisible() {
+		win.Hide()
+		return
+	}
+	a.ShowNasWindow()
+}
+
+// ShowITWindow 唤起「IT 工具」窗口（原主窗口）：侧栏 + 标签页 + 终端那一套。
+// 它常驻后台（webview 一直活着），这里只负责显示/聚焦。
+func (a *App) ShowITWindow() {
+	win := a.win()
+	if win == nil {
+		return
+	}
+	if !win.IsVisible() {
+		win.Show()
+	}
+	win.UnMinimise()
+	win.Focus()
+}
+
+// OpenITTool 唤起「IT 工具」窗口并落到指定面板（NAS 主窗宫格的「IT 专业工具」组）。
+// view 是侧栏面板名（plugins / sites / connections）；action 可选，落地后再补
+// 一个创建动作（如 connection → 直接打开「新建连接」表单）。
+//
+// 跨窗口只能走 Go 的事件广播：两个窗口各自是独立 webview，window.dispatchEvent
+// 传不过去。前端 App.vue 收到后落成窗口内既有的导航事件，与命令面板同一条路。
+func (a *App) OpenITTool(view, action string) {
+	a.ShowITWindow()
+	a.emit("app:it-tool", map[string]string{"view": view, "action": action})
+}
+
+// NAS 主窗的尺寸（M23 拆分：普通模式从「主窗口的一个身份」升格为独立窗口）。
+// 单位 DIP，逻辑像素。
+//
+// **宽高全部固定**（用户定稿）：Min=Max=LifeWindowWidth/Height + DisableResize，
+// 拖边框拖不动、最大化也不变形。尺寸按「存储环 + 地址行 + 我的 NAS 12 宫格 +
+// IT 专业工具 4 宫格 + 扫码行」实测，刚好不出滚动条（M25 用户要求再压 20px：
+// 800 → 780，同时把内容区滚动条藏掉）。宽度取竞品实测
+// （505 物理像素 @150% ≈ 337 DIP）再收 10 → 330。
+const (
+	LifeWindowWidth  = 330
+	LifeWindowHeight = 780
+	// lifeWindowMargin 是 NAS 主窗贴屏幕右侧时与工作区边缘留的空白。
+	// 用户定稿「居右 100px」= 100 DIP（150% 缩放下约 150 物理像素），不再贴边。
+	lifeWindowMargin = 100
+)
+
+// nasMainWindowGeometry 计算 NAS 主窗的落点：尺寸恒为 LifeWindowWidth×LifeWindowHeight，
+// 位置贴主屏工作区**右侧**、垂直居中（工作区比窗口矮时贴顶，别把标题栏顶出屏幕）。
+// scale 是主屏的 DPI 缩放（WorkArea 与 PhysicalWorkArea 之比），供原生物理定位使用。
+// ok=false 表示屏幕信息还拿不到（wails 在 Run 之前 Screen 尚未填充），调用方应退回
+// 居中并在窗口真正显示时再摆位。
+func nasMainWindowGeometry(w3app *application.App) (w, h, x, y int, scale float64, ok bool) {
+	w, h = LifeWindowWidth, LifeWindowHeight
+	scale = 1
+	if w3app == nil || w3app.Screen == nil {
+		return w, h, 0, 0, scale, false
+	}
+	sc := w3app.Screen.GetPrimary()
+	if sc == nil {
+		return w, h, 0, 0, scale, false
+	}
+	wa := sc.WorkArea // DIP，与窗口尺寸同单位
+	if wa.Width <= 0 || wa.Height <= 0 {
+		return w, h, 0, 0, scale, false
+	}
+	if sc.PhysicalWorkArea.Width > 0 {
+		scale = float64(sc.PhysicalWorkArea.Width) / float64(wa.Width)
+	}
+	x = wa.X + wa.Width - w - lifeWindowMargin
+	y = wa.Y + (wa.Height-h)/2
+	if y < wa.Y {
+		y = wa.Y
+	}
+	return w, h, x, y, scale, true
+}
+
+// placeNasWindow 把 NAS 主窗贴到主屏右侧、垂直居中。位置走原生物理像素：
+// wails 的 SetPosition 经自己的 DIP 管线换算后落点偏离工作区右缘（M21 实测），
+// SetWindowPos 才是精确的。Windows 上优先用 nasRightPosition 直接问系统要
+// 显示器工作区（物理像素），拿不到再退回 DIP 计算；连屏幕信息都拿不到就保持
+// 原位（不再退化成居中）。
+//
+// 启动建窗、以及**每次弹出**（托盘 / 悬浮菜单 / 热键）都会调它，保证窗口无论
+// 之前被拖到哪，弹出来就贴在右边。
+func (a *App) placeNasWindow(win *application.WebviewWindow) {
+	w, h, x, y, scale, ok := nasMainWindowGeometry(a.app)
+	win.SetSize(w, h)
+	// 原生定位要读窗口真实 rect，而 SetSize 是异步下发的：刚建窗时 rect 可能还是
+	// 0×0，或者还是**上一个尺寸**（从隐藏状态再次弹出时最容易踩），用错的宽去算
+	// x 就会落到中间偏左。所以除了要求 rect 有效，还要跟目标物理尺寸对得上，最多
+	// 等 1.5 秒反复试，尺寸一到位立刻摆位。
+	expW, expH := 0, 0
+	if ok {
+		expW = int(float64(w)*scale + 0.5)
+		expH = int(float64(h)*scale + 0.5)
+	}
+	for i := 0; i < 30; i++ {
+		if hwnd := win.NativeWindow(); hwnd != nil {
+			if px, py, native := nasRightPosition(hwnd, lifeWindowMargin, expW, expH); native {
+				setWindowPosPhysical(hwnd, px, py)
+				log.Writef("M25: nas placed native x=%d y=%d exp=%dx%d scale=%.2f", px, py, expW, expH, scale)
+				return
+			}
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	if !ok {
+		// 拿不到屏幕信息：**不要**去 Center()，那是「居中」而不是「居右」，正好
+		// 是用户不想要的落点；保持原位交给系统，等下一次弹出再试。
+		log.Writef("M25: nas geometry unavailable, keep current position")
+		return
+	}
+	px := int(float64(x)*scale + 0.5)
+	py := int(float64(y)*scale + 0.5)
+	setWindowPosPhysical(win.NativeWindow(), px, py)
+	log.Writef("M25: nas native placement gave up, dip fallback x=%d y=%d scale=%.2f", px, py, scale)
+}
+
+// nudgeNasPlacement 在窗口**真正显示之后**再复核几次落点。
+//
+// 为什么要这一步：`placeNasWindow` 是在 `Show()` 之前摆位的，而 wails 首次显示
+// 时会按创建参数做一次自己的摆放（实测偶发把窗口摆回「居中」，x 恰好是
+// (2520-495)/2=1012）。摆位发生在 Show 之前，就救不了这一次覆盖，所以显示后
+// 再补几拍。每拍只是把同一个目标坐标再设一遍，位置没被改时是纯空操作，不会闪。
+func (a *App) nudgeNasPlacement(win *application.WebviewWindow) {
+	w, h, _, _, scale, ok := nasMainWindowGeometry(a.app)
+	if !ok || win == nil {
+		return
+	}
+	expW := int(float64(w)*scale + 0.5)
+	expH := int(float64(h)*scale + 0.5)
+	go func() {
+		for i := 0; i < 5; i++ {
+			time.Sleep(150 * time.Millisecond)
+			hwnd := win.NativeWindow()
+			if hwnd == nil {
+				return
+			}
+			if px, py, native := nasRightPosition(hwnd, lifeWindowMargin, expW, expH); native {
+				setWindowPosPhysical(hwnd, px, py)
+			}
+		}
+		log.Writef("M25: nas placement nudged (%d tries)", 5)
+	}()
+}
+
+// ApplyUIModeWindow 保留给已生成的绑定签名（前端 settingsStore 仍会调用）。
+//
+// M23 之后「模式」不再改变主窗口身份：NAS 是独立主窗（/?w=nas），主窗口恒为
+// IT 工具窗口。因此这里只做一件事——把主窗口恢复到「宽窗」几何（老配置里
+// uiMode=life 的用户升级后不会留在一个 330 宽的 IT 窗口里）。参数不再区分。
+func (a *App) ApplyUIModeWindow(string) {
+	win := a.win()
+	if win == nil {
+		return
+	}
+	// MaxSize 不能用 (0,0)：wails 在 Windows 上把 0 当真实上限（不是「不限制」），
+	// 窗口会被压到系统最小尺寸（M21 实测）。给足够大的值等效无限制。
+	win.SetMaxSize(16384, 16384)
+	win.SetMinSize(500, 450)
+	w, h := 1200, 800
+	if a.localStateStore != nil {
+		if ls, err := a.localStateStore.Load(); err == nil && ls.WindowWidth > 0 && ls.WindowHeight > 0 {
+			w, h = ls.WindowWidth, ls.WindowHeight
+		}
+	}
+	win.SetSize(w, h)
+	win.Center()
 }
 
 func (a *App) SaveWindowState(x, y, width, height int, maximised bool) {
@@ -1884,9 +2104,15 @@ func (a *App) SaveSettings(settings store.AppSettings) error {
 		a.SetDefaultSessionLogDir(settings.Terminal.SessionLogDir)
 		a.setSessionLogFilename(settings.Terminal.SessionLogFilename)
 		a.triggerAutoSync()
+		// 主题是「全窗口 + NAS 网页」共用的一个值：
+		//   ① 推给 webdavd（页面首帧 + SSE 推给已打开的 NAS 页面）；
+		//   ② 广播 settings 事件，IT 工具窗 / NAS 主窗 / 面板窗各自应用。
+		// 前端收到事件时会抑制回写，不会形成「保存→广播→再保存」的环。
+		webdavd.SetAppTheme(settings.Theme)
+		a.emit("store:settings:changed", settings)
 		// Re-apply the global show/hide hotkey so binding changes (and the
 		// enable switch) take effect immediately. No-op when unchanged.
-		applyGlobalShowHideHotkey(a.app, a.window, trayHotkeyBinding(&settings))
+		applyGlobalShowHideHotkey(a.app, a, a.window, trayHotkeyBinding(&settings))
 	}
 	return err
 }

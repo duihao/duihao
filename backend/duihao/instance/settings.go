@@ -322,6 +322,22 @@ func (m *Manager) ApplySettings(id string, vals map[string]string) error {
 	return nil
 }
 
+// ApplySettingsDiff 只改指定的几个键，其余 keep 当前生效值。
+//
+// ApplySettings 的语义是「整表覆盖」（saveOverride 直接写 norm），只传一两个键会
+// 把别的 override 抹掉；首屏「一键开启局域网」这类只动 1-2 个键的快捷入口走这里，
+// 先取生效值合并再交给 ApplySettings，端口字段值未变会自动跳过。
+func (m *Manager) ApplySettingsDiff(id string, kv map[string]string) error {
+	eff, err := m.EffectiveSettings(id)
+	if err != nil {
+		return err
+	}
+	for k, v := range kv {
+		eff[k] = v
+	}
+	return m.ApplySettings(id, eff)
+}
+
 // ResetSettings 恢复清单默认值：删 override → 重渲染 → 同 ApplySettings 的生效方式。
 // 端口不动（端口由端口池/站点占用管理，不在「默认值」语义内）。
 func (m *Manager) ResetSettings(id string) error {

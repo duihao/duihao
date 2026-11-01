@@ -113,7 +113,7 @@ import RedisManageDialog from './RedisManageDialog.vue'
 import FTPManageDialog from './FTPManageDialog.vue'
 import { ListInstances, ListPlugins, StartInstance, StopInstance } from '../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/plugincenterservice'
 import { ListSites, StartSite, StopSite, OpenSite, OpenSiteRoot } from '../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/siteservice'
-import { LoadConnections, PaletteNavigate, PaletteConnect, PaletteAction } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { LoadConnections, PaletteNavigate, PaletteConnect, PaletteAction, ShowNasWindow } from '../../bindings/github.com/ys-ll/uniterm/app'
 
 const props = defineProps<{ visible: boolean }>()
 const emit = defineEmits<{ (e: 'update:visible', v: boolean): void }>()
@@ -260,6 +260,12 @@ function close() {
 }
 
 function navTo(view: string) {
+  // 「我的 NAS」不在侧栏里：直接唤 NAS 主窗（两个形态下都这么走）
+  if (view === 'nas') {
+    close()
+    void ShowNasWindow().catch(() => {})
+    return
+  }
   if (standalone) {
     void PaletteNavigate(view)
     return
@@ -292,9 +298,11 @@ const items = computed<Item[]>(() => {
   const list: Item[] = []
   // 创建（新建连接 / 新建站点）
   list.push(createAction('connection', 'sidebar.newConnection', CONN_META.ssh.icon, CONN_META.ssh.color, ['create', 'new', 'xinjian', '新建', '添加', 'add']))
-  list.push(createAction('site', 'sites.new', SITE_META.icon, SITE_META.color, ['create', 'new', 'xinjian', '新建', '添加', 'add', 'wangzhan', '网站']))
+  list.push(createAction('site', 'sites.new', SITE_META.icon, SITE_META.color, ['create', 'new', 'xinjian', '新建', '添加', 'add', 'zhandian', '站点', 'wangzhan', '网站']))
   // 导航（复用既有 Tab 标题键）
   const navs: Array<[string, string]> = [
+    // M23：NAS 主窗也进面板（面板是热键面，不该只有 IT 的东西）
+    ['nas', 'life.myNas'],
     ['plugins', 'sidebar.plugins'],
     ['sites', 'sidebar.sites'],
     ['connections', 'header.connections'],
@@ -408,7 +416,7 @@ const filtered = computed<Item[]>(() => {
     else if (it.hint.toLowerCase().startsWith(kw)) s = 90
     else if (t.includes(kw)) s = 80
     else {
-      // 拼音：match('网站管理', 'wz') / ('wangzhan') 命中返回下标数组
+      // 拼音：match('站点管理', 'zd') / ('zhandian') 命中返回下标数组
       const p = pinyinMatch(it.title, kw) || pinyinMatch(it.hint, kw)
       if (p) s = 60
       else {

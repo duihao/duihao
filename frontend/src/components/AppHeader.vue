@@ -1,7 +1,7 @@
 <template>
   <div
     class="app-header"
-    :class="`platform-${platform}`"
+    :class="[`platform-${platform}`, { 'is-compact': props.compact }]"
     @dblclick="onDblClick"
   >
     <!-- macOS: custom traffic lights (Wails frameless hides the native ones) -->
@@ -13,6 +13,13 @@
       @maximise="onMaximise"
       @close="onClose"
     />
+
+    <!-- compact（专有版单页 / 普通模式）：左上角品牌区 —— logo + 名称 + 模式徽标。
+         拖拽区与 .app-header 一致（drag），点按不触发任何动作。 -->
+    <div v-if="props.compact" class="header-brand">
+      <img class="brand-mark" src="/favicon.png" alt="对号" draggable="false" />
+      <span class="brand-name">对号</span>
+    </div>
 
     <!-- Connections button (icon only, leftmost) -->
     <button v-if="!props.compact" class="header-btn" @click="emit('toggle-sidebar')" :title="t('header.connections') + shortcutSuffix('toggleSidebar')">
@@ -44,19 +51,19 @@
 
       <!-- Settings dropdown (theme / language / ai / identities / proxies / settings / check update) -->
       <Menu ref="settingsMenuRef" align="end" v-model:visible="showSettingsMenu">
-        <!-- 主题 -->
+        <!-- 主题（顺序：五个配色在前，「跟随系统」压到最后 + 分隔线） -->
         <MenuSubmenu :label="t('settings.theme')">
           <MenuItem
-            :class="{ active: settingsStore.settings.theme === 'system' }"
-            @click="applyTheme('system')"
-          >{{ t('settings.themeSystem') }}</MenuItem>
-          <MenuDivider />
-          <MenuItem
-            v-for="opt in themeOptions.slice(1)"
+            v-for="opt in themeOptions.filter(o => o.value !== 'system')"
             :key="opt.value"
             :class="{ active: settingsStore.settings.theme === opt.value }"
             @click="applyTheme(opt.value)"
           >{{ opt.label }}</MenuItem>
+          <MenuDivider />
+          <MenuItem
+            :class="{ active: settingsStore.settings.theme === 'system' }"
+            @click="applyTheme('system')"
+          >{{ t('settings.themeSystem') }}</MenuItem>
         </MenuSubmenu>
 
         <!-- 终端主题 -->
@@ -105,9 +112,8 @@
           >{{ lang.native }}</MenuItem>
         </MenuSubmenu>
 
+        <!-- AI模型 / MCP / 密钥库 / 代理等 IT 概念：本窗口就是 IT 工具窗，恒常显示 -->
         <MenuDivider />
-
-        <!-- AI模型 / MCP / 密钥库 / 代理 -->
         <MenuItem @click="openCategory('ai')">{{ t('settings.ai') }}</MenuItem>
         <MenuItem v-if="!isMobilePlatform(platform.value)" @click="openCategory('mcp')">{{ t('settings.mcp') }}</MenuItem>
         <MenuItem @click="openCategory('identities')">{{ t('settings.identities') }}</MenuItem>
@@ -170,6 +176,9 @@ import { SaveWindowState } from '../../bindings/github.com/ys-ll/uniterm/app'
 const { t } = useI18n()
 const settingsStore = useSettingsStore()
 const localStateStore = useLocalStateStore()
+
+// M23：窗口形态不再按「模式」切换 —— NAS 是独立主窗，本窗口恒为 IT 工具窗。
+// 标题栏这里的 ☰ 菜单只留设置项，不再有「切换到普通模式」。
 // Window frame is fixed at startup (Wails limitation): the OS title bar only
 // appears after a relaunch. Snapshot the choice once the persisted local
 // state has loaded (reads before that would only see the default, since
@@ -193,13 +202,14 @@ const showSettingsMenu = ref(false)
 const settingsBtnRef = ref<HTMLElement | null>(null)
 const settingsMenuRef = ref<InstanceType<typeof Menu> | null>(null)
 
+// 顺序（用户定稿）：深色 / 浅色 / 深蓝 / 深红 / 浅红 / 跟随系统（跟随系统放最后）
 const themeOptions = computed(() => [
-  { value: 'system' as const, label: t('settings.themeSystem') },
   { value: 'dark' as const, label: t('settings.themeDark') },
+  { value: 'light' as const, label: t('settings.themeLight') },
   { value: 'deep-blue' as const, label: t('settings.themeDeepBlue') },
   { value: 'duihao-red' as const, label: t('settings.themeDuihaoRed') },
   { value: 'duihao-light' as const, label: t('settings.themeDuihaoLight') },
-  { value: 'light' as const, label: t('settings.themeLight') },
+  { value: 'system' as const, label: t('settings.themeSystem') },
 ])
 
 // Terminal theme submenu: built-ins split into dark / light sections.
@@ -490,6 +500,39 @@ onUnmounted(() => {
   position: relative;
   flex-shrink: 0;
   --wails-draggable: no-drag;
+}
+
+/* compact（专有版单页 / 普通模式）：tabs 区不渲染，少了 flex:1 的推力，
+   右侧菜单与窗口控件会被挤到最左边。这里补一个自动左边距，让它们回到右侧，
+   左侧留白继续作为拖拽区（.app-header 本身是 drag 区）。 */
+.app-header.is-compact .settings-wrap {
+  margin-left: auto;
+}
+
+/* compact 左上角品牌区：logo + 名称 + 模式徽标（普通模式等）。
+   整块是拖拽区；徽标沿用首页 life-pill 的玫红样式（双轨制 accent）。 */
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.4375rem;
+  padding-right: 0.5rem;
+  --wails-draggable: drag;
+  user-select: none;
+}
+.brand-mark {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 0.375rem;
+  object-fit: contain;
+  display: block;
+  /* favicon 自带玫红底与圆角，这里只补一层极淡的投影压住浅色背景 */
+  box-shadow: 0 1px 3px rgba(240, 36, 126, 0.28);
+}
+.brand-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.01em;
 }
 
 </style>

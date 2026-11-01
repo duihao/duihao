@@ -245,6 +245,9 @@ watch(() => props.visible, (v) => {
   min-width: 8.75rem;
   padding: 0.25rem;
   backdrop-filter: blur(0.5rem);
+  /* 菜单是浮层，绝不能被当成窗口拖拽区：普通模式窄窗里菜单会盖住标题栏
+     高度带，缺了这条会让「点菜单项」变成「拖动窗口」。 */
+  --wails-draggable: no-drag;
 }
 .conn-context-menu.anchored {
   position: absolute;
@@ -337,6 +340,8 @@ watch(() => props.visible, (v) => {
   padding: 0.25rem;
   backdrop-filter: blur(0.5rem);
   overflow-y: auto;
+  /* 同 .conn-context-menu：浮层不做窗口拖拽区 */
+  --wails-draggable: no-drag;
 }
 .menu-submenu .menu-item {
   padding: 0.4375rem 0.75rem;

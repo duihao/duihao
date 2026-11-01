@@ -50,7 +50,7 @@ func TestMCPForegroundDiscoversAllTextTerminals(t *testing.T) {
 func TestMcpNotifyStrings(t *testing.T) {
 	en := mcpNotifyStringsFor("en")
 	zh := mcpNotifyStringsFor("zh-CN")
-	if en.Title != "uniTerm · MCP approval request" {
+	if en.Title != "Duihao · MCP approval request" {
 		t.Errorf("en title = %q", en.Title)
 	}
 	if !strings.Contains(zh.BodyConnect, "请求建立新连接") {

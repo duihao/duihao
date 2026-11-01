@@ -127,6 +127,13 @@ func detectExternalEditors() []ExternalEditorOption {
 // platform (the Windows build asks DWM for Win11 rounded corners instead).
 func removeNativeWindowBorder(unsafe.Pointer) {}
 
+// setWindowPosPhysical is a no-op outside Windows (see app_windows.go).
+func setWindowPosPhysical(unsafe.Pointer, int, int) {}
+
+// nasRightPosition is Windows-only (see app_windows.go); elsewhere the caller
+// falls back to the DIP-based placement.
+func nasRightPosition(unsafe.Pointer, int, int, int) (int, int, bool) { return 0, 0, false }
+
 // openWithSystem opens the file with its default associated application via
 // xdg-open. Linux has no scriptable cross-desktop "open with" picker, so the
 // degrading behaviour from the issue discussion applies: no chooser, the file

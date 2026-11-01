@@ -1,4 +1,4 @@
-// m10driver：站点配置（M10，借鉴 phpStudy「网站」对话框）端到端验收。
+// m10driver：站点配置（M10，借鉴 phpStudy「站点」对话框）端到端验收。
 //
 // 真实 nginx + php 运行时（隔离 DUIHAO_DATA_ROOT），逐项开开关并用 HTTP 断言行为：
 //

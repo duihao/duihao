@@ -366,8 +366,93 @@ const (
 	SWP_NOSIZE       = 0x0001
 	SWP_NOMOVE       = 0x0002
 	SWP_NOZORDER     = 0x0004
+	SWP_NOACTIVATE   = 0x0010
 	SWP_FRAMECHANGED = 0x0020
 )
+
+// setWindowPosPhysical moves the window so its top-left corner lands on the
+// given PHYSICAL pixel coordinates, leaving size and z-order alone. Used for
+// the normal-mode placement: wails' SetPosition converts through its own DIP
+// pipeline and landed well off the work-area edge on this machine (M21 实测
+// 偏右上 ~480 DIP), while SetWindowPos is exact.
+func setWindowPosPhysical(hwnd unsafe.Pointer, x, y int) {
+	if hwnd == nil {
+		return
+	}
+	user32 := windows.NewLazySystemDLL("user32.dll")
+	user32.NewProc("SetWindowPos").Call(
+		uintptr(hwnd), 0, uintptr(x), uintptr(y), 0, 0,
+		SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE)
+}
+
+// nasRightPosition 算出 NAS 主窗「贴主屏工作区右侧、垂直居中」的**物理像素**
+// 落点。刻意不用 wails 的 Screen 数据：它给的是 DIP 工作区，经自己的 DIP 管线
+// 换算后落点会偏（M25 实测离右缘还差 ~79 DIP、垂直偏下 ~30 DIP）。这里直接问
+// 系统三件事：显示器工作区（物理）、窗口当前 rect（物理）、该窗的 DPI。
+//
+// margin 是「离右缘留多少 DIP」，按窗口 DPI 折算成物理像素后再扣。
+//
+// expW/expH 是期望的窗口物理尺寸（0 = 不校验）。必须校验：SetSize 是异步下发
+// 的，刚建窗/刚 Show 时 GetWindowRect 拿到的往往还是上一个尺寸（甚至默认尺寸），
+// 用错的宽去算 x 就会落到屏幕中间偏左 —— 表现就是「弹出时没在右边」。尺寸对不上
+// 就返回 false，让调用方下一轮再试。
+func nasRightPosition(hwnd unsafe.Pointer, margin, expW, expH int) (int, int, bool) {
+	if hwnd == nil {
+		return 0, 0, false
+	}
+	user32 := windows.NewLazySystemDLL("user32.dll")
+	pGetRect := user32.NewProc("GetWindowRect")
+	pMonFromWin := user32.NewProc("MonitorFromWindow")
+	pGetMonInfo := user32.NewProc("GetMonitorInfoW")
+
+	type rect struct{ Left, Top, Right, Bottom int32 }
+	type monitorInfo struct {
+		CbSize    uint32
+		RcMonitor rect
+		RcWork    rect
+		DwFlags   uint32
+	}
+	const monitorDefaultToNearest = 2 // MONITOR_DEFAULTTONEAREST
+
+	var wr rect
+	if r, _, _ := pGetRect.Call(uintptr(hwnd), uintptr(unsafe.Pointer(&wr))); r == 0 {
+		return 0, 0, false
+	}
+	w, h := int(wr.Right-wr.Left), int(wr.Bottom-wr.Top)
+	if w <= 0 || h <= 0 {
+		return 0, 0, false
+	}
+	// 尺寸还没落到目标值（SetSize 未生效）就别急着算 x，否则右边会空一大截。
+	const sizeTol = 8
+	if (expW > 0 && (w < expW-sizeTol || w > expW+sizeTol)) ||
+		(expH > 0 && (h < expH-sizeTol || h > expH+sizeTol)) {
+		return 0, 0, false
+	}
+	mon, _, _ := pMonFromWin.Call(uintptr(hwnd), monitorDefaultToNearest)
+	mi := monitorInfo{}
+	mi.CbSize = uint32(unsafe.Sizeof(mi))
+	if r, _, _ := pGetMonInfo.Call(mon, uintptr(unsafe.Pointer(&mi))); r == 0 {
+		return 0, 0, false
+	}
+	workW := int(mi.RcWork.Right - mi.RcWork.Left)
+	workH := int(mi.RcWork.Bottom - mi.RcWork.Top)
+	if workW <= 0 || workH <= 0 {
+		return 0, 0, false
+	}
+	// margin 按窗口 DPI 折算（96 = 100%）
+	m := margin
+	if pGetDpi := user32.NewProc("GetDpiForWindow"); true {
+		if dpi, _, _ := pGetDpi.Call(uintptr(hwnd)); dpi >= 96 {
+			m = margin * int(dpi) / 96
+		}
+	}
+	x := int(mi.RcWork.Right) - w - m
+	y := int(mi.RcWork.Top) + (workH-h)/2
+	if y < int(mi.RcWork.Top) {
+		y = int(mi.RcWork.Top)
+	}
+	return x, y, true
+}
 
 // styleToolWindow gives the M18-C palette window WS_EX_TOOLWINDOW so it stays
 // out of the taskbar and Alt+Tab, like uTools' floating panel.
@@ -423,14 +508,36 @@ func forceWindowSize(hwnd uintptr, w, h int) {
 // computes the default), so the Go first-show hook can no longer clobber the
 // user's last drag position.
 
+// findMainWindow 定位「IT 工具」窗口（原主窗口）的原生句柄。
+//
+// M23 拆窗后 NAS 主窗也叫「对号」（用户定稿：标题保持「对号」，不写成
+// 「对号 · NAS」），所以「标题前缀 + 不含 · 」这条判据会同时命中两个窗口。
+// 这里补两道区分：
+//  1. 排掉 app.nasHwnd（NAS 主窗创建/显示时记下的句柄）；
+//  2. 兜底按窗口面积取最大 —— NAS 窗宽锁死 330，面积一定小于 IT 工具窗。
+//
+// 另外一旦 mainHwnd 确定过就直接复用（IsWindow 校验），不再重复枚举。
 func (a *App) findMainWindow() uintptr {
+	if a.mainHwnd != 0 && a.isLiveWindow(a.mainHwnd) {
+		return a.mainHwnd
+	}
+
 	pid := windows.GetCurrentProcessId()
-	var result uintptr
+	var best uintptr
+	var bestArea int64
+
+	nasHwnd := a.nasHwnd
+	if nasHwnd == 0 && a.nasWin != nil {
+		if h := a.nasWin.NativeWindow(); h != nil {
+			nasHwnd = uintptr(h)
+		}
+	}
 
 	user32 := windows.NewLazySystemDLL("user32.dll")
 	procEnumWindows := user32.NewProc("EnumWindows")
 	procGetWindowThreadProcessId := user32.NewProc("GetWindowThreadProcessId")
 	procGetWindowTextW := user32.NewProc("GetWindowTextW")
+	procGetWindowRect := user32.NewProc("GetWindowRect")
 
 	cb := windows.NewCallback(func(hwnd windows.HWND, lParam uintptr) uintptr {
 		var wndPid uint32
@@ -444,14 +551,34 @@ func (a *App) findMainWindow() uintptr {
 		buf := make([]uint16, 256)
 		procGetWindowTextW.Call(uintptr(hwnd), uintptr(unsafe.Pointer(&buf[0])), 255)
 		title := windows.UTF16ToString(buf)
-		if strings.HasPrefix(title, "对号") && !strings.Contains(title, " · ") {
-			result = uintptr(hwnd)
-			return 0 // stop
+		if !strings.HasPrefix(title, "对号") || strings.Contains(title, " · ") {
+			return 1 // continue
 		}
-		return 1 // continue
+		h := uintptr(hwnd)
+		if nasHwnd != 0 && h == nasHwnd {
+			return 1 // NAS 主窗，跳过
+		}
+		type rect struct{ L, T, R, B int32 }
+		var rc rect
+		procGetWindowRect.Call(h, uintptr(unsafe.Pointer(&rc)))
+		area := int64(rc.R-rc.L) * int64(rc.B-rc.T)
+		if area > bestArea {
+			bestArea, best = area, h
+		}
+		return 1 // continue：两个同名窗都收，取面积最大的那个
 	})
 	procEnumWindows.Call(cb, 0)
-	return result
+	return best
+}
+
+// isLiveWindow 判断句柄是否仍是一个有效窗口（缓存复用前的校验）。
+func (a *App) isLiveWindow(hwnd uintptr) bool {
+	if hwnd == 0 {
+		return false
+	}
+	user32 := windows.NewLazySystemDLL("user32.dll")
+	ok, _, _ := user32.NewProc("IsWindow").Call(hwnd)
+	return ok != 0
 }
 
 // bringMainWindowToFront raises the main window to the foreground once. After a
@@ -1122,13 +1249,26 @@ func readClipboardHDROP() ([]string, error) {
 // 不用原生 TrackPopupMenu 的原因：系统菜单做不出圆角卡片观感，且锚点只能
 // 取窗口矩形（球窗被误拉大时离球很远）。
 const (
-	floatMenuMain = 1 // 主窗口
-	floatMenuSet  = 2 // 设置
-	floatMenuQuit = 3 // 退出
+	// M23：菜单入口（主窗 = NAS，IT工具 = 原主窗口）+ 设置 + 官网（官网排最后）。
+	// 退出项已从菜单去掉（走托盘菜单），命令值保留不动，避免和托盘那套串号。
+	floatMenuMain = 1 // 主窗（NAS）
+	floatMenuIT   = 2 // IT工具（原主窗口）
+	floatMenuSite = 3 // 官网
+	floatMenuSet  = 4 // 设置
+	floatMenuQuit = 5 // 退出（菜单里已不给入口，仅保留命令值）
 
-	floatMenuW   = 96  // 菜单窗逻辑宽（与 main.go 创建尺寸一致，含 14px 阴影留白）
-	floatMenuH   = 164 // 菜单窗逻辑高（同上）
-	floatMenuGap = 6   // 球底到菜单顶的间距（逻辑 px）
+	floatMenuW = 96  // 菜单窗逻辑宽（与 main.go 创建尺寸一致，含 14px 阴影留白）
+	floatMenuH = 193 // 菜单窗逻辑高（4 项 + 1 条分隔 + 上下各 14px 留白）
+	// floatMenuGap：卡片顶到球**可见边缘**（白边外沿）的间距。
+	// 不能拿球窗底边当锚点 —— 球窗 78 高里图标下沿离窗底还有 20px（留给
+	// 投影），直接贴窗底会多出 20px 空隙，看着就是「菜单离球太远」。
+	floatMenuGap = 6
+	// floatMenuTopPad：菜单窗顶部透明留白（FloatMenu.vue 的 .fm-root padding）
+	floatMenuTopPad = 14
+	// floatBallBottomPad：球窗底边到「图标+白边」下沿（78 - 图标底 54 - 白边 4）
+	floatBallBottomPad = 20
+	// floatBallTopPad：球窗顶边到「图标+白边」上沿（padding 10 + 图标偏移 4 - 白边 4）
+	floatBallTopPad = 10
 )
 
 // 菜单收起监听：每次弹出换一代，旧协程自行退出。
@@ -1168,12 +1308,15 @@ func (a *App) ShowFloatMenu() error {
 	if x < 0 {
 		x = 0
 	}
-	// 默认贴球下方；下方放不下（球在屏幕底部）就翻到球上方 —— 否则菜单
-	// 会整个掉到屏幕外，看起来像「没弹出来」。
-	y := bottomDip + floatMenuGap
+	// 默认紧贴球下方：锚点取「图标+白边」的下沿，而不是球窗底边（窗底还有
+	// 20px 投影留白，用它当锚点会凭空多出 20px 空隙）。下方放不下（球在屏幕
+	// 底部）就翻到球上方 —— 否则菜单会整个掉到屏幕外，像「没弹出来」。
+	cardH := float64(floatMenuH - 2*floatMenuTopPad)
+	gap := float64(floatMenuGap)
+	y := bottomDip - float64(floatBallBottomPad) + gap - float64(floatMenuTopPad)
 	ballTopDip := float64(rc.T) * scale
-	if screenH > 0 && y+floatMenuH > float64(screenH) {
-		y = ballTopDip - floatMenuH - floatMenuGap
+	if screenH > 0 && y+float64(floatMenuH) > float64(screenH) {
+		y = ballTopDip + float64(floatBallTopPad) - gap - cardH - float64(floatMenuTopPad)
 	}
 	if y < 0 {
 		y = 0
@@ -1253,18 +1396,29 @@ func (a *App) HideFloatMenu() {
 	}
 }
 
-// FloatMenuAction 执行菜单项：1 主窗口 / 2 设置 / 3 退出。先收菜单再动作。
+// FloatMenuAction 执行菜单项：1 主窗（NAS）/ 2 IT 工具 / 3 官网 / 4 设置 / 5 退出。
+// 先收菜单再动作。
 func (a *App) FloatMenuAction(cmd int) {
 	a.HideFloatMenu()
 	switch cmd {
 	case floatMenuMain:
-		a.PaletteNavigate("")
+		a.ShowNasWindow()
+	case floatMenuIT:
+		a.ShowITWindow()
+	case floatMenuSite:
+		if a.app != nil {
+			_ = a.app.Browser.OpenURL(duihaoSiteURL)
+		}
 	case floatMenuSet:
-		a.PaletteNavigate("settings")
+		a.ShowITWindow()
+		a.emit("app:open-settings")
 	case floatMenuQuit:
 		a.QuitApp()
 	}
 }
+
+// duihaoSiteURL 官网地址（与「关于」里的链接同源）。
+const duihaoSiteURL = "https://duihao.cn"
 
 // windowWorkAreaDIP 返回主屏工作区的逻辑宽高（DIP，与 SetPosition 同口径），
 // 用于把菜单钳在屏内。取工作区而非整屏：任务栏那一侧也别压住。

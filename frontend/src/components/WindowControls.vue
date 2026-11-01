@@ -7,7 +7,7 @@
       <button class="wc-btn mac minimise" @click="$emit('minimise')" :aria-label="t('window.minimize')" :title="t('window.minimize')">
         <MacMinimise />
       </button>
-      <button class="wc-btn mac maximise" @click="$emit('maximise')" :aria-label="t('window.maximize')" :title="t('window.maximize')">
+      <button v-if="!hideMaximise" class="wc-btn mac maximise" @click="$emit('maximise')" :aria-label="t('window.maximize')" :title="t('window.maximize')">
         <MacRestore v-if="isMaximised" />
         <MacMaximise v-else />
       </button>
@@ -18,7 +18,7 @@
       <button class="wc-btn win minimise" @click="$emit('minimise')" :aria-label="t('window.minimize')">
         <WinMinimise />
       </button>
-      <button class="wc-btn win maximise" @click="$emit('maximise')" :aria-label="t('window.maximize')">
+      <button v-if="!hideMaximise" class="wc-btn win maximise" @click="$emit('maximise')" :aria-label="t('window.maximize')">
         <WinRestore v-if="isMaximised" />
         <WinMaximise v-else />
       </button>
@@ -46,8 +46,11 @@ withDefaults(defineProps<{
   isMaximised: boolean
   /** 'mac' renders traffic-light dots, 'win' the header-btn-matching icons */
   variant?: 'win' | 'mac'
+  /** 隐藏最大化按钮（普通模式的竖版窄窗宽度锁死，放大没有意义） */
+  hideMaximise?: boolean
 }>(), {
-  variant: 'win'
+  variant: 'win',
+  hideMaximise: false
 })
 
 defineEmits(['minimise', 'maximise', 'close'])

@@ -12,6 +12,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/ys-ll/uniterm/backend/duihao/webdavd/hubusers"
 )
 
 // 服务集成测试：起真实监听，走完整 HTTP 管线（auth → 路径守卫 → webdav）。
@@ -55,6 +57,13 @@ func startTestServer(t *testing.T, mutate func(*Config)) (*Server, string, strin
 		t.Fatalf("Start: %v", err)
 	}
 	t.Cleanup(func() { _ = srv.Stop() })
+	// 引导的 admin 固定叫 "admin"（随机密码）；测试的 Basic 凭据要能进 NAS
+	// 应用，就在这里显式建一个与共享同名的管理员账号。
+	if st := srv.hub(); st != nil {
+		if err := hubusers.Create(st.DB(), user, pass, hubusers.RoleAdmin, nil); err != nil {
+			t.Fatalf("建测试管理员: %v", err)
+		}
+	}
 	// Port 0 → 从 listener 回读实际端口。
 	addr := srv.Addr()
 	if addr == "" {
@@ -317,4 +326,70 @@ func TestLoginSessionAndZip(t *testing.T) {
 	if _, err := verifyToken([]byte("other"), tok); err == nil {
 		t.Fatal("密钥不同应校验失败")
 	}
+}
+
+// TestQuickLogin 扫码快传：短时 token 换完整会话（手机扫码自动登录）。
+func TestQuickLogin(t *testing.T) {
+	srv, base, user, _ := startTestServer(t, nil)
+	cli := newTestClient(t, false)
+
+	// 1) 无 token / 坏 token → 回登录页（带失效提示）
+	for _, q := range []string{"/-q", "/-q?t=garbage.sig"} {
+		r := doReq(t, cli, base, "GET", q, "", "", nil)
+		page, _ := io.ReadAll(r.Body)
+		_ = r.Body.Close()
+		if r.StatusCode != 200 || !bytes.Contains(page, []byte("快传链接已失效")) {
+			t.Fatalf("坏 token 应回登录页带提示 (%s), got %d", q, r.StatusCode)
+		}
+	}
+
+	// 2) 有效 token（短 TTL 签名）→ 302 回根路径 + Set-Cookie 完整会话
+	// （不跟随重定向：跟随后的 / 请求无凭据会拿到 401，测试里只要 302 本身）
+	noRedirect := &http.Client{
+		Transport: cli.Transport, Timeout: cli.Timeout,
+		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+	}
+	tok := issueTokenTTL(srv.sessKey, user, quickTTL)
+	r, err := noRedirect.Get("http://" + base + "/-q?t=" + tok)
+	if err != nil {
+		t.Fatal(err)
+	}
+	page, _ := io.ReadAll(r.Body)
+	_ = r.Body.Close()
+	if r.StatusCode != 302 {
+		t.Fatalf("有效 token 应 302, got %d: %s", r.StatusCode, page)
+	}
+	if loc := r.Header.Get("Location"); loc != "/" {
+		t.Fatalf("应重定向到 /, got %q", loc)
+	}
+	var ck *http.Cookie
+	for _, c := range r.Cookies() {
+		if c.Name == sessCookie {
+			ck = c
+		}
+	}
+	if ck == nil || ck.Value == "" || !ck.HttpOnly {
+		t.Fatal("快传成功应签发 HttpOnly 会话 Cookie")
+	}
+
+	// 3) 换来的 Cookie 直接落在文件管理器页
+	req, _ := http.NewRequest("GET", "http://"+base+"/", nil)
+	req.Header.Set("Accept", "text/html")
+	req.AddCookie(ck)
+	page2, err := cli.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, _ := io.ReadAll(page2.Body)
+	_ = page2.Body.Close()
+	if page2.StatusCode != 200 || !bytes.Contains(body, []byte("davdata")) {
+		t.Fatalf("快传 Cookie 访问应得管理页 200, got %d", page2.StatusCode)
+	}
+
+	// 4) token 对不存在/未启用的用户：签名有效也拒登（共享被禁后兜底）
+	tokBad := issueTokenTTL(srv.sessKey, "nobody", quickTTL)
+	if r = doReq(t, cli, base, "GET", "/-q?t="+tokBad, "", "", nil); r.StatusCode != 200 {
+		t.Fatalf("未知用户 token 应回登录页 200, got %d", r.StatusCode)
+	}
+	_ = r.Body.Close()
 }

@@ -7,9 +7,10 @@
     class="dbm-dialog"
     destroy-on-close
   >
-    <!-- 工具条：连接状态 + 主操作 + 搜索（对齐 phpStudy 数据库管理页） -->
+    <!-- 工具条：实例启停 + 连接状态 + 主操作 + 搜索（对齐 phpStudy 数据库管理页） -->
     <div class="dbm-bar">
       <div class="dbm-bar-left">
+        <InstancePower :instance-id="instanceId" @changed="onPowerChanged" />
         <el-tag v-if="status.connected" type="success" size="small" effect="plain">
           MySQL {{ status.version }} · :{{ status.port }}
         </el-tag>
@@ -278,6 +279,7 @@ import {
   MySQLConnectionInfo, SaveMySQLDbUser,
 } from '../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/mysqlservice'
 import { launchConnection } from '../composables/connectionLauncher'
+import InstancePower from './InstancePower.vue'
 import type { ConnectionConfig } from '../types/session'
 
 const props = defineProps<{ instanceId: string; instanceName?: string }>()
@@ -330,6 +332,11 @@ const credTarget = reactive({ db: '', user: '', password: '', rootInfo: null as 
 // immediate：父组件用 v-if 挂载本对话框，挂载时 visible 已经是 true，
 // 不加 immediate 就永远不会自动连（用户点「管理」后停在「未连接」）。
 watch(visible, (v) => { if (v) reload() }, { immediate: true })
+
+// 顶部启停后：等进程真正起停完成再刷一次（否则拿到的还是旧状态）
+function onPowerChanged() {
+  window.setTimeout(() => { void reload() }, 700)
+}
 
 // 实例刚启动时 mysqld 可能还在初始化/还没监听端口：首次连不上就等 700ms 自动重试一次，
 // 避免用户看到「未连接」后被迫手动点刷新。凭证错误不重试（密码错误等 700ms 也一样）。

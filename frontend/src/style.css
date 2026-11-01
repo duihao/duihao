@@ -23,6 +23,15 @@
   --info: #4c9df0;
   --info-subtle: rgba(76, 157, 240, 0.1);
 
+  /* Brand - logo 取色（appicon.png 左 #F32484 → 右 #FD0A3A 玫红渐变）。
+     双轨制：品牌玫红只用于「品牌时刻」（启动页、A 模式个人壳、营销物料），
+     功能交互色仍是上面的 --accent 蓝；A 模式通过 html.ui-home 把
+     --accent 整体换成品牌玫红提亮版，组件层零改动。 */
+  --brand: #f0247e;
+  --brand-bright: #ff4d8d;   /* 暗底提亮，作 A 模式 accent 用 */
+  --brand-deep: #c71a62;     /* 按压态 / 浅底描边 */
+  --brand-subtle: rgba(240, 36, 126, 0.12);
+
   /* Text/icon color to place on top of a solid --accent fill */
   --on-accent: #ffffff;
 
@@ -51,6 +60,7 @@
 
   /* Borders - separators read slightly heavier than hairlines */
   --border-subtle: rgba(255, 255, 255, 0.16);
+  --win-border: rgba(255, 255, 255, 0.10);  /* 窗口最外圈 1px 描边：深色窗在亮桌面上也有轮廓 */
   --border-hover: rgba(255, 255, 255, 0.22);
 
   /* Shadows */
@@ -125,6 +135,18 @@
   --el-font-size-extra-large: 1.25rem;
 }
 
+/* A 模式（个人版）整壳换肤：把功能 accent 换成品牌玫红提亮版。
+   只动 accent 族 —— 背景层/文字层/边框层沿用当前主题， EP 的
+   --el-color-primary(-> --accent) 及 light-3/5/7 派生色一并跟随。
+   M21 在 main.ts 给 <html> 挂 ui-home 类即可生效；B 模式不挂 = 蓝色不变。 */
+html.ui-home {
+  --accent: var(--brand-bright);
+  --accent-glow: rgba(255, 77, 141, 0.25);
+  --accent-subtle: rgba(255, 77, 141, 0.12);
+  /* 玫红与错误红 #f87171 色相太近：A 模式里错误色偏橙红 + 必须配图标文案 */
+  --error: #e5484d;
+}
+
 /* Deep blue - oceanic dark */
 [data-theme="deep-blue"] {
   --bg-base: #0b111e;
@@ -167,6 +189,7 @@
   --error-glow: rgba(248, 113, 113, 0.15);
 
   --border-subtle: rgba(255, 255, 255, 0.16);
+  --win-border: rgba(255, 255, 255, 0.10);  /* 窗口最外圈 1px 描边：深色窗在亮桌面上也有轮廓 */
   --border-hover: rgba(255, 255, 255, 0.22);
 
   --shadow-sm: 0 1px 0.125rem rgba(0, 0, 0, 0.4);
@@ -235,6 +258,7 @@
   --error-glow: rgba(255, 107, 107, 0.15);
 
   --border-subtle: rgba(255, 255, 255, 0.16);
+  --win-border: rgba(255, 255, 255, 0.10);  /* 窗口最外圈 1px 描边：深色窗在亮桌面上也有轮廓 */
   --border-hover: rgba(255, 255, 255, 0.22);
 
   --shadow-sm: 0 1px 0.125rem rgba(0, 0, 0, 0.4);
@@ -303,6 +327,7 @@
   --error-glow: rgba(209, 52, 56, 0.15);
 
   --border-subtle: rgba(0, 0, 0, 0.08);
+  --win-border: rgba(0, 0, 0, 0.15);  /* 窗口最外圈 1px 描边：白窗贴白桌面全靠这条才有边界 */
   --border-hover: rgba(0, 0, 0, 0.13);
 
   --scrim: rgba(255, 255, 255, 0.6);
@@ -381,6 +406,7 @@
 
   /* Borders - cool light grays */
   --border-subtle: rgba(0, 0, 0, 0.08);
+  --win-border: rgba(0, 0, 0, 0.15);  /* 窗口最外圈 1px 描边：白窗贴白桌面全靠这条才有边界 */
   --border-hover: rgba(0, 0, 0, 0.13);
 
   /* Scrim - translucent white so dark loading text stays legible */
@@ -559,6 +585,41 @@ body::before {
 
 [data-theme="light"] body::before {
   opacity: 0.006;
+}
+
+/* 窗口描边：主窗口是 Frameless + 透明背景，圆角与底色全由 CSS 画，因此没有
+   系统边框——浅色主题下白窗贴白桌面就完全看不出边界（Windows 125%/150% 缩放
+   还会把 1px 稀释掉一半）。这里用最上层的伪元素补一圈 1px：不占布局、不吃
+   鼠标、随 body 的圆角一起被 contain:paint 裁好。颜色走 --win-border，
+   五个主题各自定义。
+   只给主窗口画（html.win-main 由 main.ts 打标）：悬浮球 / 悬浮菜单是透明小窗，
+   套一圈方框会在四角露出线头。
+   想更粗就改下面的 1px——但全站分隔线都是 1px，2px 窗框会显笨重，优先调颜色。 */
+/* 到点提醒卡片（语音提醒 V2，/?w=notify）：整张卡自己画圆角 + 阴影，
+   所以窗口底色必须透明，也不能有噪声纹理与主窗口那圈 1px 描边。 */
+html.win-notify body,
+html.win-notify #app {
+  background: transparent;
+  border-radius: 14px;
+}
+html.win-notify body::before {
+  display: none;
+}
+
+html.win-main body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  box-sizing: border-box;
+  pointer-events: none;
+  z-index: 10000;
+  border: 1px solid var(--win-border, rgba(0, 0, 0, 0.12));
+  border-radius: var(--win-radius);
+}
+
+/* 最大化 / 全屏：窗口贴边变直角，描边跟着直角 */
+html.win-main.win-square body::after {
+  border-radius: 0;
 }
 
 /* Scrollbar - minimal */
@@ -1840,4 +1901,82 @@ button:disabled,
 /* Compact query editors on narrow screens: less reserved editor height. */
 @media (max-width: 640px) {
   .sql-editor-wrap { min-height: 4rem !important; }
+}
+
+/* ============================================================
+   M20 管理独立窗口（/?w=manage）：弹窗即窗口。
+   standalone 弹窗由 ManageTitleBar 顶栏 + 内容构成，占满整个窗口。
+   之前多轮用 scoped/:deep/class 选择器改 EP 的三层盒子
+   （.el-overlay > .el-overlay-dialog > .el-dialog）都不稳定——
+   这里全部用「html.win-manage 前缀 + 类名直击 + !important」钉死。
+   ============================================================ */
+
+/* 遮罩链不再滚出滚动条（右侧白条的来源），也不允许暗色蒙层 */
+html.win-manage .el-overlay,
+html.win-manage .el-overlay-dialog {
+  overflow: hidden !important;
+}
+html.win-manage .el-overlay {
+  background: transparent !important;
+}
+
+/* standalone 弹窗占满窗口：无圆角/阴影/边距，纵向 flex（顶栏 + 内容） */
+.el-dialog.davm-standalone {
+  height: 100% !important;
+  width: 100% !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: var(--bg-elevated) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+.el-dialog.davm-standalone .el-dialog__header {
+  flex-shrink: 0;
+  padding: 0;
+  margin: 0;
+  /* 顶栏自己 2.5rem 高，别被全局 2.25rem 的标题行裁出缝 */
+  height: 2.5rem;
+}
+/* 自绘顶栏塞进弹窗 #header：吃掉整行。全局 .el-dialog__header 是
+   justify-content:center 的「居中标题」样式，不补这条顶栏会缩成内容宽、
+   标题和窗口按钮挤在中间（左右分不开）。 */
+.el-dialog__header > .mwt-bar {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.el-dialog.davm-standalone .el-dialog__body {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* header-class / body-class 钩子挂的类（WebDavManageDialog standalone） */
+.davm-hide {
+  display: none !important;
+}
+.davm-body-plain {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0.75rem 1rem 1rem !important;
+  box-sizing: border-box;
+}
+.davm-body-plain .davm-table {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.davm-body-plain .davm-conn,
+.davm-body-plain .davm-bar {
+  flex-shrink: 0;
+}
+
+/* 管理面板：实例启停不再单占一行（太旷），而是并入各面板的第一行工具条。
+   .mng-inline-end = 靠右收口（网盘连接行 / Redis 概览行）。 */
+.mng-inline-end {
+  margin-left: auto;
 }

@@ -5,15 +5,8 @@
         <span class="rp-title">{{ t('plugins.runtimeTitle') }}</span>
         <span class="rp-sub">{{ t('plugins.runtimeHint') }}</span>
       </div>
-      <!-- 右侧：软件市场 + 数据目录（软件自带的运行时/实例/站点/日志都在数据目录下） -->
+      <!-- 右侧一行两个通用入口：软件市场 · 数据目录（数据目录只显示文字，路径走 tooltip） -->
       <div class="rp-head-ops">
-        <button class="rp-market" :title="t('sched.title')" @click="scheduleOpen = true">
-          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <circle cx="8" cy="8" r="6.1" stroke="currentColor" stroke-width="1.3" />
-            <path d="M8 4.6V8l2.4 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
-          </svg>
-          <span>{{ t('sched.button') }}</span>
-        </button>
         <button class="rp-market" :title="t('market.title')" @click="marketOpen = true">
           <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path d="M2 6.6V13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V6.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
@@ -22,10 +15,11 @@
           </svg>
           <span>{{ t('market.button') }}</span>
         </button>
-        <button v-if="dataRoot" class="rp-path" :title="dataRoot" @click="onOpenDataRoot">
-          <span class="rp-path-label">{{ t('plugins.dataDir') }}</span>
-          <code>{{ dataRoot }}</code>
-          <span v-if="portable" class="rp-path-tag">portable</span>
+        <button v-if="dataRoot" class="rp-market" :title="portable ? `${dataRoot} · portable` : dataRoot" @click="onOpenDataRoot">
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M1.9 4.3a1 1 0 0 1 1-1h3.1l1.3 1.6h5.8a1 1 0 0 1 1 1v6.8a1 1 0 0 1-1 1H2.9a1 1 0 0 1-1-1V4.3Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" />
+          </svg>
+          <span>{{ t('plugins.dataDir') }}</span>
         </button>
       </div>
     </div>
@@ -72,11 +66,17 @@
               :title="i.live === 'running' ? t('plugins.manageHint') : (manageOfflineOk(g.plugin) ? t('plugins.manageOffline') : t('plugins.manageNeedStart'))"
               @click="openManage(g.plugin, i)"
             >{{ t('plugins.manage') }}</el-button>
-            <el-dropdown trigger="click" popper-class="rp-more-popper" @command="(cmd) => onMore(cmd, i)">
+            <el-dropdown trigger="click" popper-class="rp-more-popper" @command="(cmd) => onMore(cmd, i, g.plugin)">
               <el-button size="small" class="rp-more" :title="t('plugins.more')">⋯</el-button>
               <template #dropdown>
                 <el-dropdown-menu>
-                  <el-dropdown-item command="settings">{{ t('plugins.settings') }}</el-dropdown-item>
+                  <el-dropdown-item v-if="g.plugin.manage" command="manageWindow">
+                    {{ t('plugins.openInWindow') }}
+                  </el-dropdown-item>
+                  <el-dropdown-item v-if="g.plugin.manage" command="manageMode">
+                    {{ manageModeLabel(g.plugin) }}
+                  </el-dropdown-item>
+                  <el-dropdown-item command="settings" :divided="!!g.plugin.manage">{{ t('plugins.settings') }}</el-dropdown-item>
                   <el-dropdown-item command="logs">{{ t('plugins.logs') }}</el-dropdown-item>
                   <el-dropdown-item v-if="portsText(i)" class="rp-port-line" divided>
                     {{ t('plugins.ports') }} {{ portValue(i) }}
@@ -173,9 +173,6 @@
       :instance-id="panelInst?.id || ''"
       :instance-name="panelInst?.name || ''"
     />
-
-    <!-- 定时任务：库备份 / Redis 备份 / 日志切割 -->
-    <ScheduleDialog v-model:visible="scheduleOpen" />
   </div>
 </template>
 
@@ -183,10 +180,11 @@
 import { ref, computed, onMounted, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useI18n } from '../i18n'
+import { useSettingsStore } from '../stores/settingsStore'
+import { OpenManageWindow } from '../../bindings/github.com/ys-ll/uniterm/app'
 import SettingsDialog from './SettingsDialog.vue'
 import PluginVersionDialog from './PluginVersionDialog.vue'
 import SoftwareMarketDialog from './SoftwareMarketDialog.vue'
-import ScheduleDialog from './ScheduleDialog.vue'
 import MySQLManageDialog from './MySQLManageDialog.vue'
 import RedisManageDialog from './RedisManageDialog.vue'
 import FTPManageDialog from './FTPManageDialog.vue'
@@ -240,6 +238,7 @@ function onSettings(inst: InstanceView) {
 // 「管理」= 该软件的内置连接管理界面，卡片上直接打开，不套中间层。
 // 打开哪个界面由清单 manage.panel 决定（mysql / redis / ftp），前端不写死软件 id。
 const PANELS = ['mysql', 'redis', 'ftp', 'webdav']
+const settingsStore = useSettingsStore()
 // 停机也可用的管理面：WebDAV 的共享必须先建好才能启动（服务端校验至少一个
 // 启用共享），若「管理」要求运行中就成了死锁——这些面板对已装实例停机放行。
 const PANEL_OFFLINE_OK = ['webdav']
@@ -251,15 +250,40 @@ function manageOfflineOk(p: PluginView) {
   return PANEL_OFFLINE_OK.includes(p.manage?.panel || '')
 }
 
-function openManage(p: PluginView, inst: InstanceView) {
+function openManage(p: PluginView, inst: InstanceView, force?: 'dialog' | 'window') {
   const panel = p.manage?.panel || ''
   if (!PANELS.includes(panel)) {
     ElMessage.warning(t('plugins.manageUnsupported'))
     return
   }
+  // 打开方式按软件记忆（settings.manageOpenMode），卡片菜单可临时指定。
+  // 注意 pinia store 会自动解包 ref：settingsStore.settings 直接就是对象，
+  // 不能再 .value（之前写成 .value 导致「管理」全点不开）。
+  const mode = force || settingsStore.settings.manageOpenMode?.[p.id] || 'dialog'
+  if (mode === 'window') {
+    // 独立窗口失败（窗口管理器未就绪等）时退回弹窗，不让用户点了没反应。
+    OpenManageWindow(panel, inst.id, inst.name || '').catch((e: unknown) => {
+      ElMessage.error(errText(e))
+      panelInst.value = inst
+      panelKind.value = panel
+      panelOpen.value = true
+    })
+    return
+  }
   panelInst.value = inst
   panelKind.value = panel
   panelOpen.value = true
+}
+
+// 「⋯」里那两项的文案：显示「切到另一种方式」，避免用户看不出当前状态。
+function manageModeLabel(p: PluginView): string {
+  const isWindow = (settingsStore.settings.manageOpenMode?.[p.id] || 'dialog') === 'window'
+  return isWindow ? t('plugins.manageDefaultDialog') : t('plugins.manageDefaultWindow')
+}
+
+function errText(e: unknown): string {
+  if (e instanceof Error) return e.message
+  return String(e).replace(/^Error:\s*/, '')
 }
 
 // process（下载运行时）+ embedded（编译进本体的服务，如 FTPServer）进面板；
@@ -294,8 +318,6 @@ function setPref(pluginId: string, version: string) {
 
 // 软件市场弹窗
 const marketOpen = ref(false)
-// 定时任务弹窗（库备份 / 日志切割）
-const scheduleOpen = ref(false)
 // 用户自定义清单目录（市场底部提示：丢 JSON 进去即可扩展分类与软件）
 const manifestDir = computed(() => {
   const d = dataRoot.value
@@ -490,8 +512,24 @@ async function onEditPort(inst: InstanceView) {
   }
 }
 
-async function onMore(cmd: string, inst?: InstanceView) {
+async function onMore(cmd: string, inst?: InstanceView, plugin?: PluginView) {
   if (!inst) return
+  if (cmd === 'manageWindow') {
+    if (plugin) openManage(plugin, inst, 'window')
+    return
+  }
+  if (cmd === 'manageMode') {
+    if (!plugin) return
+    const cur = settingsStore.settings.manageOpenMode?.[plugin.id] || 'dialog'
+    const next = cur === 'window' ? 'dialog' : 'window'
+    settingsStore.settings.manageOpenMode = {
+      ...(settingsStore.settings.manageOpenMode || {}),
+      [plugin.id]: next
+    }
+    await settingsStore.save()
+    ElMessage.success(next === 'window' ? t('plugins.manageDefaultWindowDone') : t('plugins.manageDefaultDialogDone'))
+    return
+  }
   if (cmd === 'settings') {
     onSettings(inst)
     return
@@ -551,13 +589,15 @@ onMounted(refresh)
 .runtime-panel { padding: 0.75rem; overflow-y: auto; height: 100%; }
 .rp-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
 .rp-head-main { display: flex; align-items: baseline; gap: 0.375rem; min-width: 0; }
-.rp-head-ops { display: flex; align-items: center; justify-content: flex-end; gap: 0.375rem; min-width: 0; flex-wrap: wrap; }
+/* 三个入口必须同一行：不换行，标题过长时由标题侧让步 */
+.rp-head-ops { display: flex; align-items: center; justify-content: flex-end; gap: 0.3125rem; min-width: 0; flex-wrap: nowrap; }
 .rp-title { font-size: 0.8125rem; font-weight: 600; color: var(--text-primary); }
 .rp-sub { font-size: 0.6875rem; color: var(--text-muted); }
 
-/* 软件市场入口：标题行右侧，按分类浏览可安装的软件与版本 */
+/* 三个入口按钮统一：高度一致、同一行；极窄时才让文字省略，不挤压图标 */
 .rp-market {
-  display: inline-flex; align-items: center; gap: 0.25rem; flex-shrink: 0;
+  display: inline-flex; align-items: center; gap: 0.25rem;
+  flex: 0 1 auto; min-width: 0;
   height: 1.5rem; padding: 0 0.5rem;
   border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
   background: transparent; cursor: pointer;
@@ -565,26 +605,8 @@ onMounted(refresh)
   transition: color .12s, border-color .12s, background .12s;
 }
 .rp-market:hover { color: var(--accent); border-color: var(--accent); background: var(--bg-hover); }
-
-/* 数据目录：路径常显，点击打开（用户要求运行时统一在软件自己的目录下） */
-.rp-path {
-  display: inline-flex; align-items: center; gap: 0.3125rem;
-  max-width: 60%;
-  padding: 0.125rem 0.375rem;
-  border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
-  background: transparent; cursor: pointer; font-family: inherit;
-}
-.rp-path:hover { border-color: var(--border-default); background: var(--bg-hover); }
-.rp-path-label { font-size: 0.625rem; color: var(--text-muted); flex-shrink: 0; }
-.rp-path code {
-  font-size: 0.625rem; color: var(--text-secondary);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; text-align: left;
-}
-.rp-path-tag {
-  flex-shrink: 0; font-size: 0.5625rem; letter-spacing: 0.02em;
-  padding: 0 0.25rem; border-radius: var(--radius-sm);
-  color: var(--accent-text, var(--text-primary)); background: var(--accent-soft, transparent);
-}
+.rp-market svg { flex-shrink: 0; }
+.rp-market span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* 卡片列表：一个软件一张卡，窄到 240px 也不裁按钮 */
 .rp-grid { display: flex; flex-direction: column; gap: 0.625rem; container-type: inline-size; }

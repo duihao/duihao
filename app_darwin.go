@@ -172,6 +172,13 @@ func (a *App) configureMacKeyRepeat() {
 // platform (the Windows build asks DWM for Win11 rounded corners instead).
 func removeNativeWindowBorder(unsafe.Pointer) {}
 
+// setWindowPosPhysical is a no-op outside Windows (see app_windows.go).
+func setWindowPosPhysical(unsafe.Pointer, int, int) {}
+
+// nasRightPosition is Windows-only (see app_windows.go); elsewhere the caller
+// falls back to the DIP-based placement.
+func nasRightPosition(unsafe.Pointer, int, int, int) (int, int, bool) { return 0, 0, false }
+
 // systemPrefersDark reports whether macOS is in dark mode via the same global
 // preference (`AppleInterfaceStyle`) WKWebView consults for the CSS
 // prefers-color-scheme media query. The key only exists when a dark variant

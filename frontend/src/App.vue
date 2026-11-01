@@ -3,7 +3,7 @@
   <div class="app-container" :class="{ 'has-bg': bgVisible }">
     <div v-if="bgVisible" class="app-bg" :style="bgStyle"></div>
     <AppHeader
-      :compact="!!editionHome"
+      :compact="!!effectiveHome"
       @toggle-ai="aiStore.toggle"
       @toggle-sidebar="sidebarVisible = !sidebarVisible"
       @open-settings="openSettings"
@@ -14,7 +14,7 @@
       @new-local-terminal="createNewTab"
     />
     <div class="main-content">
-      <Sidebar v-if="!editionHome" ref="sidebarRef" :visible="sidebarVisible" @toggle="sidebarVisible = !sidebarVisible" @connect="onSidebarConnect" @connect-to-workspace="({ config, workspaceId }: any) => onConnect(config, undefined, undefined, true, workspaceId)" @create-workspace="(configs: any) => onCreateWorkspaceFromConfigs(configs)" @connect-only="onConnectOnly" />
+      <Sidebar v-if="!effectiveHome" ref="sidebarRef" :visible="sidebarVisible" @toggle="sidebarVisible = !sidebarVisible" @connect="onSidebarConnect" @connect-to-workspace="({ config, workspaceId }: any) => onConnect(config, undefined, undefined, true, workspaceId)" @create-workspace="(configs: any) => onCreateWorkspaceFromConfigs(configs)" @connect-only="onConnectOnly" />
       <div class="tab-area">
         <template v-if="activeTab">
           <KeepAlive>
@@ -105,8 +105,8 @@
               :tab="activeTab"
             />
             <component
-              v-else-if="activeTab.type === 'start' && editionHome"
-              :is="HOME_VIEWS[editionHome]"
+              v-else-if="activeTab.type === 'start' && effectiveHome"
+              :is="HOME_VIEWS[effectiveHome]"
             />
             <StartTabContent
               v-else-if="activeTab.type === 'start'"
@@ -127,7 +127,7 @@
           </KeepAlive>
         </template>
       </div>
-      <AISidebar v-if="!editionHome" ref="aiSidebarRef" @open-settings="openSettings" />
+      <AISidebar v-if="!effectiveHome" ref="aiSidebarRef" @open-settings="openSettings" />
     </div>
     <ConnectionForm v-model="showConnectionForm" :edit-config="editConfig" :default-group-id="pendingGroupId" @save="onSaveOnly" @connect="(c: ConnectionConfig, ko?: boolean) => { const wasEdit = !!editConfig?.id; editConfig = null; onConnect(c, ko, wasEdit) }" @connect-only="onConnectOnly" @cancel="editConfig = null" />
 
@@ -384,6 +384,8 @@ let unsubTrayOpenAbout: (() => void) | null = null
 // 弹层（用户定稿：只有面板一个入口 UI，避免两套面板）。
 let unsubPaletteConnect: (() => void) | null = null
 let unsubPaletteAction: (() => void) | null = null
+// M23 NAS 主窗宫格「IT 专业工具」：后端先唤起本窗（IT 工具），再广播 view(+action)。
+let unsubItTool: (() => void) | null = null
 function onPaletteShortcut(e: KeyboardEvent) {
   if (!(e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey) || e.key.toLowerCase() !== 'k') return
   const el = e.target as HTMLElement | null
@@ -475,8 +477,61 @@ const showConnectionForm = ref(false)
 const sidebarVisible = ref(false)
 // M19 插件化产品线：专有版首页归属插件 id（'' = core 走现状 StartTabContent）
 const editionHome = ref('')
+// 身份壳：只剩发行版专属首页（M23 之后普通模式已拆成独立的 NAS 主窗，主窗口
+// 恒为 IT 工具：侧栏 + 标签页 + 终端，不再有 uiMode=life 这个身份）。
+// 注意：必须声明在 editionHome 之后 —— 下面的 immediate watch 会在 setup
+// 阶段就求值，提前引用会 TDZ 抛错，整页白屏。
+const effectiveHome = computed(() => editionHome.value)
+// 发行版首页要先有 start tab 才挂得上（否则用户停在终端上切过去看不到）；
+// immediate 覆盖「启动即发行版首页且没恢复出 tab」的白屏场景。
+watch(effectiveHome, (v) => {
+  if (v && tabStore.activeTab?.type !== 'start') {
+    tabStore.createStartTab()
+  }
+}, { immediate: true })
 const sidebarRef = ref<any>(null)
 const aiSidebarRef = ref<any>(null)
+
+// ── 跨模式导航收口（普通模式 → 专业模式落面板）──
+// 普通模式/专有版壳下 Sidebar 是 v-if 卸载的，「app:set-sidebar-view」事件没人
+// 监听会直接丢。这里统一入口：先记住目标视图 → 切回专业模式 → 等侧栏挂载后
+// 再补发。适用：首页宫格「我的站点」、独立面板（PaletteNavigate）的导航条目。
+const pendingNavView = ref('')
+function dispatchSidebarView(view: string) {
+  window.dispatchEvent(new CustomEvent('app:set-sidebar-view', { detail: { view } }))
+}
+async function requestSidebarView(view: string) {
+  if (!view) return
+  sidebarVisible.value = true
+  if (effectiveHome.value && !editionHome.value) {
+    pendingNavView.value = view
+    if (settingsStore.settings.uiMode !== 'pro') settingsStore.setUIMode('pro')
+    await nextTick()
+    if (!pendingNavView.value) return
+    const v = pendingNavView.value
+    pendingNavView.value = ''
+    dispatchSidebarView(v)
+    return
+  }
+  dispatchSidebarView(view)
+  await nextTick()
+}
+
+// 「创建」类动作（新建连接 / 新建站点）的唯一落地实现：命令面板的
+// PaletteAction（Go 广播）与普通模式首页宫格（window 自定义事件）都走这里，
+// 保证两条来源行为一致。
+function runPaletteAction(name: string) {
+  if (name === 'connection') {
+    pendingGroupId.value = undefined
+    editConfig.value = null
+    showConnectionForm.value = true
+  } else if (name === 'site') {
+    // 先落到站点面板（普通模式会先切专业模式，等侧栏挂载），再发创建事件
+    void requestSidebarView('sites').then(() => {
+      window.dispatchEvent(new CustomEvent('site:create'))
+    })
+  }
+}
 
 
 // Input context menu state
@@ -876,7 +931,7 @@ onMounted(async () => {
       const d = data as { view?: string; data?: { view?: string } }
       view = d.view || d.data?.view || ''
     }
-    if (view) window.dispatchEvent(new CustomEvent('app:set-sidebar-view', { detail: { view } }))
+    if (view) void requestSidebarView(view)
   })
   // M18 面板「连接」快捷执行：后端 PaletteConnect 广播连接配置，走既有 onConnect
   unsubPaletteConnect = Events.On('app:palette-connect', (data: unknown) => {
@@ -893,15 +948,18 @@ onMounted(async () => {
       const d = data as { data?: unknown; name?: unknown }
       name = typeof d.data === 'string' ? d.data : typeof d.name === 'string' ? d.name : ''
     }
-    if (name === 'connection') {
-      pendingGroupId.value = undefined
-      editConfig.value = null
-      showConnectionForm.value = true
-    } else if (name === 'site') {
-      window.dispatchEvent(new CustomEvent('app:set-sidebar-view', { detail: { view: 'sites' } }))
-      // 等站点面板挂载后再发创建事件
-      nextTick(() => window.dispatchEvent(new CustomEvent('site:create')))
-    }
+    runPaletteAction(name)
+  })
+  // M23 NAS 主窗的 IT 分组：后端 OpenITTool 先亮起本窗，再广播 {view, action}。
+  // 落成窗口内既有的导航事件（与命令面板同一条路：切侧栏面板 + 可选创建动作）。
+  unsubItTool = Events.On('app:it-tool', (data: unknown) => {
+    const raw = (data && typeof data === 'object' && 'data' in (data as Record<string, unknown>)
+      ? (data as { data: unknown }).data
+      : data) as { view?: string; action?: string } | undefined
+    if (!raw || typeof raw !== 'object') return
+    window.dispatchEvent(new CustomEvent('app:nav-view', {
+      detail: { view: String(raw.view || ''), action: String(raw.action || '') }
+    }))
   })
   document.addEventListener('keydown', onPaletteShortcut, true)
   // 导航请求（首页按钮 / 命令面板）同时确保侧栏展开：Sidebar 只切 activeView，
@@ -909,6 +967,16 @@ onMounted(async () => {
   window.addEventListener('app:set-sidebar-view', () => {
     sidebarVisible.value = true
   })
+  // 跨模式导航入口（普通模式首页宫格等）：统一走 requestSidebarView 收口，
+  // 由它负责「先切专业模式 → 侧栏挂载 → 再落目标面板」的时序。
+  // detail.action 可选：落面板之后补一个「创建」动作（如宫格「创建连接」）。
+  window.addEventListener('app:nav-view', ((e: CustomEvent) => {
+    const view = String(e.detail?.view || '')
+    const action = String(e.detail?.action || '')
+    void requestSidebarView(view).then(() => {
+      if (action) runPaletteAction(action)
+    })
+  }) as EventListener)
   // MCP (external AI agents): approval dialogs + session takeover.
   unsubMcpApproval = Events.On('mcp:approval-request', (ev) => {
     mcpApprovalRequest.value = ev.data as MCPApprovalRequest
@@ -1164,6 +1232,7 @@ onUnmounted(() => {
   unsubPaletteNav?.()
   unsubPaletteConnect?.()
   unsubPaletteAction?.()
+  unsubItTool?.()
   unsubMcpApproval?.()
   unsubMcpSessionCreated?.()
   settingsStore.dispose?.()

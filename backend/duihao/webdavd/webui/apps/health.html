@@ -1,0 +1,284 @@
+{{define "body"}}
+<section id="h-home">
+  <!-- 工具区：宽屏左栏（搜索 + 成员 + 分区 + 新建）/ 窄屏回落成顶部横排 -->
+  <div class="hh-shell">
+    <aside class="hh-rail">
+      <div class="hh-rail-search">
+        <div class="vt-search">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input id="h-q" placeholder="搜机构 / 项目 / 结论" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="hh-rail-h">成员</div>
+      <div class="hh-members" id="h-members"></div>
+
+      <div class="hh-rail-h">分区</div>
+      <div class="hh-nav" id="h-nav">
+        <button class="hh-navb on" data-sec="overview">概览</button>
+        <button class="hh-navb" data-sec="reports">体检报告<i id="h-rep-n"></i></button>
+        <button class="hh-navb" data-sec="trends">趋势</button>
+        <button class="hh-navb" data-sec="daily">日常</button>
+        <button class="hh-navb" data-sec="meds">用药<i id="h-med-n"></i></button>
+        <button class="hh-navb" data-sec="visits">就诊</button>
+      </div>
+
+      <div class="hh-rail-tools">
+        <button id="h-new" class="hh-primary">+ 新建报告</button>
+        <button id="h-addmem">+ 添加成员</button>
+        <div class="hh-rail-mini">
+          <button id="h-export" class="hh-linkb" title="把全部健康数据导成 JSON">导出</button>
+          <button id="h-privacy" class="hh-linkb" title="数值打码，防旁人一眼看到">隐私模式</button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="hh-main" id="h-main">
+      <div class="hh-privhint" id="h-privhint" hidden>
+        <span>隐私模式 · 数值已打码</span>
+        <button id="h-priv-show" class="hh-mini">临时显示 15 秒</button>
+        <button id="h-priv-off" class="hh-linkb">关闭隐私模式</button>
+      </div>
+
+      <!-- 概览 -->
+      <div id="h-overview">
+        <div class="hh-stats" id="h-stats"></div>
+        <h2 class="hh-h">需要留意</h2>
+        <div class="hh-abn" id="h-abn"></div>
+        <h2 class="hh-h">最近报告</h2>
+        <div class="hh-list" id="h-recent"></div>
+      </div>
+
+      <!-- 报告列表 -->
+      <div id="h-reports" hidden>
+        <div class="hh-list" id="h-list"></div>
+        <div class="hh-empty muted" id="h-empty" hidden>还没有报告。点左下「新建报告」，把体检单或化验单的项目抄进来。</div>
+        <div class="hh-more" id="h-more" hidden><button id="h-more-b">加载更多</button></div>
+      </div>
+
+      <!-- 报告详情 -->
+      <div id="h-detail" hidden>
+        <div class="hh-dhead">
+          <div class="hh-dhead-l">
+            <button class="hh-back" id="h-back" title="返回 (Esc)">‹</button>
+            <div>
+              <h2 id="h-dtitle"></h2>
+              <div class="hh-dsub" id="h-dsub"></div>
+            </div>
+          </div>
+          <div class="hh-dhead-r">
+            <button id="h-edit">编辑</button>
+            <button id="h-del" class="hh-danger">删除</button>
+          </div>
+        </div>
+        <div class="hh-mtable-wrap">
+          <table class="hh-mtable">
+            <thead>
+              <tr><th>项目</th><th>结果</th><th>参考范围</th><th>较上次</th></tr>
+            </thead>
+            <tbody id="h-mt"></tbody>
+          </table>
+        </div>
+        <div class="hh-sum" id="h-sum" hidden></div>
+        <h2 class="hh-h">附件 <span class="hh-h-n muted" id="h-atts-n"></span></h2>
+        <div class="hh-atts" id="h-atts"></div>
+        <div class="hh-atts-add">
+          <button id="h-att-up">+ 添加附件</button>
+          <span class="muted">照片 / PDF 存在网盘 _appfiles/health/ 下，可在「网盘」里整理</span>
+        </div>
+      </div>
+
+      <!-- 趋势 -->
+      <div id="h-trends" hidden>
+        <div class="hh-pick" id="h-pick"></div>
+        <div class="hh-chart" id="h-chart">
+          <div class="hh-chart-h">
+            <b id="h-ch-name">—</b>
+            <span id="h-ch-meta" class="muted"></span>
+          </div>
+          <svg id="h-svg" viewBox="0 0 720 260" preserveAspectRatio="xMidYMid meet" role="img"></svg>
+          <div class="hh-chart-f" id="h-ch-foot"></div>
+        </div>
+        <div class="hh-mtable-wrap">
+          <table class="hh-mtable">
+            <thead><tr><th>日期</th><th>结果</th><th>参考范围</th><th>标记</th><th>来源</th></tr></thead>
+            <tbody id="h-pts"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 日常自测 -->
+      <div id="h-daily" hidden>
+        <div class="hh-quick">
+          <div class="hh-quick-kinds" id="h-vk"></div>
+          <div class="hh-quick-form">
+            <label class="hh-f">数值
+              <div class="hh-dual">
+                <input id="h-v1" inputmode="decimal" placeholder="—">
+                <span id="h-v2-wrap" hidden><em>/</em><input id="h-v2" inputmode="decimal" placeholder="舒张压"></span>
+                <span class="hh-unit-fix" id="h-vunit"></span>
+              </div>
+            </label>
+            <label class="hh-f">时间<input id="h-vtime" type="datetime-local"></label>
+            <label class="hh-f">备注<input id="h-vnote" maxlength="120" placeholder="选填，如 早餐后 / 运动后"></label>
+            <button id="h-vsave" class="hh-primary">记录</button>
+          </div>
+          <p class="hh-hint muted" id="h-vhint">点一下类型再填数值；同一天多测几次就多记几条。</p>
+        </div>
+        <h2 class="hh-h">最近记录 <span class="hh-h-n muted">今日 / 最近 60 条</span></h2>
+        <div class="hh-vlist" id="h-vlist"></div>
+      </div>
+
+      <!-- 用药 -->
+      <div id="h-meds" hidden>
+        <div class="hh-sec-h">
+          <h2 class="hh-h" style="margin:0">在服用药</h2>
+          <button id="h-med-new" class="hh-mini">+ 添加</button>
+        </div>
+        <div class="hh-medlist" id="h-med-list"></div>
+        <h2 class="hh-h">已停 / 历史</h2>
+        <div class="hh-medlist" id="h-med-old"></div>
+      </div>
+
+      <!-- 就诊 -->
+      <div id="h-visits" hidden>
+        <div class="hh-sec-h">
+          <h2 class="hh-h" style="margin:0">就诊记录</h2>
+          <button id="h-vis-new" class="hh-mini">+ 添加</button>
+        </div>
+        <div class="hh-vslist" id="h-vs-list"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 成员弹窗 -->
+<div class="mask" id="h-mmask" hidden>
+  <div class="dlg hh-dlg-sm">
+    <h3 id="h-mtitle">添加成员</h3>
+    <label class="hh-f">姓名<input id="h-mname" maxlength="16" placeholder="例如 父亲"></label>
+    <label class="hh-f">关系
+      <select id="h-mrel">
+        <option value="本人">本人</option>
+        <option value="父亲">父亲</option>
+        <option value="母亲">母亲</option>
+        <option value="配偶">配偶</option>
+        <option value="子女">子女</option>
+        <option value="其他">其他</option>
+      </select>
+    </label>
+    <div class="hh-f2">
+      <label class="hh-f">性别
+        <select id="h-msex"><option value="">不填</option><option value="男">男</option><option value="女">女</option></select>
+      </label>
+      <label class="hh-f">生日<input id="h-mbirth" type="date"></label>
+    </div>
+    <label class="hh-f">身高 (cm)<input id="h-mheight" type="number" step="0.1" min="30" max="260" placeholder="选填，用于算 BMI"></label>
+    <div class="hh-acts">
+      <button id="h-mcancel">取消</button>
+      <button id="h-msave" class="hh-primary">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 报告弹窗 -->
+<div class="mask" id="h-rmask" hidden>
+  <div class="dlg hh-dlg">
+    <h3 id="h-rtitle">新建报告</h3>
+    <div class="hh-f3">
+      <label class="hh-f">成员<select id="h-rmem"></select></label>
+      <label class="hh-f">类型
+        <select id="h-rkind">
+          <option value="checkup">体检</option>
+          <option value="lab">化验</option>
+          <option value="imaging">影像</option>
+          <option value="other">其他</option>
+        </select>
+      </label>
+      <label class="hh-f">日期<input id="h-rdate" type="date"></label>
+    </div>
+    <div class="hh-f3">
+      <label class="hh-f">标题<input id="h-rt" maxlength="60" placeholder="留空自动生成"></label>
+      <label class="hh-f">机构<input id="h-rorg" placeholder="例如 市一院体检中心"></label>
+      <label class="hh-f">科室<input id="h-rdept" placeholder="选填"></label>
+    </div>
+
+    <div class="hh-metrics-h">
+      <span>指标明细</span>
+      <button id="h-addrow" class="hh-mini">+ 添加一行</button>
+    </div>
+    <div class="hh-mtable-wrap hh-mtable-edit">
+      <table class="hh-mtable">
+        <thead>
+          <tr><th>项目</th><th>结果</th><th>单位</th><th>参考下限</th><th>参考上限</th><th>定性结果</th><th></th></tr>
+        </thead>
+        <tbody id="h-rows"></tbody>
+      </table>
+    </div>
+    <p class="hh-hint muted">参考范围填了才会自动判高低；定性项目（阴性/阳性）填在最后一列。</p>
+
+    <label class="hh-f">结论 / 医生意见<textarea id="h-rsum" rows="2" placeholder="选填"></textarea></label>
+    <div class="hh-acts">
+      <button id="h-rcancel">取消</button>
+      <button id="h-rsave" class="hh-primary">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 用药弹窗 -->
+<div class="mask" id="h-dmask" hidden>
+  <div class="dlg hh-dlg-sm">
+    <h3 id="h-dtitle2">添加用药</h3>
+    <label class="hh-f">药名<input id="h-dname" maxlength="40" placeholder="例如 阿托伐他汀钙片"></label>
+    <div class="hh-f2">
+      <label class="hh-f">单次剂量<input id="h-ddose" placeholder="20mg · 1片"></label>
+      <label class="hh-f">用法
+        <select id="h-droute">
+          <option value="口服">口服</option>
+          <option value="外用">外用</option>
+          <option value="注射">注射</option>
+          <option value="吸入">吸入</option>
+          <option value="">其他</option>
+        </select>
+      </label>
+    </div>
+    <label class="hh-f">频次<input id="h-dfreq" placeholder="每日一次 睡前"></label>
+    <div class="hh-f2">
+      <label class="hh-f">开始<input id="h-dstart" type="date"></label>
+      <label class="hh-f">结束<input id="h-dend" type="date"></label>
+    </div>
+    <label class="hh-f">备注<textarea id="h-dnote" rows="2" placeholder="选填：谁开的、吃了有什么反应"></textarea></label>
+    <label class="hh-f hh-check"><input id="h-dstop" type="checkbox"> 已停用</label>
+    <div class="hh-acts">
+      <button id="h-dcancel">取消</button>
+      <button id="h-dsave" class="hh-primary">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 就诊弹窗 -->
+<div class="mask" id="h-smask" hidden>
+  <div class="dlg hh-dlg-sm">
+    <h3 id="h-stitle">添加就诊</h3>
+    <div class="hh-f2">
+      <label class="hh-f">日期<input id="h-sdate" type="date"></label>
+      <label class="hh-f">费用 (元)<input id="h-scost" inputmode="decimal" placeholder="选填"></label>
+    </div>
+    <div class="hh-f2">
+      <label class="hh-f">机构<input id="h-sorg" placeholder="例如 市一院"></label>
+      <label class="hh-f">科室<input id="h-sdept" placeholder="心内科"></label>
+    </div>
+    <label class="hh-f">医生<input id="h-sdoctor" placeholder="选填"></label>
+    <label class="hh-f">就诊原因<input id="h-sreason" maxlength="80" placeholder="主诉 / 复查 / 开药"></label>
+    <label class="hh-f">诊断<textarea id="h-sdiag" rows="2" placeholder="选填，按病历抄"></textarea></label>
+    <label class="hh-f">医嘱<textarea id="h-sadv" rows="2" placeholder="选填"></textarea></label>
+    <div class="hh-acts">
+      <button id="h-scancel">取消</button>
+      <button id="h-ssave" class="hh-primary">保存</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="h-file" multiple hidden>
+<script src="/-ui/apps/health.js"></script>
+{{end}}

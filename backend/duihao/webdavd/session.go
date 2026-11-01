@@ -63,9 +63,14 @@ func sessMAC(key []byte, user string, exp int64) []byte {
 	return m.Sum(nil)
 }
 
-// issueToken 为用户签发会话 token。
+// issueToken 为用户签发会话 token（完整有效期）。
 func issueToken(key []byte, user string) string {
-	exp := time.Now().Add(sessTTL).Unix()
+	return issueTokenTTL(key, user, sessTTL)
+}
+
+// issueTokenTTL 按指定有效期签发 token（扫码快传走短 TTL，见 quick.go）。
+func issueTokenTTL(key []byte, user string, ttl time.Duration) string {
+	exp := time.Now().Add(ttl).Unix()
 	payload := user + "|" + strconv.FormatInt(exp, 10)
 	sig := base64.RawURLEncoding.EncodeToString(sessMAC(key, user, exp))
 	return base64.RawURLEncoding.EncodeToString([]byte(payload)) + "." + sig

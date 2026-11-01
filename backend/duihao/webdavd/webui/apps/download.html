@@ -1,0 +1,99 @@
+{{define "body"}}
+<section id="d-home">
+  <div class="dl-wrap">
+
+    <!-- 组件未装：先说清楚要下什么、多大、为什么，不偷偷下 -->
+    <div class="dl-setup" id="d-setup" hidden>
+      <div class="dl-setup-bd">
+        <b>启用下载需要一个运行组件</b>
+        <p class="muted">aria2（约 4MB）负责取文件、断点续传、磁力与 BT。对号不内置它 ——
+          aria2 按 GPLv2 分发，对号只调用你机器上的副本，不打包不分发；装好之后全程本机运行，
+          数据不出这台机器。</p>
+        <div class="dl-setup-row">
+          <button class="dl-primary" id="d-install">下载并启用</button>
+          <button class="dl-ghost" id="d-import">导入本地 zip</button>
+          <span class="muted" id="d-comp-hint"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 新建任务 -->
+    <div class="dl-new">
+      <textarea id="d-urls" rows="3" spellcheck="false"
+        placeholder="粘贴链接，一行一个&#10;http / https / ftp 直链，或 magnet:?xt=urn:btih:… 磁力链接"></textarea>
+      <div class="dl-new-row">
+        <label class="dl-sel">存到
+          <select id="d-dir">
+            <option value="download">下载目录</option>
+            <option value="video">影视库（下完进片库）</option>
+            <option value="music">音乐库（下完进曲库）</option>
+          </select>
+        </label>
+        <span class="dl-tip" id="d-free"></span>
+        <button class="dl-primary" id="d-add">开始下载</button>
+      </div>
+      <p class="dl-warn muted">只接受你自己粘进来的链接。对号不提供搜索、索引或任何种子源 ——
+        请只下载你有权获取的内容。</p>
+    </div>
+
+    <!-- 工具条 -->
+    <div class="dl-topbar">
+      <div class="dl-stats" id="d-stats">队列是空的</div>
+      <div class="dl-tools">
+        <button class="dl-ghost" id="d-set">限速与并发</button>
+        <button class="dl-ghost" id="d-engine">停止引擎</button>
+      </div>
+    </div>
+
+    <div class="dl-list" id="d-list"></div>
+
+    <div class="dl-empty" id="d-empty" hidden>
+      <b>还没有下载任务</b>
+      <span>把链接粘到上面就能开始。选「影视库」或「音乐库」的任务，下完会自动出现在对应的页面里 —— 不用再搬一次。</span>
+    </div>
+  </div>
+
+  <!-- 限速与并发 -->
+  <div class="dl-mask" id="d-mask" hidden>
+    <div class="dl-dlg">
+      <div class="dl-dlg-h">
+        <b>限速与并发</b>
+        <button class="dl-x" id="d-x">×</button>
+      </div>
+      <div class="dl-dlg-b">
+        <div class="dl-row2">
+          <label class="dl-f"><span>同时下载</span>
+            <input class="dl-in" id="d-maxconc" type="number" min="1" max="10" value="3">
+            <em>1~10 个，再多也受带宽限制</em></label>
+          <label class="dl-f"><span>下载限速（KB/s）</span>
+            <input class="dl-in" id="d-down" type="number" min="0" value="0">
+            <em>0 = 不限速</em></label>
+        </div>
+        <div class="dl-row2">
+          <label class="dl-f"><span>上传限速（KB/s）</span>
+            <input class="dl-in" id="d-up" type="number" min="0" value="0">
+            <em>0 = 不限速</em></label>
+          <label class="dl-f"><span>新任务默认存到</span>
+            <select class="dl-in" id="d-autodir">
+              <option value="download">下载目录</option>
+              <option value="video">影视库</option>
+              <option value="music">音乐库</option>
+            </select></label>
+        </div>
+        <label class="dl-check"><input type="checkbox" id="d-btnet" checked>
+          <span>允许 BT 网络（DHT 与 6881-6899 监听端口）</span></label>
+        <p class="dl-hint muted">关掉它，对号不再往公网暴露任何监听端口 —— 但磁力链接基本就找不到源了。
+          局域网自用建议开着。</p>
+        <label class="dl-check"><input type="checkbox" id="d-seed">
+          <span>下完继续做种 24 小时</span></label>
+        <p class="dl-hint muted">默认不做种：下完即停，省上传带宽。做种是 BT 的礼节，但家用宽带通常不需要。</p>
+      </div>
+      <div class="dl-dlg-f">
+        <span class="muted" id="d-set-hint"></span>
+        <button class="dl-primary" id="d-save">保存</button>
+      </div>
+    </div>
+  </div>
+</section>
+<script src="/-ui/apps/download.js"></script>
+{{end}}

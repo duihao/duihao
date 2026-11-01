@@ -586,6 +586,11 @@ func (m *Manager) List() []View {
 	out := make([]View, 0, len(recs))
 	for _, rec := range recs {
 		v := View{Record: *rec, Live: m.Status(rec.ID)}
+		// 早期版本装配的实例没有落 name，前端下拉/卡片会渲染成 "undefined · nginx-1"。
+		// 视图层按清单名回填（只改内存视图，不写回注册表，避免每次 List 都触发落盘）。
+		if v.Name == "" {
+			v.Name = m.displayName(rec.Plugin)
+		}
 		if !m.isEmbedded(rec.Plugin) {
 			v.Pids = m.proc.PIDs(rec.ID)
 		}
@@ -595,6 +600,16 @@ func (m *Manager) List() []View {
 		out = append(out, v)
 	}
 	return out
+}
+
+// displayName 插件展示名（清单 name），清单缺失时退化为插件 id。
+func (m *Manager) displayName(plugin string) string {
+	if m.plugins != nil {
+		if man, ok := m.plugins.Get(plugin); ok && man != nil && man.Name != "" {
+			return man.Name
+		}
+	}
+	return plugin
 }
 
 // Status 活状态（error 需 UI 标红）。

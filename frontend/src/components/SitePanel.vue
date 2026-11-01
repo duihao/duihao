@@ -71,7 +71,7 @@
       </div>
     </div>
 
-    <!-- 全部站点总览：点面板标题「网站」打开，一次看全所有站点 -->
+    <!-- 全部站点总览：点面板标题「站点」打开，一次看全所有站点 -->
     <el-dialog
       v-model="allDlg"
       :title="t('sites.allTitle')"
@@ -147,7 +147,7 @@
       <pre class="sp-log">{{ logText }}</pre>
     </el-drawer>
 
-    <!-- 新建 / 编辑共用同一个「网站」对话框：基本配置就是第一屏（对齐 phpStudy） -->
+    <!-- 新建 / 编辑共用同一个「站点」对话框：基本配置就是第一屏（对齐 phpStudy） -->
     <SiteDialog v-model:visible="siteDlg" :site="dlgSite" @saved="refresh" />
 
     <!-- 一键部署程序（DuihaoCMS / WordPress / Typecho / 自定义） -->

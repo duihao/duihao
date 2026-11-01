@@ -1,7 +1,8 @@
 <template>
-  <!-- uTools 桌面小球：圆形品牌钮 + 半透明外圈。左键 = 与 Alt+Space 相同的
-       切换（App.PaletteToggle）；按住拖拽 = 移动窗口，松手记住落点；右键 =
-       原生操作菜单（主窗口 / 设置 / 退出，App.ShowFloatMenu）。 -->
+  <!-- uTools 桌面小球：只有一枚圆形品牌图标，窗口背景全透明（无外圈、无底色、
+       无投影）。左键 = 与 Alt+Space 相同的切换（App.PaletteToggle）；按住拖拽
+       = 移动窗口，松手记住落点；右键 = 原生操作菜单（主窗口 / 设置 / 退出，
+       App.ShowFloatMenu）。 -->
   <div
     ref="el"
     class="fi-wrap"
@@ -14,6 +15,7 @@
     @click="onClick"
     @contextmenu.prevent="onMenu"
   >
+    <span class="fi-ring" aria-hidden="true"></span>
     <img class="fi-logo" src="/float-icon.png" alt="对号" draggable="false" />
   </div>
 </template>
@@ -26,8 +28,13 @@ import { HideFloatMenu, PaletteToggle, ShowFloatMenu } from '../bindings/github.
 const el = ref<HTMLDivElement | null>(null)
 const dragging = ref(false)
 
-const POS_KEY = 'duihao.floatPos'
-const BALL = 44
+const POS_KEY = 'duihao.floatPos.v2'
+// 球窗逻辑尺寸：40px 图标 + 两侧各 4px 白边 = 48，横向再留 12×2（阴影左右
+// 羽化）、纵向留上 10 / 下 20（阴影 `0 5px 12px` 往下落）。改环宽/阴影必须
+// 重算，并同步 main.go 里 floatWin 的 Width/Height/MinWidth/MinHeight 和两处
+// forceWindowSize（系统会按最小跟踪尺寸把窗掰大，不掰回来环和阴影会被裁）。
+const BALL_W = 72
+const BALL_H = 78
 const DRAG_SLOP = 4
 
 // 拖拽位移必须用 **screenX/screenY**（绝对屏幕坐标），不能用 clientX/clientY：
@@ -167,13 +174,17 @@ async function onMenu() {
   }
 }
 
-// 启动定位：默认主屏右缘偏下（uTools 同款），有记忆位就恢复并钳回屏幕内
-// （换显示器后不会丢球）。Go 侧首显钩子不摆位置，避免盖掉用户拖拽落点。
+// 启动定位（用户定稿）：默认**居右 10px、距底 100px**（按窗口外框算，不是图标
+// 外缘 —— 窗内右侧留了 12px 阴影、底部留了 20px，肉眼看到的是图标比这再进一点）。
+// 有记忆位就恢复并钳回屏幕内（换显示器 / 改分辨率后不会丢球）。
+// 注意 POS_KEY 升到 .v2：默认位变了，旧记忆会让新默认位永远看不到。
 onMounted(() => {
-  const maxX = Math.max(0, window.screen.availWidth - BALL)
-  const maxY = Math.max(0, window.screen.availHeight - BALL)
-  let x = maxX - 12
-  let y = Math.round(window.screen.availHeight * 0.58) - BALL / 2
+  // 钳制边界用「窗口完全在屏内」的真极限；默认位另算（含 10 / 100 的留白），
+  // 否则用户把球拖到最右下角，重启会被默认位的留白拉回来。
+  const maxX = Math.max(0, window.screen.availWidth - BALL_W)
+  const maxY = Math.max(0, window.screen.availHeight - BALL_H)
+  let x = Math.max(0, maxX - 10)
+  let y = Math.max(0, maxY - 100)
   try {
     const saved = localStorage.getItem(POS_KEY)
     if (saved) {
@@ -192,62 +203,81 @@ onMounted(() => {
 
 <style>
 /* 非 scoped：scoped 会给选择器追加 data-v 属性，html/body/#app 匹配不上，
-   全局 style.css 的深色 body 背景（+ 1px padding 内缩 = 白边线）就会透出来。 */
+   全局 style.css 的深色 body 背景（+ 1px padding 内缩 = 白边线）就会透出来。
+   **完全透明**：这里必须把全局的 #app 主题渐变、body::before 噪点都压掉，
+   否则窗口里会留一层几乎看不见的灰膜（噪点 opacity 0.015 在浅色桌面上
+   仍能看出一个方块）。 */
 html, body, #app {
   margin: 0 !important;
   padding: 0 !important;
   border: none !important;
-  background: transparent !important;
+  border-radius: 0 !important;
+  background: none !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
   overflow: hidden;
   width: 100%;
   height: 100%;
 }
+/* style.css 的 body::before 噪点纹理：整窗一层，透明窗上就是灰膜 */
+html body::before {
+  display: none !important;
+}
 </style>
 
 <style scoped>
-/* 半透明外圈：44px 窗口内一圈淡色圆环，球体 34px 居中，环带约 5px。
-   白色半透明在浅色/深色桌面上都能看出轮廓；外描 1px 极淡黑边保证白桌面
-   上也有边界。 */
+/* 图标 + 一圈 4px 纯白描边 + 描边外的向下投影：窗口 72×78（横向 48+24、
+   纵向 48+30，阴影要落在窗口内，否则被边界硬裁成一道直线）。
+   圆心 (36,34)，即左右留 12、上留 10、下留 20 —— 下留得多是为了装阴影。
+   窗口背景仍是全透明，四角透出壁纸。 */
 .fi-wrap {
   box-sizing: border-box;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.07),
-    inset 0 0 6px rgba(255, 255, 255, 0.12),
-    0 2px 10px rgba(0, 0, 0, 0.22);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 78px;
+  padding: 10px 12px 20px;
+  background: transparent;
+  border: none;
   cursor: pointer;
   user-select: none;
   touch-action: none;
-  transition:
-    background 0.12s ease,
-    border-color 0.12s ease,
-    transform 0.12s ease;
 }
-.fi-wrap:hover {
-  background: rgba(255, 255, 255, 0.22);
-  border-color: rgba(255, 255, 255, 0.65);
+/* 白环 + 投影都画在 40px 的环元素上（与图标同尺寸、同格叠放）：
+   ① `0 0 0 4px #fff` 是外扩 4 的实心白环（外径 48）；
+   ② `0 4px 10px rgba(0,0,0,.22)` 是白环之外的向下投影 —— 前一层不透明，
+      阴影在环内侧看不见，只在环外侧露出一圈，正好是「浮」起来的感觉。
+   用 box-shadow 而不是 border：不吃盒模型，图标不会被挤小。 */
+/* 白边留 30% 透明度（alpha .7）：纯白边在浅色壁纸上太"死"，半透明后
+   既压得住图标边缘，又不会像贴纸；下层的 0 5px 12px 投影会透上来一点，
+   底缘自然变柔。 */
+.fi-ring {
+  grid-area: 1 / 1;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 4px rgba(255, 255, 255, 0.7),
+    0 5px 12px rgba(0, 0, 0, 0.26);
+  pointer-events: none;
+}
+/* 悬停只提亮图标本身，不放大、不加底色（放大已按要求去掉） */
+.fi-wrap:hover .fi-logo {
+  filter: brightness(1.07) saturate(1.04);
 }
 .fi-wrap.dragging {
-  transform: scale(1.06);
-  border-color: rgba(255, 255, 255, 0.7);
-  background: rgba(255, 255, 255, 0.26);
   cursor: grabbing;
 }
 .fi-logo {
+  grid-area: 1 / 1;
   display: block;
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   object-fit: cover;
   border-radius: 50%;
   pointer-events: none;
   user-select: none;
   -webkit-user-drag: none;
+  transition: filter 0.12s ease;
 }
 </style>

@@ -1,0 +1,44 @@
+{{define "body"}}
+<section id="u-home">
+  <div class="dl-wrap">
+
+    <div class="rm-card rm-wide">
+      <div class="rm-card-hd"><b>用户</b><span class="rm-tag">NAS 账号 · 模块权限</span></div>
+      <p class="muted rm-lead">NAS 账号只管网页里的模块（读写两档）；手机/电脑挂载网盘用的是共享账号，不受这里限制。第一个账号是管理员，密码在「连接管理」里可查看。</p>
+      <table class="u-table">
+        <thead><tr>
+          <th>账号</th><th>角色</th><th>状态</th><th>建号时间</th><th>操作</th>
+        </tr></thead>
+        <tbody id="u-rows"><tr><td colspan="5" class="muted">加载中…</td></tr></tbody>
+      </table>
+      <div class="u-acts">
+        <button class="rm-btn" id="u-new">新建用户</button>
+        <button class="rm-btn" id="u-mypass">修改我的密码</button>
+      </div>
+    </div>
+
+    <div class="rm-card rm-wide" id="u-editor" hidden>
+      <div class="rm-card-hd"><b id="u-ed-title">新建用户</b><span class="rm-tag" id="u-ed-uid"></span></div>
+      <div class="u-form">
+        <label>账号<input id="u-f-name" placeholder="2-32 个字符，不能含空格" autocomplete="off"></label>
+        <label>密码<input id="u-f-pass" type="password" placeholder="至少 6 位" autocomplete="new-password"></label>
+        <label class="u-role">角色
+          <select id="u-f-role">
+            <option value="member">成员（按模块授权）</option>
+            <option value="admin">管理员（全部模块）</option>
+          </select>
+        </label>
+      </div>
+      <div id="u-f-perms" class="u-perms">
+        <p class="muted">模块权限（读 = 能看；读写 = 能改）：</p>
+      </div>
+      <div class="u-acts">
+        <button class="rm-btn primary" id="u-save">保存</button>
+        <button class="rm-btn" id="u-cancel">取消</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+<script src="/-ui/apps/users.js"></script>
+{{end}}

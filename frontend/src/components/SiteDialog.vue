@@ -87,7 +87,7 @@
                     <el-select v-model="f.ftpInstance" size="small" class="sd-grow" :placeholder="t('sites.ftpNoInstance')">
                       <el-option
                         v-for="i in ftpInstances" :key="i.id"
-                        :label="`${i.name} · ${i.id} · :${i.ports.ftp}`" :value="i.id"
+                        :label="instLabel(i, 'ftp')" :value="i.id"
                       />
                     </el-select>
                   </div>
@@ -105,7 +105,7 @@
                 <div class="sd-subrow">
                   <span class="sd-sublabel">{{ t('sites.dbInstance') }}</span>
                   <el-select v-model="f.dbInstance" size="small" class="sd-grow" :placeholder="t('sites.dbNoInstance')">
-                    <el-option v-for="i in dbInstances" :key="i.id" :label="`${i.name} · ${i.id} · :${i.ports.db}`" :value="i.id" />
+                    <el-option v-for="i in dbInstances" :key="i.id" :label="instLabel(i, 'db')" :value="i.id" />
                   </el-select>
                   <span class="sd-sublabel">{{ t('sites.dbName') }}</span>
                   <el-input v-model="f.dbName" size="small" class="sd-grow" />
@@ -158,7 +158,7 @@
               <el-select v-model="f.web" size="small" :placeholder="t('sites.needWeb')">
                 <el-option
                   v-for="i in nginxInstances" :key="i.id"
-                  :label="`${i.name} · ${i.id} · :${i.ports.http}`" :value="i.id"
+                  :label="instLabel(i, 'http')" :value="i.id"
                 />
               </el-select>
             </div>
@@ -365,10 +365,19 @@ const phpChoices = computed<PhpChoice[]>(() => {
   }
   return out
 })
+// 实例下拉文案：名称缺失退化为插件 id、端口缺失整段省略，
+// 避免早期装配的记录（没有 name 字段）在界面上渲染出 "undefined · xxx"。
+function instLabel(i: InstanceView, role: string): string {
+  const name = i.name || i.plugin || i.id
+  const port = i.ports?.[role]
+  return port ? `${name} · ${i.id} · :${port}` : `${name} · ${i.id}`
+}
+
 function phpLabel(c: PhpChoice): string {
   if (!c.instanceId) return `PHP ${c.version} · ${t('sites.phpAutoInstall')}`
   const live = c.live === 'running' ? ` · ${t('sites.running')}` : ''
-  return `PHP ${c.version} · ${c.instanceId} · :${c.port}${live}`
+  const port = c.port ? ` · :${c.port}` : ''
+  return `PHP ${c.version} · ${c.instanceId}${port}${live}`
 }
 
 // 版本 → 实例 id：已装直接用，没装就装配一个（首次会取包，可能要等一会）。
@@ -398,7 +407,10 @@ const dbLinked = computed(() => !isCreate.value && !!props.site?.db && !!props.s
 
 const webLabel = computed(() => {
   const i = instances.value.find(x => x.id === props.site?.web)
-  return i ? `${i.name}@${i.version} · ${i.id} · :${i.ports.http}` : (props.site?.web || '—')
+  if (!i) return props.site?.web || '—'
+  const name = i.name || i.plugin || i.id
+  const port = i.ports?.http ? ` · :${i.ports.http}` : ''
+  return `${name}@${i.version} · ${i.id}${port}`
 })
 
 const f = reactive({

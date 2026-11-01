@@ -1,0 +1,250 @@
+{{define "body"}}
+<section class="kb">
+  <!-- 顶部三张主统计卡（对应参考页的 总文章数 / 今日添加 / 本月添加） -->
+  <div class="kb-stats">
+    <div class="kb-stat">
+      <div class="kb-stat-t">笔记总数</div>
+      <div class="kb-stat-num"><b id="stat-total">0</b><small>DOCS</small></div>
+      <div class="kb-stat-foot"><span id="stat-cats">覆盖 0 个分类</span><span class="kb-ok">本机存储</span></div>
+    </div>
+    <div class="kb-stat">
+      <div class="kb-stat-t">累计阅读</div>
+      <div class="kb-stat-num"><b id="stat-views">0</b><small>VIEWS</small></div>
+      <div class="kb-stat-foot"><span>打开即计一次</span><span class="kb-ok">实时统计</span></div>
+    </div>
+    <div class="kb-stat">
+      <div class="kb-stat-t">今日新增</div>
+      <div class="kb-stat-num"><b id="stat-today">0</b><small>ENTRIES</small></div>
+      <div class="kb-stat-foot"><span>今天新写的笔记</span><span class="kb-ok">实时统计</span></div>
+    </div>
+    <div class="kb-stat">
+      <div class="kb-stat-t">昨日新增</div>
+      <div class="kb-stat-num"><b id="stat-yesterday">0</b><small>ENTRIES</small></div>
+      <div class="kb-stat-foot"><span>昨天累计篇数</span><span class="kb-ok">持续沉淀</span></div>
+    </div>
+  </div>
+
+  <!-- 时间维度汇总：本周 / 上周 / 本月 / 上月 / 今年 / 去年（今日/昨日已在主卡） -->
+  <div class="kb-dims" id="dims"></div>
+
+  <!-- 两栏：左分类导航 + 右搜索/卡片流 -->
+  <div class="kb-layout">
+    <aside class="kb-side">
+      <div class="kb-side-h">
+        <span>笔记分类</span>
+        <button id="btn-cats" class="link-btn">管理</button>
+      </div>
+      <nav class="kb-side-nav" id="cats"></nav>
+      <div class="kb-side-foot">
+        <span class="muted" id="cat-count"></span>
+        <span class="kb-side-foot-acts">
+          <button id="btn-cats2" class="ghost-btn">管理分类</button>
+          <button id="btn-export" class="ghost-btn" title="导出为 JSON（数据自救出口）">导出</button>
+        </span>
+      </div>
+    </aside>
+
+    <div class="kb-content">
+      <!-- 搜索 + 日期区间 + 排序 -->
+      <div class="kb-search">
+        <label class="kb-search-box">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+          <input id="q" placeholder="搜索标题、正文关键词，回车搜索" autocomplete="off">
+        </label>
+        <div class="kb-range">
+          <input id="from" type="date" class="kb-date" title="起始日期">
+          <span class="muted">至</span>
+          <input id="to" type="date" class="kb-date" title="结束日期">
+          <button id="btn-clear" class="ghost-btn" title="清除搜索与日期">清除</button>
+          <select id="sort" class="kb-sort" title="排序方式">
+            <option value="new">最新添加</option>
+            <option value="updated">最近修改</option>
+            <option value="old">最早上传</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 工具行（参照账本：视图切换 · 时间维度 · 操作按钮 同一行） -->
+      <div class="lg-bar kb-bar">
+        <div class="lg-tabs" id="viewtabs">
+          <button type="button" data-view="cards" class="on">卡片</button>
+          <button type="button" data-view="cats">分类汇总</button>
+        </div>
+        <div class="lg-tabs" id="ranges">
+          <button type="button" data-range="all" class="on">全部</button>
+          <button type="button" data-range="today">今日</button>
+          <button type="button" data-range="yesterday">昨日</button>
+          <button type="button" data-range="week">本周</button>
+          <button type="button" data-range="lastweek">上周</button>
+          <button type="button" data-range="month">本月</button>
+          <button type="button" data-range="lastmonth">上月</button>
+          <button type="button" data-range="year">今年</button>
+          <button type="button" data-range="lastyear">去年</button>
+        </div>
+        <div class="lg-bar-acts">
+          <button id="btn-new" class="lg-primary">+ 添加笔记</button>
+        </div>
+      </div>
+
+      <div id="cardview">
+        <div class="kb-grid" id="list"></div>
+      </div>
+
+      <!-- 分类汇总视图（与账本分类统计同形态，共用同一套筛选） -->
+      <div id="catview" hidden>
+        <div class="lg-statsec" id="cat-panel"></div>
+        <div class="lg-empty" id="cat-empty" hidden><p class="muted">当前筛选范围内还没有笔记。</p></div>
+      </div>
+
+      <!-- 底部：总数 + 分页（两个视图共用） -->
+      <div class="kb-foot">
+        <span class="muted" id="foot-total">共 0 篇笔记</span>
+        <div class="kb-pager" id="pager">
+          <button id="pg-prev" class="ghost-btn">上一页</button>
+          <span id="pg-info" class="muted">1 / 1</span>
+          <button id="pg-next" class="ghost-btn">下一页</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 浏览笔记（点卡片先看，编辑走这里的「编辑」按钮） -->
+<div class="mask" id="view-mask" hidden>
+  <div class="kb-dlg">
+    <div class="kb-dlg-head">
+      <h3 id="view-title"></h3>
+      <span class="kb-head-btns">
+        <button class="kb-max" id="view-max" title="放大">⛶</button>
+        <button class="kb-x" id="view-close" title="关闭">×</button>
+      </span>
+    </div>
+    <div class="kb-view-meta" id="view-meta"></div>
+    <img id="view-cover" alt="封面" hidden>
+    <div id="view-body" class="kb-view-body"></div>
+    <div class="kb-dlg-foot">
+      <span id="view-views" class="muted"></span>
+      <div class="acts">
+        <button id="btn-view-del" class="danger-btn">删除</button>
+        <button id="btn-view-edit" class="primary">编辑</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 编辑弹窗：标题 + 分类 + 富文本工具栏 + 正文 -->
+<div class="mask" id="edit-mask" hidden>
+  <div class="kb-dlg">
+    <div class="kb-dlg-head">
+      <h3 id="edit-head">添加新笔记</h3>
+      <span class="kb-head-btns">
+        <button class="kb-max" id="edit-max" title="放大">⛶</button>
+        <button class="kb-x" id="edit-close" title="关闭">×</button>
+      </span>
+    </div>
+    <input id="title" class="kb-title-input" placeholder="请输入笔记标题…" autocomplete="off">
+    <!-- 封面图：图片存网盘 _appfiles/notes/，笔记里只记路径 -->
+    <div class="kb-cover-edit">
+      <img id="cover-img" alt="封面" hidden>
+      <div class="kb-cover-ph" id="cover-ph">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M4 18l5-5 4 4 3-3 4 4"/></svg>
+        <span>未设置封面</span>
+      </div>
+      <div class="kb-cover-acts">
+        <button id="btn-cover-up" class="ghost-btn" type="button">上传封面</button>
+        <button id="btn-cover-pick" class="ghost-btn" type="button">从网盘选</button>
+        <button id="btn-cover-del" class="link-btn" type="button" hidden>移除封面</button>
+      </div>
+    </div>
+    <div class="kb-editbar">
+      <div class="kb-chips" id="edit-cats"></div>
+      <input id="new-cat" class="kb-mini" placeholder="新分类，回车添加" autocomplete="off">
+      <button id="btn-src" class="link-btn">切换源码模式</button>
+    </div>
+    <div class="kb-toolbar" id="toolbar">
+      <select id="fmt" title="段落格式">
+        <option value="p">正文</option>
+        <option value="h2">标题 2</option>
+        <option value="h3">标题 3</option>
+      </select>
+      <span class="kb-sep"></span>
+      <button type="button" data-cmd="bold" title="粗体"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="斜体"><i>I</i></button>
+      <button type="button" data-cmd="underline" title="下划线"><u>U</u></button>
+      <button type="button" data-cmd="strikeThrough" title="删除线"><s>S</s></button>
+      <span class="kb-sep"></span>
+      <button type="button" data-cmd="insertUnorderedList" title="无序列表">•</button>
+      <button type="button" data-cmd="insertOrderedList" title="有序列表">1.</button>
+      <button type="button" data-cmd="formatBlock" data-val="blockquote" title="引用">”</button>
+      <button type="button" data-cmd="formatBlock" data-val="pre" title="代码块">&lt;/&gt;</button>
+      <span class="kb-sep"></span>
+      <button type="button" data-cmd="link" title="插入链接">🔗</button>
+      <button type="button" data-act="ins-img" title="插入图片（上传到网盘 _appfiles）">🖼️</button>
+      <button type="button" data-act="ins-video" title="插入视频（上传到网盘 _appfiles）">🎬</button>
+      <button type="button" data-act="ins-audio" title="插入音频（上传到网盘 _appfiles）">🎵</button>
+      <button type="button" data-act="ins-file" title="插入文件（上传到网盘 _appfiles）">📎</button>
+      <button type="button" data-act="ins-pick" title="从网盘选择文件插入">📂</button>
+      <button type="button" data-cmd="insertHorizontalRule" title="分隔线">—</button>
+      <span class="kb-sep"></span>
+      <button type="button" data-cmd="removeFormat" title="清除格式">Tx</button>
+      <span class="kb-sep"></span>
+      <button type="button" data-cmd="undo" title="撤销">↶</button>
+      <button type="button" data-cmd="redo" title="重做">↷</button>
+    </div>
+    <div id="body" class="kb-body" contenteditable="true" data-ph="请在此输入你的笔记内容…"></div>
+    <textarea id="body-src" class="kb-src" spellcheck="false" hidden></textarea>
+    <div class="kb-dlg-foot">
+      <span id="hint" class="muted"></span>
+      <div class="acts">
+        <span id="saved" class="muted"></span>
+        <button id="btn-del" class="danger-btn" hidden>删除</button>
+        <button id="btn-save" class="primary">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 分类管理弹窗 -->
+<div class="mask" id="cat-mask" hidden>
+  <div class="kb-dlg kb-dlg-sm">
+    <div class="kb-dlg-head">
+      <h3>管理笔记分类</h3>
+      <button class="kb-x" id="cat-close" title="关闭">×</button>
+    </div>
+    <div class="kb-cat-add">
+      <input id="cat-name" placeholder="输入分类名称…" autocomplete="off">
+      <button id="cat-add" class="primary">添加</button>
+    </div>
+    <div class="kb-cat-list" id="cat-list"></div>
+  </div>
+</div>
+
+<!-- 从网盘选择（插入正文 / 设为封面共用） -->
+<div class="mask" id="pick-mask" hidden>
+  <div class="kb-dlg kb-dlg-sm">
+    <div class="kb-dlg-head">
+      <h3 id="pick-head">从网盘选择</h3>
+      <button class="kb-x" id="pick-close" title="关闭">×</button>
+    </div>
+    <div class="kb-pick-bar">
+      <select id="pick-kind" class="kb-mini" title="筛选类型">
+        <option value="all">全部文件</option>
+        <option value="img">图片</option>
+        <option value="video">视频</option>
+        <option value="audio">音频</option>
+        <option value="file">其他文件</option>
+      </select>
+      <div class="kb-pick-crumb" id="pick-crumb"></div>
+    </div>
+    <div class="kb-pick-list" id="pick-list"></div>
+    <div class="kb-dlg-foot">
+      <span id="pick-selname" class="muted"></span>
+      <button id="pick-ok" class="primary" disabled>确定</button>
+    </div>
+  </div>
+</div>
+<input type="file" id="ins-file-input" hidden>
+
+<div class="hub-toast" id="toast"></div>
+<script src="/-ui/apps/notes.js"></script>
+{{end}}

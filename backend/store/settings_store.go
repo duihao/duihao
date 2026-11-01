@@ -235,6 +235,13 @@ type AppSettings struct {
 	// loads; a nil value means "use the frontend defaults" (everything
 	// visible, search → favorites → recent → groups).
 	StartPage *StartPageSettings `json:"startPage,omitempty"`
+	// ManageOpenMode 记录每个软件「管理」界面的默认打开方式，键为插件 id，
+	// 值为 "dialog"（弹窗，缺省）或 "window"（独立窗口）。nil/缺键 = 弹窗。
+	ManageOpenMode map[string]string `json:"manageOpenMode,omitempty"`
+	// UIMode 主窗口身份壳："life"（普通模式，网盘主导的消费级首屏）或
+	// "pro"（专业模式，完整工作台）。缺省 = pro，随 settings.json 持久化；
+	// 只影响界面壳，不影响任何功能权限（收费只按时间维度，与模式无关）。
+	UIMode string `json:"uiMode,omitempty"`
 }
 
 type SFTPBookmarks struct {

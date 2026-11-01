@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import type { AppSettings, AIModelConfig, CustomTerminalTheme } from '../types/settings'
 import { DEFAULT_SETTINGS, normalizeKeyBindings } from '../types/settings'
-import { SaveSettings, LoadSettings, GetAvailableShells, SetDefaultSessionLogDir } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { SaveSettings, LoadSettings, GetAvailableShells, SetDefaultSessionLogDir, ApplyUIModeWindow } from '../../bindings/github.com/ys-ll/uniterm/app'
 import { Events } from '@wailsio/runtime'
 import { setLocale } from '../i18n'
 import { useAIConfigStore } from './aiConfigStore'
@@ -12,6 +12,10 @@ import { useAIConfigStore } from './aiConfigStore'
 // listener before re-subscribing (FE-03).
 let unsubSettingsChanged: (() => void) | null = null
 let unsubAiChanged: (() => void) | null = null
+// 收到「别的窗口保存了设置」的广播后，把整份 settings 换掉会触发本地的
+// deep watch（AI 那段有 auto-save），若不拦住就是「保存 → 广播 → 再保存」
+// 的无限回环。置位期间 save() 直接返回，setTimeout 0 后复位（等 watch 刷完）。
+let applyingRemoteSettings = false
 
 export const useSettingsStore = defineStore('settings', () => {
   const settings = ref<AppSettings>({ ...DEFAULT_SETTINGS })
@@ -163,6 +167,7 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   async function save() {
+    if (applyingRemoteSettings) return
     try {
       await SaveSettings(settings.value)
       // Mirror the syncable AI slice into ai.json (skipped when unchanged).
@@ -178,6 +183,17 @@ export const useSettingsStore = defineStore('settings', () => {
   function updateTheme(value: AppSettings['theme']) {
     settings.value.theme = value
     save()
+  }
+
+  // 身份壳切换（生活 / 专业）。没有 deep watcher，必须显式落盘。
+  // 普通模式窗口是竖版窄窗（宽 280 锁死、无最大化），几何改动交给后端
+  // ApplyUIModeWindow 统一处理（DIP 单位、含专业模式几何的记忆与还原）。
+  function setUIMode(mode: AppSettings['uiMode']) {
+    settings.value.uiMode = mode
+    save()
+    ApplyUIModeWindow(mode).catch(() => {
+      // 窗口 API 不可用（server 模式 / 平台差异）时静默：界面照样切
+    })
   }
 
   function addCustomTheme(theme: CustomTerminalTheme) {
@@ -296,12 +312,17 @@ export const useSettingsStore = defineStore('settings', () => {
 
   // Listen for settings changes from sync
   unsubSettingsChanged?.()
-  unsubSettingsChanged =Events.On('store:settings:changed', (ev) => { const data: AppSettings = ev.data; 
+  unsubSettingsChanged = Events.On('store:settings:changed', (ev) => {
+    const data: AppSettings = ev.data
     if (data) {
+      applyingRemoteSettings = true
       settings.value = mergeSettings(data)
       loaded.value = true
       applyUiFontSize()
       applyTheme()
+      setTimeout(() => {
+        applyingRemoteSettings = false
+      }, 0)
     }
   })
 
@@ -343,6 +364,7 @@ export const useSettingsStore = defineStore('settings', () => {
     save,
     applyTheme,
     updateTheme,
+    setUIMode,
     updateLanguage,
     updateTerminal,
     addModel,
@@ -404,7 +426,11 @@ function mergeSettings(loaded: AppSettings): AppSettings {
     // Per-key visible merge; the order is validated against the known block
     // ids and backfilled with any missing blocks (older settings.json files
     // or hand-edited ones).
-    startPage: mergeStartPage(loaded.startPage)
+    startPage: mergeStartPage(loaded.startPage),
+    // 按软件的「管理」打开方式：缺键即弹窗（不预填，省得设置文件膨胀）
+    manageOpenMode: { ...(loaded.manageOpenMode || {}) },
+    // 身份壳：只有明确写了 life 才是普通模式，其余（含老配置文件）一律专业模式
+    uiMode: loaded.uiMode === 'life' ? 'life' : 'pro'
   }
 }
 

@@ -1,4 +1,4 @@
-// 站点级配置项（借鉴 phpStudy「网站」对话框的 6 个 Tab）。
+// 站点级配置项（借鉴 phpStudy「站点」对话框的 6 个 Tab）。
 //
 // 铁律 1：这里全是**站点层**的声明式配置——只影响 nginx 片段渲染，
 // 不启动任何进程、不携带可执行逻辑。手工改片段会在下次渲染时被覆盖。
@@ -16,7 +16,7 @@ type Options struct {
 	Gzip         bool   `json:"gzip,omitempty"`         // 页面压缩
 	CacheExpires bool   `json:"cacheExpires,omitempty"` // 静态资源缓存（expires 30d）
 	AutoIndex    bool   `json:"autoIndex,omitempty"`    // 目录索引（目录列表）
-	Index        string `json:"index,omitempty"`        // 网站首页，空格分隔（默认 index.html index.htm index.php）
+	Index        string `json:"index,omitempty"`        // 默认首页，空格分隔（默认 index.html index.htm index.php）
 
 	// —— 安全配置 ——
 	DenyHidden   bool   `json:"denyHidden,omitempty"`   // 禁止访问 . 开头的文件/目录
@@ -41,7 +41,7 @@ type Options struct {
 	Remark     string `json:"remark,omitempty"`     // 备注
 }
 
-// DefaultIndex 未指定网站首页时的默认值。
+// DefaultIndex 未指定默认首页时的默认值。
 const DefaultIndex = "index.html index.htm index.php"
 
 // IndexList 首页文件列表（空白分隔，已规范化）。

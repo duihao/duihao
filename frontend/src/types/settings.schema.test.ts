@@ -16,7 +16,7 @@ const settingsStoreSrc = readFileSync(resolve(here, '../stores/settingsStore.ts'
 
 // Keys persisted as opaque maps on the Go side (map[string]... transparently
 // round-trips every child key): only the top-level key needs a Go tag.
-const OPAQUE_MAP_KEYS = new Set(['keyboard', 'sidebarTabs'])
+const OPAQUE_MAP_KEYS = new Set(['keyboard', 'sidebarTabs', 'startPage.visible'])
 
 function collectLeafKeys(obj: object, prefix = '', out = new Set<string>()): Set<string> {
   for (const [key, value] of Object.entries(obj)) {
@@ -63,7 +63,8 @@ function goStructTags(src: string, structName: string): Set<string> {
 const NESTED_STRUCTS: Record<string, string> = {
   terminal: 'TerminalSettings',
   ai: 'AISettings',
-  sftpBookmarks: 'SFTPBookmarks'
+  sftpBookmarks: 'SFTPBookmarks',
+  startPage: 'StartPageSettings'
 }
 
 const tagsByStruct: Record<string, Set<string>> = {}

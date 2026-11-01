@@ -1,13 +1,16 @@
 <template>
-  <!-- 悬浮球右键菜单卡片（uTools 同款）：84×152 透明窗里居中画一张 68×136
-       圆角卡片，四周 8px 留白给柔和投影透出来。菜单窗由 Go 侧摆在球正下方
-       （App.ShowFloatMenu），收起由 Go 的前台监听 / 选项点击 / Esc 触发。 -->
+  <!-- 悬浮球右键菜单卡片（uTools 同款）：96×234 透明窗里居中画一张 68×206
+       圆角卡片，四周 14px 留白给柔和投影透出来。菜单窗由 Go 侧摆在球正下方
+       （App.ShowFloatMenu），收起由 Go 的前台监听 / 选项点击 / Esc 触发。
+       M23 起每个入口对应一个窗口：主窗口（NAS）/ IT工具 / 设置 / 官网（官网放最后，
+       退出项已去掉 —— 退出走托盘菜单）。 -->
   <div class="fm-root">
     <div class="fm-card">
-      <button class="fm-item" @click="pick(1)">主窗</button>
-      <button class="fm-item" @click="pick(2)">设置</button>
+      <button class="fm-item" @click="pick(1)">主窗口</button>
+      <button class="fm-item" @click="pick(2)">IT工具</button>
       <div class="fm-sep"></div>
-      <button class="fm-item fm-danger" @click="pick(3)">退出</button>
+      <button class="fm-item" @click="pick(4)">设置</button>
+      <button class="fm-item" @click="pick(3)">官网</button>
     </div>
   </div>
 </template>
@@ -62,7 +65,10 @@ body,
 .fm-card {
   box-sizing: border-box;
   width: 68px;
-  height: 136px;
+  /* 4 项（主窗口 / IT工具 / 设置 / 官网）+ 1 条分隔：
+     36×4 + (1+3+3) + gap 1×4 + 内边距 5×2 = 165。
+     改项数必须同步 main.go 与 app_windows.go 的 floatMenuH。 */
+  height: 165px;
   padding: 5px;
   border-radius: 12px;
   display: flex;
@@ -96,11 +102,6 @@ body,
   background: var(--win-menu-hover, rgba(0, 0, 0, 0.06));
 }
 
-.fm-danger:hover {
-  background: rgba(232, 63, 63, 0.12);
-  color: #d93026;
-}
-
 .fm-sep {
   height: 1px;
   margin: 3px 8px;
@@ -119,10 +120,5 @@ body,
 
 :global(html[data-theme='dark']) .fm-item:hover {
   background: rgba(255, 255, 255, 0.08);
-}
-
-:global(html[data-theme='dark']) .fm-danger:hover {
-  background: rgba(232, 63, 63, 0.2);
-  color: #ff7b72;
 }
 </style>

@@ -8,8 +8,8 @@ import (
 
 func TestLogPathEndsWithLogName(t *testing.T) {
 	got := logPath()
-	if filepath.Base(got) != "uniterm.log" {
-		t.Errorf("logPath() = %q, want base name uniterm.log", got)
+	if filepath.Base(got) != "duihao.log" {
+		t.Errorf("logPath() = %q, want base name duihao.log", got)
 	}
 	if runtime.GOOS != "android" && !filepath.IsAbs(got) {
 		t.Errorf("desktop logPath() = %q, want absolute", got)

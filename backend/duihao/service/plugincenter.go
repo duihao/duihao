@@ -1,4 +1,4 @@
-// Package service 对号插件中心的 Wails 服务绑定。
+// Package service 对号环境工具的 Wails 服务绑定。
 // 前端经由生成的 bindings 调用；全部写操作走审计。
 package service
 
@@ -56,7 +56,7 @@ type VersionView struct {
 	Installed bool   `json:"installed"`
 }
 
-// PluginCenterService 插件中心服务。
+// PluginCenterService 环境工具服务。
 type PluginCenterService struct {
 	mgr   *instance.Manager
 	sites *site.Manager // 可选：删除实例前做站点引用检查
@@ -311,7 +311,7 @@ func (s *PluginCenterService) view(id string) (*instance.View, error) {
 	return nil, errNotReady()
 }
 
-func errNotReady() error { return &pluginCenterError{"插件中心尚未就绪"} }
+func errNotReady() error { return &pluginCenterError{"环境工具尚未就绪"} }
 
 type pluginCenterError struct{ msg string }
 

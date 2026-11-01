@@ -13,7 +13,9 @@
     <div class="start-content" :style="contentStyle">
       <!-- Branding -->
       <div class="start-brand-block" v-show="!searchQuery.trim()">
-        <div class="start-brand">对号</div>
+        <!-- 标题：IT 工具窗的主页面品牌。「对号」是 NAS 主窗的标题，这里要区分开，
+             所以按窗口名写全（用户定稿：对号 · IT工具，分隔点与其它窗口一致）。 -->
+        <div class="start-brand">对号 · IT工具</div>
         <div class="start-slogan">{{ t('startTab.slogan') }}</div>
       </div>
 

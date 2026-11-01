@@ -77,7 +77,10 @@ OutFile "..\..\..\bin\${INSTALLER_OUT}"
 !endif
 RequestExecutionLevel ${REQUEST_EXECUTION_LEVEL}
 SetCompressor /SOLID lzma
-SetCompressorDictSize 128
+; 128MB 字典下 32 位 makensis 会在压缩流初始化阶段失败
+; （Internal compiler error #12345: deflateInit() failed [-2]）。
+; 64MB 可稳定出包，体积约 24.2%（128 时约 22%，差 ~1.5MB）。
+SetCompressorDictSize 64
 
 !include "MUI2.nsh"
 !include "LogicLib.nsh"

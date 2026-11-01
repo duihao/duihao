@@ -1,0 +1,211 @@
+{{define "body"}}
+<section id="c-home">
+  <div class="cc-shell">
+    <aside class="cc-rail">
+      <div class="cc-rail-h">相机</div>
+      <div class="cc-cams" id="c-cams"></div>
+      <div class="cc-rail-tools">
+        <button class="cc-linkb" id="c-add">+ 添加相机</button>
+        <button class="cc-linkb" id="c-find">发现局域网相机</button>
+        <button class="cc-linkb" id="c-logs">运行日志</button>
+        <button class="cc-linkb" id="c-clean">清理旧录像</button>
+      </div>
+    </aside>
+
+    <div class="cc-main">
+      <!-- 组件未装：先在页面上把话说清楚，不偷偷下 80MB -->
+      <div class="cc-setup" id="c-setup" hidden>
+        <div class="cc-setup-ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2.5" y="6" width="13" height="12" rx="2.5"/><path d="M15.5 11l6-3.5v9L15.5 13"/></svg>
+        </div>
+        <div class="cc-setup-bd">
+          <b>启用监控需要下载一个运行组件</b>
+          <p class="muted">ffmpeg（约 95MB）负责拉流、转画面预览、分段录像。对号不内置它，
+            用到才下载；装好之后断网也能用，数据不出这台机器。</p>
+          <div class="cc-setup-row">
+            <button class="cc-primary" id="c-install">下载并启用</button>
+            <button class="cc-ghost" id="c-import">导入本地 zip</button>
+            <span class="muted" id="c-comp-hint"></span>
+          </div>
+          <div class="cc-bar" id="c-comp-bar" hidden><i></i></div>
+        </div>
+      </div>
+
+      <div class="cc-empty" id="c-empty" hidden>
+        <b>还没有相机</b>
+        <span>点「发现局域网相机」扫一遍，或者手动填 IP —— 海康/大华/TP-Link 的 RTSP 地址对号有模板，不用你记。</span>
+        <button class="cc-primary" id="c-empty-add">添加第一台</button>
+      </div>
+
+      <div id="c-work" hidden>
+        <div class="cc-tabs">
+          <button class="cc-tab on" data-tab="live">实时画面</button>
+          <button class="cc-tab" data-tab="play">录像回放</button>
+          <span class="cc-sp"></span>
+          <span class="cc-stat" id="c-disk"></span>
+        </div>
+
+        <!-- 实时 -->
+        <div class="cc-pane" id="c-pane-live">
+          <div class="cc-screen">
+            <img id="c-img" alt="实时画面">
+            <div class="cc-screen-hint" id="c-hint">选择左侧的相机开始看</div>
+            <div class="cc-screen-bar">
+              <button id="c-snap">抓图</button>
+              <button id="c-pop">新窗口看</button>
+            </div>
+          </div>
+          <div class="cc-under">
+            <div class="cc-meta" id="c-meta"></div>
+            <div class="cc-acts">
+              <button id="c-rec-on">开始录像</button>
+              <button id="c-rec-off">停止录像</button>
+              <button id="c-edit">修改</button>
+            </div>
+          </div>
+
+          <!-- 云台：只有 hikvision / dahua 这类支持 HTTP 控制的相机才显示 -->
+          <div class="cc-ptz" id="c-ptz" hidden>
+            <div class="cc-ptz-h">
+              <b>云台</b>
+              <span class="muted" id="c-ptz-hint">按住方向键转，松手停</span>
+            </div>
+            <div class="cc-ptz-body">
+              <div class="cc-pad">
+                <button class="cc-pz up" data-dir="up" title="上">▲</button>
+                <button class="cc-pz left" data-dir="left" title="左">◀</button>
+                <button class="cc-pz mid" data-dir="stop" title="停">■</button>
+                <button class="cc-pz right" data-dir="right" title="右">▶</button>
+                <button class="cc-pz down" data-dir="down" title="下">▼</button>
+              </div>
+              <div class="cc-ptz-side">
+                <label class="cc-f"><span>速度 <em id="c-pspeed-v">4</em></span>
+                  <input type="range" id="c-pspeed" min="1" max="10" step="1" value="4"></label>
+                <div class="cc-ptz-row">
+                  <button class="cc-ghost" data-dir="zoomin">＋ 变倍</button>
+                  <button class="cc-ghost" data-dir="zoomout">－ 变倍</button>
+                </div>
+                <div class="cc-ptz-row">
+                  <select class="cc-in cc-in-sm" id="c-preset">
+                    <option value="1">预置位 1</option>
+                    <option value="2">预置位 2</option>
+                    <option value="3">预置位 3</option>
+                    <option value="4">预置位 4</option>
+                  </select>
+                  <button class="cc-ghost" id="c-preset-go">去这里</button>
+                  <button class="cc-ghost" id="c-preset-set">存为</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 回放 -->
+        <div class="cc-pane" id="c-pane-play" hidden>
+          <div class="cc-day">
+            <button id="c-prev" title="前一天">‹</button>
+            <input type="date" id="c-date" class="cc-in cc-date">
+            <button id="c-next" title="后一天">›</button>
+            <span class="muted" id="c-dayshint"></span>
+            <span class="cc-sp"></span>
+            <button id="c-today" class="cc-ghost">今天</button>
+          </div>
+          <div class="cc-tl-wrap">
+            <div class="cc-tl-hours" id="c-tl-hours"></div>
+            <div class="cc-tl" id="c-tl"></div>
+          </div>
+          <video id="c-video" controls playsinline preload="metadata"></video>
+          <div class="cc-segs" id="c-segs"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 添加 / 修改相机 -->
+  <div class="cc-mask" id="c-mask" hidden>
+    <div class="cc-dlg">
+      <div class="cc-dlg-h">
+        <b id="c-dlg-title">添加相机</b>
+        <button class="cc-x" id="c-x">×</button>
+      </div>
+      <div class="cc-dlg-b">
+        <div class="cc-row2">
+          <label class="cc-f"><span>名字</span>
+            <input class="cc-in" id="c-name" placeholder="门口 / 客厅 / 后院"></label>
+          <label class="cc-f"><span>品牌</span>
+            <select class="cc-in" id="c-vendor"></select></label>
+        </div>
+        <div class="cc-row3" id="c-row-tpl">
+          <label class="cc-f"><span>主机 / IP</span>
+            <input class="cc-in" id="c-host" placeholder="192.168.1.64"></label>
+          <label class="cc-f"><span>账号</span>
+            <input class="cc-in" id="c-user" placeholder="admin"></label>
+          <label class="cc-f"><span>密码</span>
+            <input class="cc-in" id="c-pass" type="password" placeholder="相机密码（改配置时留空 = 不改）"></label>
+        </div>
+        <p class="cc-tip" id="c-tip"></p>
+
+        <details class="cc-adv" id="c-adv">
+          <summary>高级：直接填 RTSP 地址</summary>
+          <label class="cc-f"><span>主码流（录像用，可选）</span>
+            <input class="cc-in" id="c-main" placeholder="rtsp://admin:pass@192.168.1.64:554/..."></label>
+          <label class="cc-f"><span>子码流（预览用，建议填）</span>
+            <input class="cc-in" id="c-sub" placeholder="rtsp://admin:pass@192.168.1.64:554/..."></label>
+        </details>
+
+        <div class="cc-row2">
+          <label class="cc-f"><span>通道号</span>
+            <input class="cc-in" id="c-ch" type="number" min="1" max="64" value="1"></label>
+          <label class="cc-f"><span>传输</span>
+            <select class="cc-in" id="c-transport">
+              <option value="tcp">TCP（推荐，稳定）</option>
+              <option value="udp">UDP（低延迟，易丢包）</option>
+            </select></label>
+        </div>
+
+        <div class="cc-row2">
+          <label class="cc-f"><span>录像</span>
+            <select class="cc-in" id="c-record">
+              <option value="1">录像（时段见下方计划）</option>
+              <option value="0">只看不录</option>
+            </select></label>
+          <label class="cc-f"><span>保留天数</span>
+            <input class="cc-in" id="c-retain" type="number" min="0" max="365" value="7">
+            <em>0 = 不限天数，只受磁盘守护约束</em></label>
+        </div>
+
+        <div class="cc-plan">
+          <div class="cc-plan-h">
+            <b>录像计划</b>
+            <span class="muted" id="c-plan-hint">不填 = 全天连续录</span>
+          </div>
+          <div id="c-plan-rows"></div>
+          <button class="cc-ghost cc-plan-add" id="c-plan-add">+ 加一段时段</button>
+        </div>
+
+        <p class="cc-tip muted">账号密码存进本机保险箱（Windows DPAPI 加密），库里不落明文、页面不回显。</p>
+
+        <div class="cc-dlg-foot">
+          <button class="cc-primary" id="c-save">保存</button>
+          <button class="cc-ghost" id="c-test">先试看一眼</button>
+          <span class="cc-sp"></span>
+          <button class="cc-ghost cc-danger" id="c-del" hidden>删除相机</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 拖动条：日志 / 发现结果 -->
+  <div class="cc-mask" id="c-mask2" hidden>
+    <div class="cc-dlg cc-sheet">
+      <div class="cc-dlg-h">
+        <b id="c-dlg2-title">运行日志</b>
+        <button class="cc-x" id="c-x2">×</button>
+      </div>
+      <div class="cc-dlg-b" id="c-dlg2-body"></div>
+    </div>
+  </div>
+</section>
+<script src="/-ui/apps/camera.js"></script>
+{{end}}

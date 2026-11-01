@@ -15,13 +15,24 @@ import { setLocale } from './i18n'
 // （标题参与后端 findMainWindow 匹配，不能覆盖成「对号」）。
 // /?w=float 是桌面常驻悬浮图标窗（48×48 圆形），只挂 FloatIcon。
 const wMode = new URLSearchParams(window.location.search).get('w')
+const isNasWindow = wMode === 'nas'
 const isPaletteWindow = wMode === 'palette'
 const isFloatWindow = wMode === 'float'
 // /?w=floatmenu：悬浮球右键菜单窗（148×136 透明小窗，Go 侧摆在球正下方）
 const isFloatMenuWindow = wMode === 'floatmenu'
+// /?w=manage：管理面板独立窗口（M20）—— 无边框卡片窗，内容仍是同一个管理
+// 面板组件（standalone 模式不套 el-dialog），窗口标题由 Go 侧设置。
+const isManageWindow = wMode === 'manage'
+// /?w=notify：语音提醒到点弹出的右上角卡片（V2）—— 380×124 透明无边框小窗，
+// 只挂 NotifyStandalone。窗口本身由 Go 侧创建（notify_window.go），这里只渲染。
+const isNotifyWindow = wMode === 'notify'
 
-if (!isPaletteWindow && !isFloatWindow && !isFloatMenuWindow) {
-  Window.SetTitle('对号')
+// M36：IT 工具窗（原主窗）标题 = 「对号 IT工具」，与起始页大标题「对号 · IT工具」
+// 同一套叫法（用户定稿：标题栏不要只写「对号」）。仍以「对号」开头、且不含
+// 「 · 」，后端 findMainWindow 的前缀匹配照旧成立；NAS 主窗标题是「对号」，
+// 反而更容易区分。
+if (!isPaletteWindow && !isFloatWindow && !isFloatMenuWindow && !isManageWindow && !isNotifyWindow && !isNasWindow) {
+  Window.SetTitle('对号 IT工具')
 }
 
 // 独立面板窗/悬浮窗是独立 webview，index.html 的首帧主题只看
@@ -58,11 +69,52 @@ setLocale('system')
 // 只给主窗口跑完整 init：面板窗/悬浮窗只需主题，若也跑 init，一旦
 // LoadSettings 还没就绪就会用默认值（system→浅色）applyTheme，把 index.html
 // 与主窗口写下的 appTheme 缓存覆盖成浅色 —— 面板就会在深色应用上泛白。
-if (!isPaletteWindow && !isFloatWindow && !isFloatMenuWindow) {
+if (!isPaletteWindow && !isFloatWindow && !isFloatMenuWindow && !isNotifyWindow) {
   settingsStore.init()
 }
 
-if (isPaletteWindow) {
+// 轻窗（命令面板 / 悬浮球 / 悬浮菜单 / 提醒卡）不跑完整的 settingsStore.init()
+// —— 那会被 LoadSettings 的 IPC 拖慢，面板要求「按下热键立刻出来」。但它们同样
+// 得跟着主题走：任一窗口保存设置时后端广播 store:settings:changed，这里只取
+// theme 一项，解析出具体明暗后落到 <html data-theme> 并刷新首帧缓存。
+if (isPaletteWindow || isFloatWindow || isFloatMenuWindow || isNotifyWindow) {
+  let lastRawTheme = ''
+  const applyThemeLite = (raw: string) => {
+    lastRawTheme = raw
+    const t =
+      raw === 'system'
+        ? window.matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'dark'
+          : 'light'
+        : raw
+    document.documentElement.dataset.theme = t
+    try {
+      localStorage.setItem('appTheme', t)
+    } catch {
+      // 隐私模式等：本次会话照样生效
+    }
+  }
+  // 选的是「跟随系统」时，系统明暗一变就得重解一次（其它档位忽略）
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (lastRawTheme === 'system') applyThemeLite('system')
+  })
+  Events.On('store:settings:changed', (ev: unknown) => {
+    const d = (ev as { data?: { theme?: string } } | null)?.data
+    if (d?.theme) applyThemeLite(d.theme)
+  })
+}
+
+if (isNasWindow) {
+  document.documentElement.classList.add('win-main')
+  // NAS 主窗沿用品牌玫红（原来普通模式靠 ui-home 换肤，现在整窗搬过来）
+  document.documentElement.classList.add('ui-home')
+  import('./NasStandalone.vue').then(({ default: NasStandalone }) => {
+    const nasApp = createApp(NasStandalone)
+    nasApp.use(pinia)
+    nasApp.use(ElementPlus)
+    nasApp.mount('#app')
+  })
+} else if (isPaletteWindow) {
   import('./PaletteStandalone.vue').then(({ default: PaletteStandalone }) => {
     const paletteApp = createApp(PaletteStandalone)
     paletteApp.use(pinia)
@@ -79,7 +131,29 @@ if (isPaletteWindow) {
     const menuApp = createApp(FloatMenu)
     menuApp.mount('#app')
   })
+} else if (isNotifyWindow) {
+  // 卡片自己画圆角与阴影（style.css 的 html.win-notify 把 body 底色清成透明），
+  // 不跑 settingsStore.init：这张卡要「瞬间」出现，不能等 IPC 往返。
+  document.documentElement.classList.add('win-notify')
+  import('./NotifyStandalone.vue').then(({ default: NotifyStandalone }) => {
+    const notifyApp = createApp(NotifyStandalone)
+    notifyApp.mount('#app')
+  })
+} else if (isManageWindow) {
+  // 管理窗与主窗口同款外观：加 win-main 才有 body::after 的 1px 描边；
+  // win-manage 供全局 CSS 收敛弹窗遮罩层（style.css 末段）。
+  document.documentElement.classList.add('win-main')
+  document.documentElement.classList.add('win-manage')
+  import('./ManageStandalone.vue').then(({ default: ManageStandalone }) => {
+    const manageApp = createApp(ManageStandalone)
+    manageApp.use(pinia)
+    manageApp.use(ElementPlus)
+    manageApp.mount('#app')
+  })
 } else {
+  // 标记「这是主窗口」：窗口描边（style.css 的 body::after）只给主窗口画，
+  // 悬浮球（48px 圆形）与悬浮菜单是透明小窗，套 1px 方框会露出四角。
+  document.documentElement.classList.add('win-main')
   // 最大化/全屏 → 窗口直角（贴边不留圆角），还原 → 恢复 CSS 圆角。事件源是
   // Go 侧窗口事件（events.Windows.*）的 app:win-shape 广播；启动即最大化/
   // 全屏的场景用 IsMaximised/IsFullscreen 补一次初始状态。wails 有时会把
@@ -94,6 +168,8 @@ if (isPaletteWindow) {
   void Promise.all([Window.IsMaximised(), Window.IsFullscreen()])
     .then(([m, f]) => setWinSquare(!!m || !!f))
     .catch(() => {})
+  // M23：主窗口恒为「IT 工具」（功能蓝），不再按 uiMode 换肤 —— 品牌玫红那套
+  // 外观整体搬进了 NAS 主窗（见上面的 isNasWindow 分支）。
   app.mount('#app')
 }
 

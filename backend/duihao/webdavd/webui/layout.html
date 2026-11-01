@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="{{.Theme}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Title}} · 对号 NAS</title>
+<link rel="stylesheet" href="/-ui/shared.css">
+<!-- shell.js 必须早于各应用脚本：它定义 window.hubAPI，放在底部会让应用脚本拿到 undefined -->
+<script src="/-ui/shell.js"></script>
+<!-- 顶栏账号下拉（修改密码 / 退出）：与网盘文件管理页共用同一份 -->
+<script src="/-ui/acct.js" defer></script>
+<!-- 主题跟随（SSE）：应用里切主题，已打开的页面跟着变 -->
+<script src="/-ui/theme.js" defer></script>
+</head>
+<body data-app="{{.App}}" data-role="{{.Role}}" data-user="{{.User}}">
+<header class="hub-top">
+  <a class="hub-brand" href="/-home"><b>对号</b><span>NAS</span></a>
+  <nav class="hub-nav">
+    {{range .Nav}}<a href="{{.Path}}"{{if .On}} class="on"{{end}}>{{.Label}}</a>{{end}}
+  </nav>
+  {{.Acct}}
+</header>
+<main class="hub-main">
+{{template "body" .}}
+</main>
+</body>
+</html>

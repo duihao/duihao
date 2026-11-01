@@ -11,15 +11,15 @@
     @dragend="onDragEnd"
     @contextmenu="onContextMenu"
   >
+    <!-- 左侧关闭（可选布局）：按钮常驻占位、只在悬停时显形，绝不顶掉左边的
+         类型图标——否则悬停的一瞬间图标消失、看起来像被 × 盖住了。 -->
     <button
-      v-if="!tabCloseRight && (hovered || isTouch) && !tab.locked"
-      class="tab-close"
+      v-if="!tabCloseRight"
+      class="tab-close tab-close-left"
+      :class="{ 'tab-close-ghost': (!hovered && !isTouch) || tab.locked }"
       @click.stop="$emit('close', tab.id)"
     ><X /></button>
-    <span
-      v-if="tabCloseRight || (!hovered && !isTouch) || tab.locked"
-      class="tab-icon-wrapper"
-    >
+    <span class="tab-icon-wrapper">
       <component
         :is="tab.locked ? Lock : tabIcon"
         class="tab-type-icon"
@@ -65,7 +65,7 @@
     <button
       v-if="tabCloseRight && !showBroadcastIcon"
       class="tab-close tab-close-right"
-      :class="{ 'tab-close-right-ghost': (!hovered && !isTouch) || tab.locked }"
+      :class="{ 'tab-close-ghost': (!hovered && !isTouch) || tab.locked }"
       @click.stop="$emit('close', tab.id)"
     ><X /></button>
     <Menu ref="ctxMenuRef" v-model:visible="ctxMenuVisible">
@@ -913,7 +913,12 @@ onMounted(async () => {
   margin-left: auto;
   margin-right: 0;
 }
-.tab-close-right-ghost {
+/* 左侧关闭：紧贴左侧图标之前，把基础样式里的右外边距收掉，靠父级 gap 分隔。
+   与右侧同理——按钮常驻、只是显隐切换，避免悬停时名称重新截断。 */
+.tab-close.tab-close-left {
+  margin-right: 0;
+}
+.tab-close-ghost {
   visibility: hidden;
   /* Hide instantly on mouse-leave: `.tab-close` carries transition:all, and
      visibility is a transitionable property, so a visible→hidden ghost would

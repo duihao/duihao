@@ -335,6 +335,11 @@ export interface AppSettings {
   // persistence-contract note on TerminalSettings: this field MUST also
   // exist in the Go AppSettings (backend/store/settings_store.go).
   startPage: StartPageSettings
+  // 每个软件「管理」界面的默认打开方式，键为插件 id："dialog"（缺省）/ "window"。
+  manageOpenMode: Record<string, string>
+  // 主窗口身份壳：'life' 普通模式（网盘主导的消费级首屏）/ 'pro' 专业模式
+  // （完整工作台）。只是界面壳，不涉及任何功能权限。
+  uiMode: 'life' | 'pro'
 }
 
 // Default visibility per sidebar view. "connections" is the primary view and
@@ -427,7 +432,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   customTerminalThemes: [],
   defaultLocalShell: '',
   gitBashPath: '',
-  tabCloseButton: 'left',
+  tabCloseButton: 'right',
   showTabShortcutHints: true,
   hostListMenuStyle: 'button',
   newTabAction: 'startPage',
@@ -435,7 +440,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   startPage: {
     visible: { ...START_PAGE_DEFAULTS.visible },
     order: [...START_PAGE_DEFAULTS.order]
-  }
+  },
+  manageOpenMode: {},
+  uiMode: 'pro'
 }
 
 export interface TerminalThemeEntry { label: string; value: string; type: 'dark' | 'light' }

@@ -1,0 +1,243 @@
+{{define "body"}}
+<section class="lg">
+  <!-- ① 三张统计卡：储蓄总览（全期） / 本期进账 / 综合支出 -->
+  <div class="lg-stats">
+    <div class="lg-stat">
+      <div class="lg-stat-top"><span class="lg-stat-t">储蓄总览</span><span class="lg-stat-tag">NET ASSETS</span></div>
+      <div class="lg-stat-num"><b id="st-assets">¥0.00</b></div>
+      <div class="lg-stat-foot"><span>收入减去支出</span><span class="lg-dim">全部账目</span></div>
+    </div>
+    <div class="lg-stat is-in">
+      <div class="lg-stat-top"><span class="lg-stat-t">本期进账</span><span class="lg-stat-tag">CASH INFLOW</span></div>
+      <div class="lg-stat-num"><b id="st-income">+¥0.00</b></div>
+      <div class="lg-stat-foot"><span id="st-period-in">全部账目</span><span class="lg-dim">收入</span></div>
+    </div>
+    <div class="lg-stat is-out">
+      <div class="lg-stat-top"><span class="lg-stat-t">综合支出</span><span class="lg-stat-tag">CASH OUTFLOW</span></div>
+      <div class="lg-stat-num"><b id="st-expense">-¥0.00</b></div>
+      <div class="lg-stat-foot"><span id="st-period-out">全部账目</span><span class="lg-dim">支出</span></div>
+    </div>
+  </div>
+
+  <!-- ② 搜索 + 日期区间 -->
+  <div class="lg-search">
+    <label class="lg-search-box">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="q" placeholder="搜索对象、备注或分类，按回车搜索…" autocomplete="off">
+    </label>
+    <div class="lg-range">
+      <input id="from" type="date" class="lg-date" title="起始日期">
+      <span class="lg-dim">至</span>
+      <input id="to" type="date" class="lg-date" title="结束日期">
+      <button id="btn-clear" class="ghost-btn" title="清除搜索与日期">清除</button>
+    </div>
+  </div>
+
+  <!-- ③ 支出/收入两级分类标签：一级选中所展开其二级 -->
+  <div class="lg-chips-row">
+    <span class="lg-label">支出标签</span>
+    <div class="lg-chips" id="chips-expense"></div>
+  </div>
+  <div class="lg-chips-row" id="sub-expense-row" hidden>
+    <span class="lg-label lg-label-sub">└ 二级</span>
+    <div class="lg-chips" id="chips-expense-sub"></div>
+  </div>
+  <div class="lg-chips-row">
+    <span class="lg-label">收入标签</span>
+    <div class="lg-chips" id="chips-income"></div>
+  </div>
+  <div class="lg-chips-row" id="sub-income-row" hidden>
+    <span class="lg-label lg-label-sub">└ 二级</span>
+    <div class="lg-chips" id="chips-income-sub"></div>
+  </div>
+
+  <!-- ④ 视图切换 + 时间范围 + 操作 -->
+  <div class="lg-bar">
+    <div class="lg-left">
+      <div class="lg-tabs" id="views">
+        <button type="button" data-view="list" class="on">明细</button>
+        <button type="button" data-view="stats">分类统计</button>
+      </div>
+      <div class="lg-tabs" id="ranges">
+        <button type="button" data-range="all" class="on">全部</button>
+        <button type="button" data-range="today">今日</button>
+        <button type="button" data-range="yesterday">昨日</button>
+        <button type="button" data-range="week">本周</button>
+        <button type="button" data-range="lastweek">上周</button>
+        <button type="button" data-range="month">本月</button>
+        <button type="button" data-range="lastmonth">上月</button>
+        <button type="button" data-range="year">今年</button>
+        <button type="button" data-range="lastyear">去年</button>
+      </div>
+    </div>
+    <div class="lg-bar-acts">
+      <button id="btn-cats" class="ghost-btn">管理分类</button>
+      <button id="btn-export" class="ghost-btn">导出报表</button>
+      <button id="btn-new" class="lg-primary">+ 记一笔</button>
+    </div>
+  </div>
+
+  <!-- ⑤-a 明细视图 -->
+  <div id="listview">
+  <div class="lg-table">
+    <div class="lg-thead">
+      <span class="c-ck"><input type="checkbox" id="ck-all" title="全选/全不选"></span>
+      <span class="c-main">摘要</span>
+      <span class="c-cat">分类</span>
+      <span class="c-peer">收支对象</span>
+      <span class="c-acc">结算账户</span>
+      <span class="c-receipt">凭证</span>
+      <span class="c-time">记账时间</span>
+      <span class="c-amt">金额</span>
+      <span class="c-op">操作</span>
+    </div>
+    <div class="lg-selbar" id="selbar" hidden>
+      <span id="sel-info" class="muted"></span>
+      <button id="btn-del-sel" class="danger-btn">删除选中</button>
+      <button id="btn-sel-none" class="link-btn">取消选择</button>
+    </div>
+    <div id="rows"></div>
+    <div class="lg-empty" id="empty" hidden>
+      <p class="muted">还没有记录。点右上「+ 记一笔」开始，数据只存在你这台机器上。</p>
+    </div>
+  </div>
+  <div class="lg-foot lg-dim" id="foot">已加载 0 条记录</div>
+  </div>
+
+  <!-- ⑤-b 分类统计视图 -->
+  <div id="statview" hidden>
+    <div class="lg-statsec" id="stat-expense"></div>
+    <div class="lg-statsec" id="stat-income"></div>
+    <div class="lg-empty" id="stat-empty" hidden><p class="muted">当前筛选范围内还没有账目。</p></div>
+  </div>
+</section>
+
+<!-- 记一笔 / 修改 -->
+<div class="mask" id="entry-mask" hidden>
+  <div class="lg-dlg">
+    <div class="lg-dlg-head">
+      <div>
+        <div class="lg-eyebrow"><i></i>NEW TRANSACTION ENTRY</div>
+        <h3 id="entry-head">新建记账</h3>
+        <p class="muted">记录实时资产流动，财富尽在掌控中</p>
+      </div>
+      <button class="kb-x" id="entry-close" title="关闭">×</button>
+    </div>
+    <div class="lg-dlg-body">
+      <div class="lg-field">
+        <label>1. 收支类型选择</label>
+        <div class="lg-kind">
+          <button type="button" id="k-expense" data-kind="expense" class="on">↓ 支出</button>
+          <button type="button" id="k-income" data-kind="income">↑ 收入</button>
+        </div>
+      </div>
+
+      <div class="lg-field">
+        <label>2. 记账金额</label>
+        <div class="lg-amount">
+          <span class="lg-cur">¥</span>
+          <input id="amount" inputmode="decimal" placeholder="0.00" autocomplete="off">
+          <button type="button" id="btn-receipt" class="lg-receipt-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.2"/><path d="M8 6l1.5-2h5L16 6"/></svg>
+            上传凭证
+          </button>
+          <input type="file" id="receipt-file" accept="image/*" hidden>
+        </div>
+        <div class="lg-receipt-prev" id="receipt-prev" hidden>
+          <img id="receipt-img" alt="凭证">
+          <button type="button" id="receipt-del" class="link-btn">移除凭证</button>
+        </div>
+      </div>
+
+      <div class="lg-cols">
+        <div class="lg-field">
+          <label>3. 收支分类</label>
+          <div class="lg-two">
+            <select id="group"></select>
+            <select id="cat"></select>
+          </div>
+          <button type="button" id="entry-manage-cat" class="link-btn">管理分类</button>
+        </div>
+        <div class="lg-field">
+          <label>结算账户</label>
+          <select id="account"></select>
+          <button type="button" id="entry-manage-acc" class="link-btn">管理</button>
+        </div>
+      </div>
+
+      <div class="lg-field">
+        <label>4. 收入或支出对象</label>
+        <input id="peer" class="lg-input" placeholder="如：小明、公司财务、山姆会员店……" autocomplete="off">
+        <div class="lg-peer-row">
+          <div class="lg-chips" id="peer-chips"></div>
+          <button type="button" id="entry-manage-peer" class="link-btn">管理</button>
+        </div>
+      </div>
+
+      <div class="lg-field">
+        <label>5. 备注与事由</label>
+        <input id="note" class="lg-input" placeholder="记录具体用途、消费明细或其他说明……" autocomplete="off">
+      </div>
+
+      <div class="lg-field">
+        <label>记账时间</label>
+        <input id="day" type="date" class="lg-input lg-date">
+      </div>
+    </div>
+    <div class="lg-dlg-foot">
+      <button id="entry-del" class="danger-btn" hidden>删除</button>
+      <button id="entry-save" class="lg-primary">确认记账</button>
+    </div>
+  </div>
+</div>
+
+<!-- 管理收支分类（两级） -->
+<div class="mask" id="cat-mask" hidden>
+  <div class="lg-dlg lg-dlg-cat">
+    <div class="lg-dlg-head">
+      <div>
+        <h3>管理收支分类</h3>
+        <p class="muted">系统分类只读；点击自己的分类可改名或删除，历史账目不受影响。</p>
+      </div>
+      <button class="kb-x" id="cat-close" title="关闭">×</button>
+    </div>
+    <div class="lg-seg" id="cat-tabs">
+      <button type="button" data-kind="expense" class="on">支出分类</button>
+      <button type="button" data-kind="income">收入分类</button>
+    </div>
+    <div class="lg-cat-body" id="cat-body"></div>
+    <div class="lg-dlg-foot lg-foot-center">
+      <button type="button" id="cat-add-group" class="ghost-btn">+ 新增一级分类</button>
+    </div>
+  </div>
+</div>
+
+<!-- 管理对象 / 结算账户（同一套列表） -->
+<div class="mask" id="pick-mask" hidden>
+  <div class="lg-dlg lg-dlg-sm">
+    <div class="lg-dlg-head">
+      <div><h3 id="pick-head">管理对象</h3></div>
+      <button class="kb-x" id="pick-close" title="关闭">×</button>
+    </div>
+    <div class="lg-pick-add">
+      <input id="pick-name" placeholder="请输入新名称…" autocomplete="off">
+      <button id="pick-add" class="lg-primary">添加</button>
+    </div>
+    <div class="lg-pick-list" id="pick-list"></div>
+  </div>
+</div>
+
+<!-- 账目详情 -->
+<div class="mask" id="detail-mask" hidden>
+  <div class="lg-dlg lg-dlg-sm">
+    <div class="lg-dlg-head">
+      <div><h3>账目详情</h3></div>
+      <button class="kb-x" id="detail-close" title="关闭">×</button>
+    </div>
+    <div class="lg-detail" id="detail-body"></div>
+  </div>
+</div>
+
+<div class="hub-toast" id="toast"></div>
+<script src="/-ui/apps/ledger.js"></script>
+{{end}}

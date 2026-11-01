@@ -9,6 +9,7 @@
   >
     <div class="ftpm-bar">
       <div class="ftpm-bar-left">
+        <InstancePower :instance-id="instanceId" @changed="onPowerChanged" />
         <el-button size="small" type="primary" @click="openCreate">+ {{ t('ftpm.create') }}</el-button>
         <span class="ftpm-hint">{{ t('ftpm.restartHint') }}</span>
       </div>
@@ -129,6 +130,7 @@ import { ref, reactive, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useI18n } from '../i18n'
 import { OpenDirectoryDialog } from '../../bindings/github.com/ys-ll/uniterm/app'
+import InstancePower from './InstancePower.vue'
 import {
   ListFTPAccounts, CreateFTPAccount, UpdateFTPAccount, SetFTPAccountPassword,
   DeleteFTPAccount, ListFTPSiteRoots,
@@ -162,6 +164,11 @@ const pwdTarget = reactive({ id: '', user: '', password: '' })
 
 // immediate：父组件用 v-if 挂载，挂载时 visible 已为 true，不加就永远不自动加载账号表。
 watch(visible, (v) => { if (v) reload() }, { immediate: true })
+
+// 顶部启停后：等进程真正起停完成再刷一次（否则拿到的还是旧状态）
+function onPowerChanged() {
+  window.setTimeout(() => { void reload() }, 700)
+}
 
 async function reload() {
   if (!props.instanceId) return

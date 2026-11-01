@@ -7,28 +7,31 @@
     class="rdm-dialog"
     destroy-on-close
   >
-    <!-- 概览 -->
-    <div class="rdm-cards">
-      <div class="rdm-card">
-        <span class="rdm-k">{{ t('rdm.version') }}</span>
-        <span class="rdm-v">{{ ov.version || '—' }}</span>
+    <!-- 概览（右侧并入实例启停，不再单占标题栏下的一整行） -->
+    <div class="rdm-top">
+      <div class="rdm-cards">
+        <div class="rdm-card">
+          <span class="rdm-k">{{ t('rdm.version') }}</span>
+          <span class="rdm-v">{{ ov.version || '—' }}</span>
+        </div>
+        <div class="rdm-card">
+          <span class="rdm-k">{{ t('rdm.uptime') }}</span>
+          <span class="rdm-v">{{ fmtUptime(ov.uptimeSeconds) }}</span>
+        </div>
+        <div class="rdm-card">
+          <span class="rdm-k">{{ t('rdm.memory') }}</span>
+          <span class="rdm-v">{{ ov.usedMemoryHuman || '—' }}</span>
+        </div>
+        <div class="rdm-card">
+          <span class="rdm-k">{{ t('rdm.clients') }}</span>
+          <span class="rdm-v">{{ ov.connectedClients }}</span>
+        </div>
+        <div class="rdm-card">
+          <span class="rdm-k">{{ t('rdm.keys') }}</span>
+          <span class="rdm-v">{{ ov.totalKeys }}</span>
+        </div>
       </div>
-      <div class="rdm-card">
-        <span class="rdm-k">{{ t('rdm.uptime') }}</span>
-        <span class="rdm-v">{{ fmtUptime(ov.uptimeSeconds) }}</span>
-      </div>
-      <div class="rdm-card">
-        <span class="rdm-k">{{ t('rdm.memory') }}</span>
-        <span class="rdm-v">{{ ov.usedMemoryHuman || '—' }}</span>
-      </div>
-      <div class="rdm-card">
-        <span class="rdm-k">{{ t('rdm.clients') }}</span>
-        <span class="rdm-v">{{ ov.connectedClients }}</span>
-      </div>
-      <div class="rdm-card">
-        <span class="rdm-k">{{ t('rdm.keys') }}</span>
-        <span class="rdm-v">{{ ov.totalKeys }}</span>
-      </div>
+      <InstancePower class="mng-inline-end" :instance-id="instanceId" @changed="onPowerChanged" />
     </div>
 
     <el-tabs v-model="tab" class="rdm-tabs">
@@ -121,6 +124,7 @@ import {
   RedisOverview, RedisScanKeys, RedisGetKey, RedisDeleteKey, RedisFlushDB,
   RedisBackup, ListRedisBackups, DeleteRedisBackup,
 } from '../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/redisservice'
+import InstancePower from './InstancePower.vue'
 
 const props = defineProps<{ instanceId: string; instanceName?: string }>()
 const visible = defineModel<boolean>('visible', { default: false })
@@ -144,6 +148,11 @@ const detail = reactive({ key: '', type: '', ttl: 0, size: 0, value: '', members
 
 // immediate：父组件用 v-if 挂载，挂载时 visible 已为 true，不加就永远不自动连。
 watch(visible, (v) => { if (v) reloadAll() }, { immediate: true })
+
+// 顶部启停后：等进程真正起停完成再刷一次（否则拿到的还是旧状态）
+function onPowerChanged() {
+  window.setTimeout(() => { void reloadAll() }, 700)
+}
 
 async function reloadAll() {
   if (!props.instanceId) return
@@ -290,7 +299,8 @@ function fmtTime(v: string): string {
 </script>
 
 <style scoped>
-.rdm-cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.5rem; margin-bottom: 0.75rem; }
+.rdm-top { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+.rdm-cards { flex: 1 1 auto; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.5rem; }
 .rdm-card {
   border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
   background: var(--bg-elevated); padding: 0.5rem 0.625rem;

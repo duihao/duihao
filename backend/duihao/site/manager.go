@@ -748,7 +748,7 @@ func renderVHost(rec *Record, phpPort int, logDir, instDir string) string {
 
 	// —— 日志 ——
 	if logDir != "" && (o.AccessLog || o.ErrorLog) {
-		b.WriteString("    # M10 日志：可在「网站 → 配置 → 高级配置」关闭\n")
+		b.WriteString("    # M10 日志：可在「站点 → 配置 → 高级配置」关闭\n")
 		if o.AccessLog {
 			fmt.Fprintf(&b, "    access_log \"%s/%s.access.log\";\n", slash(logDir), rec.ID)
 		}
@@ -886,7 +886,7 @@ func renderVHost(rec *Record, phpPort int, logDir, instDir string) string {
 // slash 统一成正斜杠（nginx 配置里反斜杠会被当转义符）。
 func slash(p string) string { return strings.ReplaceAll(p, `\`, "/") }
 
-// UpdateOpts 修改站点入参（对应「网站 → 配置」对话框）。
+// UpdateOpts 修改站点入参（对应「站点 → 配置」对话框）。
 // Web 实例不在可改范围：换 Web 要迁片段目录，属"新建站点"的语义。
 type UpdateOpts struct {
 	Name     string

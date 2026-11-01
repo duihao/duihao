@@ -852,6 +852,7 @@ export const useTabStore = defineStore('tab', () => {
     replaceStartWithTab,
     createStartTab,
     createWorkspaceTab,
+
     closeTab,
     setActiveTab,
     setDraggingTabId,

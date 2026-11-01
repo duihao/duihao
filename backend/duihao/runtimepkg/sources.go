@@ -227,7 +227,7 @@ type mirrorManifestItem struct {
 	SHA256  string `json:"sha256"`
 }
 
-// ImportMirror 将外部镜像 zip 的清单导入 mirror\ 目录（插件中心「导入离线包」的后端）。
+// ImportMirror 将外部镜像 zip 的清单导入 mirror\ 目录（环境工具「导入离线包」的后端）。
 // manifest 是镜像附带的 manifest.json 内容；files 目录里放 zip。
 func ImportMirror(manifestData []byte, filesDir string) error {
 	var m mirrorManifest

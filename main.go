@@ -20,7 +20,6 @@ import (
 	"github.com/ys-ll/uniterm/backend/duihao/ftpd"
 	"github.com/ys-ll/uniterm/backend/duihao/instance"
 	plugincenter "github.com/ys-ll/uniterm/backend/duihao/service"
-	"github.com/ys-ll/uniterm/backend/duihao/scheduler"
 	"github.com/ys-ll/uniterm/backend/duihao/site"
 	"github.com/ys-ll/uniterm/backend/duihao/webdavd"
 	"github.com/ys-ll/uniterm/backend/log"
@@ -239,6 +238,10 @@ func main() {
 		startState = application.WindowStateMaximised
 	}
 
+	// M23：主窗口恒为「IT 工具」窗口（侧栏 + 标签页 + 终端那套），几何按上次
+	// 记忆恢复；NAS 是独立主窗（下方 nasWin），不再靠主窗口换身份实现。
+	minWinW, minWinH, maxWinW, maxWinH := 500, 450, 0, 0
+
 	// Clean external-edit scratch dirs left behind by previous runs that
 	// exited without cleanup (crash / force-kill). Old dirs only: a
 	// concurrently running instance keeps its own. Async: it only ever
@@ -274,6 +277,11 @@ func main() {
 		SingleInstance: &application.SingleInstanceOptions{
 			UniqueID: uniqueInstanceID(),
 			OnSecondInstanceLaunch: func(data application.SecondInstanceData) {
+				// M23：第二次启动先把 NAS 主窗亮出来（它才是应用的脸）
+				if app.nasWindow() != nil {
+					app.ShowNasWindow()
+					return
+				}
 				showMainWindow(window)
 			},
 		},
@@ -330,9 +338,9 @@ func main() {
 		w3app.Menu.SetApplicationMenu(appMenu)
 	}
 
-	// M19/M6: 窗口标题随发行版品牌（core = 「对号」，专有版 = editions.json 的 name）。
+	// M19/M6: 窗口标题随发行版品牌（core = 「对号 IT工具」，专有版 = editions.json 的 name）。
 	// 放在窗口创建时设定，比前端 Window.SetTitle 更可靠（任务栏/Alt+Tab 立刻正确）。
-	winTitle := "对号"
+	winTitle := "对号 IT工具"
 	if c, err := editionpkg.Current(); err == nil && c != nil && c.Name != "" {
 		winTitle = c.Name
 	}
@@ -345,12 +353,15 @@ func main() {
 		Y:               savedY,
 		InitialPosition: startPos,
 		StartState:      startState,
-		MinWidth:        500,
-		MinHeight:       450,
+		MinWidth:        minWinW,
+		MinHeight:       minWinH,
+		MaxWidth:        maxWinW,
+		MaxHeight:       maxWinH,
 		// 用户定稿（M18-C）：启动只显示独立面板窗，主窗口常驻后台（webview
 		// 照常加载，供面板动作随时唤起）。wails 只在 options.Hidden==false
 		// 时才于 navigationCompleted 自动 Show，所以这里保持隐藏即可。
-		Hidden:    true,
+		// 例外：DUIHAO_SHOW_MAIN=1 时直接显示（GUI 自动化验收用，不影响正式行为）。
+		Hidden:    os.Getenv("DUIHAO_SHOW_MAIN") != "1",
 		Frameless: !systemTitleBar,
 		// 透明窗体：原生背景与边全部去掉（含启动首帧的底色块），窗口底色
 		// 与圆角完全由前端 CSS 决定。
@@ -430,7 +441,7 @@ func main() {
 	app.window = window
 	w3app.RegisterService(application.NewService(app))
 
-	// 对号插件中心（M3）与站点管理（M4）：共享同一实例管理器
+	// 对号环境工具（M3）与站点管理（M4）：共享同一实例管理器
 	// （两个 processd 管理器会各自持锁、互相看不见对方启的进程）。
 	if err := duihao.EnsureDirs(); err != nil {
 		log.Writef("duihao: ensure dirs failed: %v", err)
@@ -473,6 +484,27 @@ func main() {
 	w3app.RegisterService(application.NewService(pcSvc))
 	w3app.RegisterService(application.NewService(plugincenter.NewSiteService(siteMgr)))
 
+	// 打开软件默认自动启动 NAS（用户要求）：webdav 是 embedded 实例，listener
+	// 起在本进程内，早启没有副作用。异步跑，别让证书生成/端口绑定拖慢首帧；
+	// 还没建实例（首次运行、用户没点过「我的 NAS」）就静默跳过，交给首屏引导。
+	// 走 StartInstance 而不是 dhMgr.Start：它顺带重渲染引用了该实例的站点片段，
+	// 端口被自愈换掉时 nginx 不会还指着旧端口。
+	if dhMgr != nil {
+		go func() {
+			for _, v := range dhMgr.List() {
+				if v.Plugin != "webdav" {
+					continue
+				}
+				if err := pcSvc.StartInstance(v.ID); err != nil {
+					log.Writef("duihao: NAS 自动启动失败(%s): %v", v.ID, err)
+				} else {
+					log.Writef("duihao: NAS 已自动启动(%s)", v.ID)
+				}
+				break // 单实例口径：只起第一个
+			}
+		}()
+	}
+
 	// M11 运行时管理面：MySQL 库管理 / Redis 键浏览 / FTP 账号。
 	// 三者都只依赖实例管理器（端口、目录、设置），不碰站点层；
 	// FTPService 额外拿站点管理器仅用于「从站点选择根目录」下拉。
@@ -500,58 +532,6 @@ func main() {
 			w3app.RegisterService(application.NewService(deploySvc))
 		}
 
-		// M23 定时任务：MySQL/Redis 备份 + 日志切割。
-		// 调度器只做「什么时候跑」，具体动作注入现有服务（备份走 mysqldump/BGSAVE）。
-		schedActs := scheduler.Actions{
-			MySQLDatabases: func(id string) ([]string, error) {
-				list, err := mysqlSvc.ListMySQLDatabases(id)
-				if err != nil {
-					return nil, err
-				}
-				out := make([]string, 0, len(list))
-				for _, d := range list {
-					out = append(out, d.Name)
-				}
-				return out, nil
-			},
-			MySQLBackup: func(id, db string) (string, error) {
-				b, err := mysqlSvc.BackupMySQLDatabase(id, db)
-				if err != nil {
-					return "", err
-				}
-				return b.Path, nil
-			},
-			RedisBackup: func(id string) (string, error) {
-				b, err := redisSvc.RedisBackup(id)
-				if err != nil {
-					return "", err
-				}
-				return b.Path, nil
-			},
-			Instances: func(plugin string) []string {
-				var out []string
-				for _, v := range dhMgr.List() {
-					if v.Plugin == plugin {
-						out = append(out, v.ID)
-					}
-				}
-				return out
-			},
-			ReloadWeb: func() error {
-				for _, v := range dhMgr.List() {
-					if v.Plugin == "nginx" && v.Live == "running" {
-						_ = dhMgr.Reload(v.ID)
-					}
-				}
-				return nil
-			},
-		}
-		if schedMgr, serr := scheduler.NewManager(schedActs, dhAudit); serr != nil {
-			log.Writef("duihao: scheduler init failed: %v", serr)
-		} else {
-			schedMgr.Start()
-			w3app.RegisterService(application.NewService(plugincenter.NewScheduleService(schedMgr)))
-		}
 	}
 
 	// System notification service: app_<os>.go notifyMCPApproval posts MCP
@@ -572,6 +552,86 @@ func main() {
 	}
 	app.notifier = mcpNotifier
 
+	// M23 NAS 主窗：把原来的「普通模式」从「主窗口的一种身份」升格成独立窗口
+	// （/?w=nas）。竖版 330（宽度锁死）× 780，贴主屏右侧、垂直居中，默认打开；
+	// 原来那个主窗口退居「IT 工具」窗口，常驻后台（Hidden），按需唤起。
+	//
+	// 标题就是「对号」——与 IT 工具窗同名（用户定稿：主窗标题保持「对号」，
+	// 不写成「对号 · NAS」）。两窗同名不影响功能：findMainWindow 靠
+	// app.nasHwnd 把这个小窗排掉，剩下的才是 IT 工具窗（面板/悬浮菜单等辅助窗
+	// 标题都带「 · 」，本来就不在候选里）。
+	//
+	// 先建 Hidden、等原生窗口与 Screen 都就绪再摆位 + Show：创建期 Screen 还没
+	// 填充，直接显示会先在屏幕中央闪一下再跳到右边。
+	var nasWin *application.WebviewWindow
+	if runtime.GOOS != "android" {
+		nasWin = w3app.Window.NewWithOptions(application.WebviewWindowOptions{
+			Title:     "对号",
+			Width:     LifeWindowWidth,
+			Height:    LifeWindowHeight,
+			MinWidth:  LifeWindowWidth,
+			MinHeight: LifeWindowHeight,
+			MaxWidth:  LifeWindowWidth,
+			MaxHeight: LifeWindowHeight,
+			// 宽高全固定：连原生 resize 边框都关掉，拖边缘不变形
+			DisableResize: true,
+			Hidden:        true,
+			Frameless:     true,
+			// 与主窗口同款：圆角/描边/阴影全由前端 CSS 画，原生背景透明
+			BackgroundType:   application.BackgroundTypeTransparent,
+			BackgroundColour: application.NewRGBA(0, 0, 0, 0),
+			Windows: application.WindowsWindow{
+				DisableFramelessWindowDecorations: true,
+			},
+			CloseButtonState: application.ButtonHidden,
+			// NAS 各模块有拖文件上传（监控/音乐/网盘），与主窗口一致放行
+			EnableFileDrop: true,
+			URL:            "/?w=nas",
+		})
+		app.nasWin = nasWin
+		// 记下原生句柄：两窗都叫「对号」，findMainWindow 靠它把 NAS 窗排掉。
+		if h := nasWin.NativeWindow(); h != nil {
+			app.nasHwnd = uintptr(h)
+		}
+		// 主窗常驻：关闭按钮不销毁窗口，只隐藏（退出走托盘 / 悬浮菜单）。
+		//
+		// **必须用 RegisterHook 而不是 OnWindowEvent**：wails v3 建窗时给
+		// WindowClosing 挂了内置监听，它无条件 markAsDestroyed + 原生 close +
+		// 从 WindowManager 移除。监听器（OnWindowEvent）是在独立 goroutine 里
+		// 并发跑的，里面再 Cancel 已经晚了 —— 窗口照样被销毁，于是
+		// IsVisible() 恒 false、Show() 落到 isDestroyed 分支（InvokeSync(w.Run)
+		// 对已销毁窗口是空操作），表现就是「关掉 NAS 主窗后托盘 / 悬浮菜单 /
+		// 热键都唤不回来」。hook 在监听器之前同步执行，Cancel 才是有效的。
+		nasWin.RegisterHook(events.Common.WindowClosing, func(ev *application.WindowEvent) {
+			ev.Cancel()
+			nasWin.Hide()
+		})
+		if runtime.GOOS == "windows" {
+			nasWin.OnWindowEvent(events.Windows.WindowShow, func(*application.WindowEvent) {
+				removeNativeWindowBorder(nasWin.NativeWindow())
+			})
+		}
+		// 启动显示：原生窗口 + Screen 就绪后先摆位再 Show，避免中央闪一下。
+		go func() {
+			for i := 0; i < 300; i++ {
+				if nasWin.NativeWindow() != nil && app.app != nil && app.app.Screen != nil {
+					break
+				}
+				time.Sleep(20 * time.Millisecond)
+			}
+			if os.Getenv("UNITERM_UPDATE_AUTOTEST") == "1" {
+				return
+			}
+			app.placeNasWindow(nasWin)
+			if h := nasWin.NativeWindow(); h != nil {
+				app.nasHwnd = uintptr(h)
+			}
+			nasWin.Show()
+			log.Writef("M23: nas window shown")
+			app.nudgeNasPlacement(nasWin)
+		}()
+	}
+
 	// 桌面临时悬浮图标（uTools 桌面小球形态）：48×48 圆形无边框、置顶、不入
 	// 任务栏的小窗，前端 /?w=float 画品牌圆钮，点击调 App.PaletteToggle，
 	// 按住可拖拽。初始 Hidden：WS_EX_TOOLWINDOW 必须在任务栏按钮生成前生效，
@@ -583,20 +643,22 @@ func main() {
 	if runtime.GOOS != "android" {
 		floatWin = w3app.Window.NewWithOptions(application.WebviewWindowOptions{
 			Title:  "对号 · 悬浮",
-			Width:  44,
-			Height: 44,
+			Width:  72,
+			Height: 78,
 			// 不设会被系统 SM_CXMINTRACK（≈136px）钳成 135 宽的透明大窗：
 			// wails 只在 MinWidth/MinHeight>0 时接管 WM_GETMINMAXINFO。
-			// 44 = 34px 球体 + 半透明环带留白（环在窗口内部，画不出界）。
-			MinWidth:    44,
-			MinHeight:   44,
+			// 72×78 = 40px 球体 + 两侧各 4px 白边（外径 48）+ 阴影余量
+			//（横向 12×2、纵向 上10/下20）。环与阴影都画在窗口内部，画不出界；
+			// 留白不够会被窗口边界硬裁成一道直线。前端 BALL_W/BALL_H 保持同步。
+			MinWidth:  72,
+			MinHeight: 78,
 			// 禁掉缩放：frameless 窗口仍带 WS_THICKFRAME，透明区域整块都能
 			// 被鼠标抓到拖大（实测被误拉成 474×161，球还只占左上 44px，
 			// 菜单锚到窗口底边就显得离球很远）。
 			DisableResize: true,
 			Frameless:     true,
-			AlwaysOnTop: true,
-			Hidden:      true,
+			AlwaysOnTop:   true,
+			Hidden:        true,
 			// 透明窗口：圆形 logo 四角透出桌面而不是色块
 			BackgroundType:   application.BackgroundTypeTransparent,
 			BackgroundColour: application.NewRGB(247, 25, 99),
@@ -620,8 +682,8 @@ func main() {
 				if hwnd := floatWin.NativeWindow(); hwnd != nil {
 					styleToolWindow(uintptr(hwnd))
 					// 创建尺寸可能被 SM_CXMINTRACK（≈136）钳大，显示前掰回
-					// 44×44（只动尺寸；位置归前端记忆/恢复）。
-					forceWindowSize(uintptr(hwnd), 44, 44)
+					// 72×78（只动尺寸；位置归前端记忆/恢复）。
+					forceWindowSize(uintptr(hwnd), 72, 78)
 					log.Writef("M18: floatWin pre-show styled (try %d)", i)
 					return
 				}
@@ -637,7 +699,7 @@ func main() {
 					// 记忆/恢复（FloatIcon onMounted），Go 摆放会盖掉用户的
 					// 拖拽落点。
 					styleToolWindow(hwnd)
-					forceWindowSize(hwnd, 44, 44)
+					forceWindowSize(hwnd, 72, 78)
 				}
 			})
 		}
@@ -650,6 +712,20 @@ func main() {
 				floatWin.Show()
 			}
 		}()
+		// M23：面板窗不再开机自显，悬浮球改成跟着 NAS 主窗首显一起出现
+		//（球是「主窗 / IT 工具 / 官网」的入口，不能等人按了 Alt+Space 才出来）。
+		if nasWin != nil {
+			var ballOnce sync.Once
+			nasWin.OnWindowEvent(events.Common.WindowShow, func(*application.WindowEvent) {
+				ballOnce.Do(func() {
+					if !floatShown {
+						floatShown = true
+						floatWin.Show()
+						log.Writef("M23: floatWin shown with nas window")
+					}
+				})
+			})
+		}
 	}
 
 	// 悬浮球右键菜单窗：uTools 同款圆角卡片（148×136，深/浅色跟随主题）。
@@ -659,14 +735,15 @@ func main() {
 	var floatMenuWin *application.WebviewWindow
 	if runtime.GOOS != "android" {
 		floatMenuWin = w3app.Window.NewWithOptions(application.WebviewWindowOptions{
-			Title:  "对号 · 菜单",
-			// 68×136 卡片 + 四周 14px 透明留白：box-shadow 画在卡片上，
+			Title: "对号 · 菜单",
+			// 68×165 卡片 + 四周 14px 透明留白：box-shadow 画在卡片上，
 			// 没有留白会被窗口边界直接裁掉，看不出柔和投影。
+			// 4 项（主窗 / IT工具 / 设置 / 官网）+ 1 条分隔 = 165。
 			Width:  96,
-			Height: 164,
+			Height: 193,
 			// 同样要显式 Min 尺寸，否则被 SM_CXMINTRACK 钳成 135 宽
 			MinWidth:      96,
-			MinHeight:     164,
+			MinHeight:     193,
 			DisableResize: true,
 			Frameless:     true,
 			AlwaysOnTop:   true,
@@ -686,7 +763,7 @@ func main() {
 			for i := 0; i < 200; i++ {
 				if hwnd := floatMenuWin.NativeWindow(); hwnd != nil {
 					styleToolWindow(uintptr(hwnd))
-					forceWindowSize(uintptr(hwnd), 96, 164)
+					forceWindowSize(uintptr(hwnd), 96, 193)
 					return
 				}
 				time.Sleep(20 * time.Millisecond)
@@ -698,25 +775,26 @@ func main() {
 				if hwnd := uintptr(floatMenuWin.NativeWindow()); hwnd != 0 {
 					styleToolWindow(hwnd)
 					removeNativeWindowBorder(unsafe.Pointer(hwnd))
-					forceWindowSize(hwnd, 96, 164)
+					forceWindowSize(hwnd, 96, 193)
 				}
 			})
 		}
 	}
 
-	// M18-C 独立悬浮命令面板（uTools「没有主窗口」形态，用户定稿：面板窗
-	// 就是主入口，启动即显示——主窗口常驻后台，触发面板动作才打开）：第二个
-	// 无边框、置顶的窗口，前端以 /?w=palette 只挂 CommandPalette。Alt+Space /
-	// 悬浮球切换它；导航/连接/创建动作经 App.PaletteNavigate/PaletteConnect/
-	// PaletteAction 打开旧主窗口。
+	// M18-C 独立悬浮命令面板：无边框置顶窗，前端 /?w=palette 只挂 CommandPalette。
+	// M23 起它不再是「启动即显示的主入口」——主入口换成 NAS 主窗（上面那个），
+	// 面板改成纯热键面：Alt+Space / 悬浮球 / 托盘唤起。启动两个窗口同时弹出来
+	// 只会互相盖住，也没必要。
+	// Alt+Space / 悬浮球切换它；导航/连接/创建动作经 App.PaletteNavigate/
+	// PaletteConnect/PaletteAction 打开 IT 工具窗口。
 	var paletteWin *application.WebviewWindow
 	if runtime.GOOS != "android" {
 		paletteWin = w3app.Window.NewWithOptions(application.WebviewWindowOptions{
 			Title:  "对号 · 面板",
 			Width:  640,
 			Height: 480,
-			// 启动即显示（不是 Hidden）。headless 更新 e2e 除外。
-			Hidden:      os.Getenv("UNITERM_UPDATE_AUTOTEST") == "1",
+			// 启动不显示，只等热键/悬浮球唤起。
+			Hidden:      true,
 			Frameless:   true,
 			AlwaysOnTop: true,
 			// 透明窗体：面板圆角由前端 CSS 画（uTools/WorkBuddy 式大圆角）
@@ -778,7 +856,7 @@ func main() {
 	// Global show/hide hotkey (issue #982, Windows + platform backends via
 	// the wails GlobalShortcutManager). Default Ctrl+M when unset; can be
 	// changed or disabled in Settings → Shortcuts.
-	applyGlobalShowHideHotkey(w3app, window, trayHotkeyBinding(&savedSettings))
+	applyGlobalShowHideHotkey(w3app, app, window, trayHotkeyBinding(&savedSettings))
 
 	// M18 全局呼出命令面板（uTools 式）：Alt+Space 切换独立悬浮面板窗 ——
 	// 主窗口收进托盘也能呼出，导航动作经后端打开旧主窗口。注册失败（组合键
@@ -876,17 +954,17 @@ func windowBackgroundColour(theme string) application.RGBA {
 // back to English.
 var trayLabels = map[string][6]string{
 	// show, hide, reset, settings, about, quit
-	"en":    {"Show Main Window", "Hide to Tray", "Reset Window Position", "Settings", "About", "Quit"},
-	"zh-CN": {"显示主窗口", "隐藏到托盘", "重置窗口位置", "设置", "关于", "退出"},
-	"zh-TW": {"顯示主視窗", "隱藏到系統匣", "重置視窗位置", "設定", "關於", "結束"},
-	"ja":    {"メインウィンドウを表示", "トレイに隠す", "ウィンドウ位置をリセット", "設定", "バージョン情報", "終了"},
-	"ko":    {"메인 창 표시", "트레이로 숨기기", "창 위치 재설정", "설정", "정보", "종료"},
-	"de":    {"Hauptfenster anzeigen", "In den Tray minimieren", "Fensterposition zurücksetzen", "Einstellungen", "Über", "Beenden"},
-	"es":    {"Mostrar ventana principal", "Ocultar en la bandeja", "Restablecer posición", "Ajustes", "Acerca de", "Salir"},
-	"fr":    {"Afficher la fenêtre", "Réduire dans la zone de notification", "Réinitialiser la position", "Paramètres", "À propos", "Quitter"},
-	"ru":    {"Показать главное окно", "Свернуть в трей", "Сбросить положение окна", "Настройки", "О программе", "Выход"},
-	"pt":    {"Mostrar janela principal", "Ocultar na bandeja", "Redefinir posição da janela", "Configurações", "Sobre", "Sair"},
-	"vi":    {"Hiện cửa sổ chính", "Ẩn vào khay hệ thống", "Đặt lại vị trí cửa sổ", "Cài đặt", "Giới thiệu", "Thoát"},
+	"en":    {"Show Main Window", "Hide to Tray", "Reset IT Tool Window", "Settings", "About", "Quit"},
+	"zh-CN": {"显示主窗口", "隐藏到托盘", "重置IT工具窗口", "设置", "关于", "退出"},
+	"zh-TW": {"顯示主視窗", "隱藏到系統匣", "重置 IT 工具視窗", "設定", "關於", "結束"},
+	"ja":    {"メインウィンドウを表示", "トレイに隠す", "ITツールのウィンドウ位置をリセット", "設定", "バージョン情報", "終了"},
+	"ko":    {"메인 창 표시", "트레이로 숨기기", "IT 도구 창 위치 재설정", "설정", "정보", "종료"},
+	"de":    {"Hauptfenster anzeigen", "In den Tray minimieren", "IT-Tool-Fensterposition zurücksetzen", "Einstellungen", "Über", "Beenden"},
+	"es":    {"Mostrar ventana principal", "Ocultar en la bandeja", "Restablecer posición de la ventana de IT", "Ajustes", "Acerca de", "Salir"},
+	"fr":    {"Afficher la fenêtre", "Réduire dans la zone de notification", "Réinitialiser la position de la fenêtre IT", "Paramètres", "À propos", "Quitter"},
+	"ru":    {"Показать главное окно", "Свернуть в трей", "Сбросить положение окна IT-инструментов", "Настройки", "О программе", "Выход"},
+	"pt":    {"Mostrar janela principal", "Ocultar na bandeja", "Redefinir posição da janela de IT", "Configurações", "Sobre", "Sair"},
+	"vi":    {"Hiện cửa sổ chính", "Ẩn vào khay hệ thống", "Đặt lại vị trí cửa sổ IT", "Cài đặt", "Giới thiệu", "Thoát"},
 }
 
 func trayLabel(lang string, idx int) string {
@@ -913,10 +991,15 @@ func setupTray(w3app *application.App, app *App, window *application.WebviewWind
 	tray.SetTooltip("对号")
 
 	menu := application.NewMenu()
+	// M23：托盘「显示/隐藏」指向 NAS 主窗（应用的脸）；设置/关于仍需要 IT 工具窗口。
 	menu.Add(trayLabel(lang, trayShow)).OnClick(func(*application.Context) {
-		showMainWindow(window)
+		app.ShowNasWindow()
 	})
 	menu.Add(trayLabel(lang, trayHide)).OnClick(func(*application.Context) {
+		if nw := app.nasWindow(); nw != nil && nw.IsVisible() {
+			nw.Hide()
+			return
+		}
 		window.Hide()
 	})
 	menu.AddSeparator()
@@ -941,11 +1024,16 @@ func setupTray(w3app *application.App, app *App, window *application.WebviewWind
 
 	// Left click toggles visibility, mirroring MobaXterm's tray behaviour.
 	tray.OnClick(func() {
-		if window.IsVisible() {
-			window.Hide()
-		} else {
-			showMainWindow(window)
+		// M23：左键切 NAS 主窗（没有 NAS 窗的构建退回到 IT 工具窗）。
+		if app.nasWindow() == nil {
+			if window.IsVisible() {
+				window.Hide()
+			} else {
+				showMainWindow(window)
+			}
+			return
 		}
+		app.ToggleNasWindow()
 	})
 
 	tray.Show()
@@ -994,7 +1082,7 @@ var (
 // Linux). A nil binding means the default Ctrl+M; a binding with an empty
 // key (the UI's "cleared" state) unregisters. Failures (the combo already
 // owned by another app) are logged and leave no binding registered.
-func applyGlobalShowHideHotkey(w3app *application.App, window *application.WebviewWindow, binding *store.KeyBinding) {
+func applyGlobalShowHideHotkey(w3app *application.App, app *App, window *application.WebviewWindow, binding *store.KeyBinding) {
 	if w3app == nil {
 		return
 	}
@@ -1016,6 +1104,11 @@ func applyGlobalShowHideHotkey(w3app *application.App, window *application.Webvi
 		return
 	}
 	if err := w3app.GlobalShortcut.Register(accel, func() {
+		// M23：全局显隐热键作用在 NAS 主窗（应用的脸）；没有 NAS 窗才退回主窗口。
+		if app != nil && app.nasWindow() != nil {
+			app.ToggleNasWindow()
+			return
+		}
 		toggleMainWindow(window)
 	}); err != nil {
 		log.Writef("global hotkey: register %q failed: %v", accel, err)

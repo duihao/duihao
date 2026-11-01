@@ -1,0 +1,90 @@
+{{define "body"}}
+<section id="m-home">
+  <!-- 宽屏左栏（搜索 + 分组 tabs + chips + 工具）/ 窄屏回落成顶部横排 -->
+  <div class="mu-shell">
+    <aside class="mu-rail">
+      <div class="mu-search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="m-q" placeholder="搜歌名 / 歌手 / 专辑" autocomplete="off">
+      </div>
+
+      <div class="mu-tabs" id="m-tabs">
+        <button data-tab="artists" class="on">歌手</button>
+        <button data-tab="albums">专辑</button>
+        <button data-tab="pls">歌单</button>
+        <button data-tab="recent">最近</button>
+      </div>
+
+      <div class="mu-chips" id="m-chips"></div>
+
+      <div class="mu-rail-tools">
+        <button id="m-scan">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9"/><path d="M21 3v6h-6"/></svg>
+          扫描曲库
+        </button>
+        <button id="m-usb" class="primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="3" width="10" height="12" rx="2"/><path d="M10 6.5h.01M14 6.5h.01M10 9.5h.01M14 9.5h.01"/><path d="M5 15v3a4 4 0 0 0 4 4h6a4 4 0 0 0 4-4v-3"/></svg>
+          制作音乐U盘
+        </button>
+        <button id="m-pl-new">新建歌单</button>
+      </div>
+    </aside>
+
+    <div class="mu-main">
+      <header class="mu-head">
+        <h2 id="m-title">曲库</h2>
+        <span class="mu-count" id="m-count"></span>
+        <span class="mu-head-btns">
+          <button id="m-pl-rename" class="mu-mini" hidden>重命名</button>
+          <button id="m-pl-del" class="mu-mini" hidden>删除歌单</button>
+          <button id="m-selall" class="mu-mini" hidden>全选</button>
+          <button id="m-selpl" class="mu-mini" hidden>加入歌单</button>
+          <button id="m-playall" class="mu-mini">全部播放</button>
+        </span>
+      </header>
+      <div class="mu-list" id="m-list"></div>
+      <div class="mu-empty" id="m-empty" hidden></div>
+    </div>
+  </div>
+
+  <!-- 底部播放条 -->
+  <div class="mu-player" id="m-player" hidden>
+    <img id="mp-cover" alt="">
+    <div class="mp-info"><b id="mp-title"></b><span id="mp-artist"></span></div>
+    <div class="mp-ctrl">
+      <button id="mp-mode" title="消声模式：原唱 → 伴奏 → 全消（消中置人声，仅立体声有效）">原唱</button>
+      <button id="mp-kara" title="K 歌模式（歌词大屏）">词</button>
+      <button id="mp-prev" title="上一首">⏮</button>
+      <button id="mp-play" title="播放/暂停">▶</button>
+      <button id="mp-next" title="下一首">⏭</button>
+    </div>
+    <div class="mp-bar">
+      <span id="mp-cur">0:00</span>
+      <div class="mp-track" id="mp-track"><i id="mp-fill"></i></div>
+      <span id="mp-dur">0:00</span>
+    </div>
+    <audio id="m-audio" preload="none"></audio>
+  </div>
+
+  <!-- K 歌大屏（消声 + LRC 歌词） -->
+  <div class="mu-kara" id="m-kara" hidden>
+    <header class="mu-kara-top">
+      <div class="mu-kara-head">
+        <b id="kara-title"></b>
+        <span id="kara-sub"></span>
+      </div>
+      <span class="mu-kara-btns">
+        <button id="kara-mode">原唱</button>
+        <button id="kara-close">退出 K 歌</button>
+      </span>
+    </header>
+    <div class="mu-kara-body" id="kara-lines"></div>
+    <div class="mu-kara-empty" id="kara-empty" hidden>
+      这首歌没有歌词<br>把同名 .lrc 文件放到音乐文件旁边（如 晴天.lrc 配 晴天.mp3），再点一次「扫描曲库」
+    </div>
+  </div>
+
+  <div class="mu-mask" id="m-mask" hidden><div class="mu-dlg" id="m-dlg"></div></div>
+</section>
+<script src="/-ui/apps/music.js"></script>
+{{end}}
