@@ -24,6 +24,7 @@ import (
 	"github.com/ys-ll/uniterm/backend/store"
 	"github.com/ys-ll/uniterm/backend/sync"
 	"github.com/ys-ll/uniterm/backend/update"
+	"github.com/ys-ll/uniterm/licence"
 	"github.com/ys-ll/uniterm/backend/utils"
 	"golang.org/x/crypto/ssh"
 	"io"
@@ -107,6 +108,10 @@ type App struct {
 	// calls reuse the keep-alive pool and skip the TCP+TLS handshake.
 	httpClient     *http.Client
 	httpClientOnce stdsync.Once
+
+	// B6 软件授权：设备绑定 / 权益 / 静默续签。initStores 末尾构建；
+	// 门禁唯一入口 Allows(cap)，启动绝不因授权阻塞（见 app_licence.go）。
+	licence *licence.Manager
 
 	// MCP server (external AI agents): listener + token auth + approval
 	// bridge. Lazily created once stores are ready (ensureMCPServer).
@@ -499,6 +504,8 @@ func (a *App) initStores(dataDir string, upgrade bool) {
 	// Credential store + auto-unlock / upgrade (wires PasswordStore into
 	// connection + settings stores).
 	a.initCredentials(dataDir, upgrade)
+	// B6 软件授权：构建管理器 + 后台 Verify / 静默续签（不阻塞启动）。
+	a.initLicence(dataDir)
 	// Resolve saved tunnel credentials only after the credential store is ready.
 	go a.autoStartTunnels()
 

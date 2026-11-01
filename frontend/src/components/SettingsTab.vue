@@ -33,10 +33,10 @@
             <div class="setting-control">
               <el-select v-model="settingsStore.settings.theme" @change="settingsStore.save()">
                 <el-option :label="t('settings.themeDark')" value="dark" />
+                <el-option :label="t('settings.themeLight')" value="light" />
                 <el-option :label="t('settings.themeDeepBlue')" value="deep-blue" />
                 <el-option :label="t('settings.themeDuihaoRed')" value="duihao-red" />
                 <el-option :label="t('settings.themeDuihaoLight')" value="duihao-light" />
-                <el-option :label="t('settings.themeLight')" value="light" />
                 <el-option :label="t('settings.themeSystem')" value="system" />
               </el-select>
             </div>
@@ -967,6 +967,12 @@
       </div>
 
       <!-- 关于 -->
+      <!-- B6 账号与授权：手机号+验证码登录 / 权益展示 / 退出。判权在 Go 侧 Allows()，这里只展示。 -->
+      <div v-if="settingsStore.activeCategory === 'account'" class="settings-section">
+        <h2 class="section-title">{{ t('settings.account') }}</h2>
+        <LicenceAccount />
+      </div>
+
       <div v-if="settingsStore.activeCategory === 'about'" class="settings-section">
         <h2 class="section-title">{{ t('settings.about') }}</h2>
         <div class="about-content">
@@ -1626,7 +1632,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, watch, computed, onMounted, onUnmounted, onActivated } from 'vue'
-import { Settings, Monitor, MessageCircleMore, Info, RefreshCw, Pencil, Trash2, Globe, Keyboard, Plus, BookOpen, Wrench, FolderOpen, Key, Network, ArrowRightLeft, ChevronLeft, ChevronRight, Plug, Server } from '@lucide/vue'
+import { Settings, Monitor, MessageCircleMore, Info, RefreshCw, Pencil, Trash2, Globe, Keyboard, Plus, BookOpen, Wrench, FolderOpen, Key, Network, ArrowRightLeft, ChevronLeft, ChevronRight, Plug, Server, UserRound } from '@lucide/vue'
 import { msg } from '../services/message'
 import { FetchModels, ChatCompletion, GetPlatform, GetAllFonts, GetDefaultSessionLogDir, OpenDirectoryDialog, OpenFileDialogFiltered, SetBackgroundImage, ClearBackgroundImage, GetBackgroundImage, RelaunchApp, ListExternalEditors, GenerateMCPToken, RevokeMCPToken, ListMCPTokens, GetMCPStatus, ListMCPClients, SaveMCPClient, UpdateMCPClient, RemoveMCPClient, TestMCPClient, MCPClientStatuses } from '../../bindings/github.com/ys-ll/uniterm/app'
 import { useSettingsStore } from '../stores/settingsStore'
@@ -1650,6 +1656,7 @@ import { uninstallGlobalListener, installGlobalListener, formatKeyBinding, digit
 import AddRepoDialog from './AddRepoDialog.vue'
 import EditRepoDialog from './EditRepoDialog.vue'
 import ChangePasswordDialog from './ChangePasswordDialog.vue'
+import LicenceAccount from './LicenceAccount.vue'
 import DeleteRepoDialog from './DeleteRepoDialog.vue'
 import CustomThemeEditor from './CustomThemeEditor.vue'
 import DataDirDialog from './DataDirDialog.vue'
@@ -2736,6 +2743,7 @@ const categories = computed(() => {
     { key: 'proxies', label: t('settings.proxies'), icon: Network },
     { key: 'tunnels', label: t('settings.tunnels'), icon: ArrowRightLeft },
     { key: 'sync', label: t('settings.sync'), icon: RefreshCw },
+    { key: 'account', label: t('settings.account'), icon: UserRound },
     { key: 'about', label: t('settings.about'), icon: Info },
   ]
   return cats
