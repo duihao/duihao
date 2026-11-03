@@ -11,6 +11,9 @@
 <script src="/-ui/acct.js" defer></script>
 <!-- 主题跟随（SSE）：应用里切主题，已打开的页面跟着变 -->
 <script src="/-ui/theme.js" defer></script>
+<!-- 桌面窗口外壳（右上角最小化/最大化/关闭 + 顶栏拖动）：只有从客户端开的模块窗
+     带票（_dw=…）时生效，浏览器打开时脚本自己空转 -->
+<script src="/-ui/winctl.js" defer></script>
 </head>
 <body data-app="{{.App}}" data-role="{{.Role}}" data-user="{{.User}}">
 <header class="hub-top">

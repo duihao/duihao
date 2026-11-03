@@ -29,6 +29,8 @@
       <div class="sp-domains" :title="s.domains.join(', ')">
         <span>{{ s.domains.join(', ') }}</span>
         <span v-if="s.tlsMode === 'selfsigned'" class="sp-tag sp-tag-tls">https</span>
+        <!-- https 站点同时开的明文端口：点一下用 http 打开（自签证书不便时用） -->
+        <button v-if="s.plainUrl" class="sp-tag sp-tag-http" :title="s.plainUrl" @click.stop="openPlain(s)">http :{{ s.plainPort }}</button>
         <span v-if="!s.php" class="sp-tag">{{ t('sites.tagStatic') }}</span>
         <span v-else class="sp-tag sp-tag-php">{{ phpTag(s) }}</span>
         <span v-if="s.options?.expireAt" class="sp-expire" :title="t('sites.expireAt')">{{ s.options.expireAt }}</span>
@@ -158,6 +160,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Browser } from '@wailsio/runtime'
 import { useI18n } from '../i18n'
 import SiteDialog from './SiteDialog.vue'
 import DeployDialog from './DeployDialog.vue'
@@ -177,6 +180,8 @@ interface SiteView {
   web: string; php?: string; db?: string; database?: string; tlsMode?: string
   webLive: string; phpLive?: string; phpPort?: number; dbLive?: string
   webPort: number; sitePort: number; url: string; hostsReady: boolean
+  // https 站点附带的明文端口：plainUrl 空表示只有 https（M58）
+  plainPort?: number; plainUrl?: string
   disabled?: boolean; live?: string
   options?: Record<string, any>
 }
@@ -383,6 +388,11 @@ async function onOpen(s: SiteView) {
   }
 }
 
+// https 站点的明文入口：直接开浏览器，不走 OpenSite（那边开的是 https）
+function openPlain(s: SiteView) {
+  if (s.plainUrl) Browser.OpenURL(s.plainUrl)
+}
+
 async function onLogs(s: SiteView) {
   try {
     logTitle.value = `${s.id} · ${t('sites.logs')}`
@@ -578,6 +588,18 @@ onUnmounted(() => window.removeEventListener('site:create', openCreate))
   color: var(--text-muted); border: 1px solid var(--border-subtle);
 }
 .sp-tag-tls { color: var(--success); border-color: color-mix(in srgb, var(--success) 45%, transparent); }
+/* 明文端口标签：看着像 tag，实际可点（用 http 打开同一站点） */
+.sp-tag-http {
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  background: transparent;
+  color: var(--accent);
+  /* button 自带字体（不是 tag 字号），这里显式对齐 .sp-tag */
+  font-family: inherit;
+  font-size: 0.5625rem;
+  line-height: 1.4;
+  cursor: pointer !important;
+}
+.sp-tag-http:hover { background: color-mix(in srgb, var(--accent) 14%, transparent); }
 /* 站点绑定的 PHP 版本：一眼看出这个站跑的是哪个版本（多版本并存时尤其有用） */
 .sp-tag-php { font-family: var(--font-mono); color: var(--text-secondary); }
 .sp-expire { flex-shrink: 0; margin-left: auto; font-size: 0.625rem; color: var(--warning); }

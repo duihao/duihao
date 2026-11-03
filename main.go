@@ -88,31 +88,33 @@ func sweepLegacyWebview2Dirs() {
 //go:embed all:frontend/dist
 var assets embed.FS
 
-// appIconTrayPNG is a dedicated tray icon: just the cyan "U" glyph cropped
-// from the app icon, pre-scaled to 64px. At the tray's 16-24px sizes the full
-// app icon (dark rounded tile + small glyph) turns into an unreadable dark
-// blob, and GDI's own downscale of the 1024px icon is mushy — a high-contrast
-// glyph filling the canvas stays legible. Scaled at runtime to the exact
-// OS small-icon size on Windows (see trayIconPNG in app_windows.go).
+// appIconTrayPNG is the tray icon used outside Windows' exact-size set
+// (macOS/Linux, and Windows as the 64px fallback): the app logo scaled down
+// proportionally, nothing redrawn. Keeping it a plain scale means the tray
+// icon, the window title-bar logo (/favicon.png) and the exe icon all show
+// the same artwork — an earlier version thickened the glyph at small sizes
+// and the tray ended up looking like a different app. 64px, derived by
+// scripts/gen_tray_icons.py.
 //
 //go:embed build/appicon_tray.png
 var appIconTrayPNG []byte
 
 // appIconTraySet is the Windows tray icon set: one PNG per OS small-icon
-// size (16/20/24/32/40/48/64), each rendered at that exact pixel grid during
-// build (scripts/gen_tray_icons.py) so strokes land on whole pixels instead
-// of being rescaled by GDI. trayIconPNG in app_windows.go picks the entry
-// matching SM_CXSMICON.
+// size (16/20/24/28/32/36/40/48/64 — i.e. 16 DIP at 100/125/150/175/200/
+// 225/250/300/400%), each produced by proportionally scaling the logo to
+// that exact pixel grid (scripts/gen_tray_icons.py) so Windows never has to
+// resample it. The 28 and 36 entries matter: at 175% DPI Windows asks for
+// 28px, which used to be missing and fell back to a downsampled 64px image —
+// visibly softer than the icons around it.
+// trayIconPNG in app_windows.go picks the entry matching SM_CXSMICON.
 //
 //go:embed build/tray
 var appIconTraySet embed.FS
 
-// appIconTrayTemplatePNG is the macOS variant: the same rounded tile rendered
-// as a template image — black tile, "U" knocked out to transparency. macOS
-// recolours template images itself (black on a light menu bar, white on a
-// dark one), matching the monochrome icons of other apps. Generated from
-// appicon_tray.png by knocking the cyan glyph out and flattening the rest to
-// black.
+// appIconTrayTemplatePNG is the macOS variant: the logo as a template image
+// (black plate, glyph knocked out) so macOS can recolour it for light and
+// dark menu bars. Maintained separately from the Windows set — macOS builds
+// are not produced yet, so the file is carried as-is.
 //
 //go:embed build/appicon_tray_template.png
 var appIconTrayTemplatePNG []byte
@@ -456,6 +458,8 @@ func main() {
 	if err != nil {
 		log.Writef("duihao: instance manager init failed: %v", err)
 	}
+	// IPv6 直连弹窗（?w=v6）要读网盘实例的 hub.db 与 dav 端口。
+	app.dhMgr = dhMgr
 	var siteMgr *site.Manager
 	if dhMgr != nil {
 		// 内置服务（embedded 类）：编译进本体的实现由 main 注入，清单只声明数据。
@@ -520,6 +524,7 @@ func main() {
 		w3app.RegisterService(application.NewService(ftpSvc))
 		// M5 本地网盘：共享管理（与 FTP 账号管理同构）。
 		davSvc := plugincenter.NewWebDavService(dhMgr, dhAudit)
+		davSvc.SetEventEmitter(func(name string, data any) { w3app.Event.Emit(name, data) })
 		if siteMgr != nil {
 			davSvc.SetSiteManager(siteMgr)
 		}

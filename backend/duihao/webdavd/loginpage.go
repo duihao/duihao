@@ -59,8 +59,10 @@ func htmlEscape(s string) string {
 	return r.Replace(s)
 }
 
-const loginCSS = `:root{--bg:#f4f5f7;--card:#fff;--tx:#24292f;--mut:#8a919c;--ln:#eceef1;--acc:#f0247e;--danger:#dc2626}
-@media (prefers-color-scheme:dark){:root{--bg:#16181c;--card:#1f2329;--tx:#e6e8eb;--mut:#7d8590;--ln:#2d333b;--acc:#ff4d8d;--danger:#f87171}}
+const loginCSS = `/* 配色与桌面端 style.css 对齐（同 shared.css 那套映射）：登录页只跟随系统明暗，
+   不读应用主题 —— 它出现在「还没进 NAS」的时刻，按系统走最不容易出岔子。 */
+:root{--bg:#ffffff;--card:#f5f5f5;--tx:#000000;--mut:#5c5c5c;--ln:rgba(0,0,0,.08);--acc:#ff4d8d;--danger:#d13438}
+@media (prefers-color-scheme:dark){:root{--bg:#0f0f0f;--card:#1a1a1a;--tx:#ffffff;--mut:#9a9a9a;--ln:rgba(255,255,255,.14);--acc:#ff4d8d;--danger:#f87171}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,"Segoe UI","Microsoft YaHei",sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem}
 .box{background:var(--card);width:100%;max-width:22rem;border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.08),0 12px 32px rgba(0,0,0,.06);padding:2rem 1.75rem 1.25rem;text-align:center}

@@ -35,7 +35,7 @@ func TestSniffListenerPlainLoopbackAndTLS(t *testing.T) {
 	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = io.WriteString(w, "ok")
 	}))
-	srv.Listener = newPlainLoopbackListener(inner, cfg)
+	srv.Listener = newDualListener(inner, cfg, true)
 	srv.Start()
 	defer srv.Close()
 
@@ -65,11 +65,14 @@ func TestSniffListenerPlainLoopbackAndTLS(t *testing.T) {
 	}
 }
 
-// TestSniffClassify 分流判定：TLS 字节→tls.Conn；回环明文→放行；
-// 外部明文→掐断（LAN 保持 https-only，Basic Auth 不裸奔）。
+// TestSniffClassify 分流判定：TLS 字节→tls.Conn；明文按 dav.plain 决定——
+// 允许明文时局域网/公网来源一律放行（同端口 http），
+// 严格模式时只放行回环，外部明文掐断（https-only）。
 // 用假连接注入来源地址——Windows 上没法用局域网源 IP 连回环，端到端模拟不了。
 func TestSniffClassify(t *testing.T) {
-	l := newPlainLoopbackListener(nil, &tls.Config{Certificates: []tls.Certificate{mustSelfCert(t)}}).(*sniffListener)
+	base := &tls.Config{Certificates: []tls.Certificate{mustSelfCert(t)}}
+	l := newDualListener(nil, base, false).(*sniffListener) // 严格模式（dav.plain=0）
+	open := newDualListener(nil, base, true).(*sniffListener)
 
 	// 1) TLS ClientHello 首字节 0x16 → tls.Conn。
 	tlsC := l.classify(&fakeConn{}, bufio.NewReader(strings.NewReader("\x16hello")))
@@ -77,7 +80,7 @@ func TestSniffClassify(t *testing.T) {
 		t.Fatalf("TLS 握手字节应得到 *tls.Conn, got %T", tlsC)
 	}
 
-	// 2) 回环明文 → 放行。
+	// 2) 回环明文 → 放行（严格模式也放行，保证本机恒 http）。
 	lb := l.classify(&fakeConn{remote: "127.0.0.1:5555"}, bufio.NewReader(strings.NewReader("GET / HTTP/1.1\r\n")))
 	if _, ok := lb.(*peekConn); !ok {
 		t.Fatalf("回环明文应放行, got %T", lb)
@@ -87,15 +90,23 @@ func TestSniffClassify(t *testing.T) {
 		t.Fatalf("IPv6 回环明文应放行, got %T", lb)
 	}
 
-	// 3) 外部明文（局域网/公网来源）→ deadConn 且底层已关。
+	// 3) 严格模式下外部明文（局域网/公网来源）→ deadConn 且底层已关。
 	for _, remote := range []string{"192.168.0.9:5555", "203.0.113.7:9999"} {
 		fc := &fakeConn{remote: remote}
 		out := l.classify(fc, bufio.NewReader(strings.NewReader("GET / HTTP/1.1\r\n")))
 		if _, ok := out.(deadConn); !ok {
-			t.Fatalf("外部明文(%s)应掐断, got %T", remote, out)
+			t.Fatalf("严格模式外部明文(%s)应掐断, got %T", remote, out)
 		}
 		if !fc.closed {
 			t.Fatalf("外部明文(%s)底层连接未关闭", remote)
+		}
+	}
+
+	// 4) 允许明文 → 同一个外部来源也放行（局域网/公网直接 http）。
+	for _, remote := range []string{"192.168.0.9:5555", "203.0.113.7:9999"} {
+		out := open.classify(&fakeConn{remote: remote}, bufio.NewReader(strings.NewReader("GET / HTTP/1.1\r\n")))
+		if _, ok := out.(*peekConn); !ok {
+			t.Fatalf("允许明文时外部明文(%s)应放行, got %T", remote, out)
 		}
 	}
 }

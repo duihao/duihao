@@ -113,3 +113,100 @@ func (a *App) LicenceLogout() error {
 	a.emit("licence:state", a.licence.State())
 	return nil
 }
+
+// LicencePasswordLogin 用户名（或邮箱）+ 密码登录并绑定本机设备；成功后广播新状态。
+func (a *App) LicencePasswordLogin(username, password string) (licence.State, error) {
+	if a.licence == nil {
+		return licence.State{}, context.Canceled
+	}
+	st, err := a.licence.PasswordLogin(username, password)
+	if err != nil {
+		return st, err
+	}
+	a.emit("licence:state", st)
+	return st, nil
+}
+
+// ─────────────────────────────────────────────────────────────
+//  会员中心（应用内购买）：/api/order* 透传
+//  前端拿到的金额一律以「分」为单位，展示用服务端回传的 *_text 字段。
+// ─────────────────────────────────────────────────────────────
+
+// LicenceProducts 当前产品的可售规格（会员中心套餐卡）。需已登录。
+func (a *App) LicenceProducts() (*licence.ProductsResp, error) {
+	if a.licence == nil {
+		return nil, context.Canceled
+	}
+	return a.licence.Products()
+}
+
+// LicenceOrderCreate 下单并发起支付（价格服务端重算；金额单位=分）。
+// 返回 pay.type=qrcode 时拿 pay.qr 直接展示微信收款码。
+func (a *App) LicenceOrderCreate(skuCode string, qty int) (*licence.OrderCreateResp, error) {
+	if a.licence == nil {
+		return nil, context.Canceled
+	}
+	return a.licence.OrderCreate(skuCode, qty)
+}
+
+// LicenceOrderStatus 查单（服务端 pending 时主动核对网关）。
+// paid=true 表示已入账，entitlement 为最新权益；前端据此刷新登录态。
+// Go 侧会在首个 paid 轮询时强制续签一次，状态真的变了才广播 —— 之前只写了
+// 注释没发事件，NAS 主窗的档位/到期日要等重开窗口才变（用户报的问题）。
+func (a *App) LicenceOrderStatus(orderNo string) (*licence.OrderStatusResp, error) {
+	if a.licence == nil {
+		return nil, context.Canceled
+	}
+	before := a.licence.State()
+	resp, err := a.licence.OrderStatus(orderNo)
+	if after := a.licence.State(); after != before {
+		a.emit("licence:state", after)
+		log.Writef("[licence] order %s -> plan=%s ent=%d", orderNo, after.Plan, after.Ent)
+	}
+	return resp, err
+}
+
+// LicenceFetchQR 把服务端下发的二维码图 URL 拉成本地 data URL。
+// 前端 <img> 直连外链会受 CSP 与断网影响，统一由 Go 拉取转 base64。
+func (a *App) LicenceFetchQR(qrURL string) (string, error) {
+	if a.licence == nil {
+		return "", context.Canceled
+	}
+	return a.licence.FetchQRData(qrURL)
+}
+
+// LicenceWechatQR 取微信扫码登录二维码，并直接把二维码图转成 data URL。
+// 返回 scene/key 供 LicenceWechatPoll 成对轮询（key 是一次性密钥）。
+func (a *App) LicenceWechatQR() (*licence.WechatQRInfo, error) {
+	if a.licence == nil {
+		return nil, context.Canceled
+	}
+	qrURL, scene, key, err := a.licence.WechatQR()
+	if err != nil {
+		return nil, err
+	}
+	dataURL, err := a.licence.FetchQRData(qrURL)
+	if err != nil {
+		return nil, err
+	}
+	return &licence.WechatQRInfo{DataURL: dataURL, Scene: scene, Key: key}, nil
+}
+
+// LicenceWechatPoll 轮询微信扫码结果。
+// 返回 waiting=true 表示尚未扫码（前端 1.5s 后继续）；命中即登录完成，
+// licence:state 随之广播（前端 applyState 即可）。扫码是「另一条登录路径」，
+// 漏了这一步主窗问候行就不会变 —— 谁调 poll 谁只更新自己的窗。
+func (a *App) LicenceWechatPoll(scene, key string) (*licence.WechatPollResult, error) {
+	if a.licence == nil {
+		return nil, context.Canceled
+	}
+	waiting, st, err := a.licence.WechatPoll(scene, key)
+	if err != nil {
+		return nil, err
+	}
+	if waiting {
+		return &licence.WechatPollResult{Waiting: true}, nil
+	}
+	a.emit("licence:state", st)
+	return &licence.WechatPollResult{Waiting: false, State: st}, nil
+}

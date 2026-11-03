@@ -45,6 +45,23 @@
         <span v-if="conn && !conn.running" class="davm-conn-hint davm-conn-hint-inline">{{ t('davm.needStart') }}</span>
         <InstancePower class="mng-inline-end" :instance-id="instanceId" @changed="onPowerChanged" />
       </div>
+      <!-- NAS 端口：默认回填当前实际端口，改完点保存才生效（走端口池校验，
+           运行中会自动重启一次服务，所以不随输入即时应用）。 -->
+      <div class="davm-conn-row davm-port-row">
+        <span class="davm-conn-label">{{ t('davm.port') }}</span>
+        <el-input-number
+          v-model="portEdit"
+          class="davm-port-input"
+          :min="1"
+          :max="65535"
+          :controls="false"
+          :disabled="portBusy"
+          size="small"
+          @keyup.enter="savePort"
+        />
+        <el-button size="small" :loading="portBusy" :disabled="!portDirty" @click="savePort">{{ t('davm.save') }}</el-button>
+        <span class="davm-conn-hint davm-conn-hint-inline">{{ t('davm.portHint') }}</span>
+      </div>
       <div class="davm-conn-hint">{{ t('davm.connHint') }}</div>
     </div>
 
@@ -227,6 +244,7 @@ import { OpenDirectoryDialog, OpenManageWindow } from '../../bindings/github.com
 import {
   ListWebDavShares, CreateWebDavShare, UpdateWebDavShare, SetWebDavSharePassword,
   DeleteWebDavShare, GetWebDavConnInfo, ListWebDavSiteRoots, HubAccountInfo,
+  SetWebDavPort,
 } from '../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/webdavservice'
 import DavBrowseDialog from './DavBrowseDialog.vue'
 import DavQuickDialog from './DavQuickDialog.vue'
@@ -274,6 +292,10 @@ const firstShareId = computed(() => {
   return best.id
 })
 const conn = ref<any>(null)
+// NAS 端口：reload 时回填当前实际端口；只有「改过且点了保存」才写后端。
+const portEdit = ref<number | undefined>(0)
+const portBusy = ref(false)
+const portDirty = computed(() => typeof portEdit.value === 'number' && Math.trunc(portEdit.value) !== Number(conn.value?.port || 0))
 const siteRoots = ref<any[]>([])
 const sitePick = ref('')
 // NAS 账号（管理员 + 自动创建的默认共享）：连接管理里可查看密码
@@ -313,6 +335,7 @@ async function reload() {
   try {
     shares.value = (await ListWebDavShares(props.instanceId)) as unknown as any[]
     try { conn.value = await GetWebDavConnInfo(props.instanceId) } catch { conn.value = null }
+    portEdit.value = Number(conn.value?.port || 0)
     try { hub.value = await HubAccountInfo(props.instanceId) } catch { hub.value = null }
     if (!siteRoots.value.length) {
       try { siteRoots.value = (await ListWebDavSiteRoots()) as unknown as any[] } catch { siteRoots.value = [] }
@@ -361,6 +384,30 @@ async function copyUrl() {
     ElMessage.success(t('davm.copied'))
   } catch {
     ElMessage.warning(url)
+  }
+}
+
+// 保存 NAS 端口：后端走端口池校验，运行中会重启一次服务再返回最新连接信息。
+// 失败时把输入回填成真实端口，免得界面留着一个没生效的数字。
+async function savePort() {
+  const p = Math.trunc(Number(portEdit.value))
+  if (!Number.isFinite(p) || p < 1 || p > 65535) {
+    ElMessage.warning(t('davm.portInvalid'))
+    return
+  }
+  if (p === Number(conn.value?.port || 0)) return
+  portBusy.value = true
+  try {
+    const next = (await SetWebDavPort(props.instanceId, p)) as unknown as any
+    if (next && typeof next === 'object') conn.value = next
+    portEdit.value = Number(next?.port || p)
+    ElMessage.success(t('davm.portSaved', { port: String(p) }))
+    await reload()
+  } catch (e) {
+    ElMessage.error(errText(e))
+    portEdit.value = Number(conn.value?.port || 0)
+  } finally {
+    portBusy.value = false
   }
 }
 
@@ -531,6 +578,10 @@ a.davm-conn-link { color: var(--accent); text-decoration: none; cursor: pointer;
 a.davm-conn-link:hover { text-decoration: underline; }
 .davm-conn-hint { font-size: 0.6875rem; color: var(--text-muted); line-height: 1.5; margin-top: 0.25rem; }
 .davm-conn-hint-inline { margin-top: 0; }
+/* NAS 端口一行：数字框只收 1-65535，回车等同点保存 */
+.davm-port-row { margin-top: 0.375rem; }
+.davm-port-input { width: 6.5rem; flex: 0 0 auto; }
+.davm-port-input :deep(.el-input__inner) { font-family: var(--font-mono, monospace); text-align: left; }
 .davm-bar { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
 .davm-bar-left, .davm-bar-right { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .davm-search { width: 12rem; }

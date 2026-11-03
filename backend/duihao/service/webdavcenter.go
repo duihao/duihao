@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/url"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -29,6 +30,7 @@ type WebDavService struct {
 	mgr   *instance.Manager
 	sites *site.Manager // 可选：「从站点选择根目录」用
 	audit *audit.Logger
+	emit  func(name string, data any) // 可选：广播给前端（改端口后首屏地址跟着变）
 }
 
 // NewWebDavService 构建服务。
@@ -38,6 +40,10 @@ func NewWebDavService(mgr *instance.Manager, a *audit.Logger) *WebDavService {
 
 // SetSiteManager 注入站点管理器（可选能力）。
 func (s *WebDavService) SetSiteManager(sites *site.Manager) { s.sites = sites }
+
+// SetEventEmitter 注入事件广播（与 DeployService 同款）。没有它服务照常工作，
+// 只是「改端口后首屏地址自动刷新」这类联动失效。
+func (s *WebDavService) SetEventEmitter(fn func(name string, data any)) { s.emit = fn }
 
 // WebDavShareView 共享列表一行（不含密码与哈希）。
 type WebDavShareView struct {
@@ -67,6 +73,10 @@ type WebDavConnInfo struct {
 // WebDavAddrView 一个访问地址。OK=false 表示在当前监听设置下外面连不上
 // （如 bind=127.0.0.1 时局域网/IPv6 地址无意义），前端置灰并显示 Note。
 type WebDavAddrView struct {
+	// ID 下拉里唯一：local / lan / v6-0 / v6-1…
+	// 本机常有多条公网 IPv6（宽带动态段、临时隐私地址、二级路由下发的段），
+	// 全都要能选，光靠 Kind 区分不出来，所以另给一个稳定 id 供前端记住选择。
+	ID    string `json:"id"`
 	Kind  string `json:"kind"`  // local | lan | v6
 	Label string `json:"label"` // 本机 / 局域网 / IPv6
 	URL   string `json:"url"`
@@ -286,15 +296,20 @@ func (s *WebDavService) GetWebDavConnInfo(instanceID string) (*WebDavConnInfo, e
 		return nil, err
 	}
 	tls := false
+	plain := true
 	bind := "127.0.0.1"
 	if values, err := s.mgr.EffectiveSettings(instanceID); err == nil {
 		tls = values["dav.tls"] == "1"
+		// dav.plain 缺省视为允许（M58 口径：局域网/公网都直接 http）
+		plain = values["dav.plain"] != "0"
 		if v := strings.TrimSpace(values["dav.bind"]); v != "" {
 			bind = v
 		}
 	}
+	// 展示口径：允许明文时一律给 http 地址（挂载端最省事，同端口仍能走 https）；
+	// 只有「强制加密」（plain=0）才把地址写成 https。
 	scheme := "http"
-	if tls {
+	if tls && !plain {
 		scheme = "https"
 	}
 	// 「对外可听」才谈得上局域网/IPv6 地址；只听 127.0.0.1 时那两条只是噪音，
@@ -310,7 +325,7 @@ func (s *WebDavService) GetWebDavConnInfo(instanceID string) (*WebDavConnInfo, e
 	}
 	port := rec.Ports["dav"]
 	running := s.mgr.Status(instanceID) == processd.StateRunning
-	addrs := buildDavAddrs(scheme, port, bind, firstLANIPv4(), sysinfo.GlobalIPv6())
+	addrs := buildDavAddrs(scheme, port, bind, firstLANIPv4(), sysinfo.GlobalIPv6All())
 
 	return &WebDavConnInfo{
 		Scheme: scheme, Host: host, Port: port,
@@ -319,16 +334,21 @@ func (s *WebDavService) GetWebDavConnInfo(instanceID string) (*WebDavConnInfo, e
 	}, nil
 }
 
-// buildDavAddrs 拼首屏「访问地址」下拉的三项（本机 / 局域网 / IPv6）。
+// buildDavAddrs 拼首屏「访问地址」下拉：本机 / 局域网 / 每条公网 IPv6 一项。
 //
-// 纯函数，便于单测：只有 bind 不是回环时局域网与 IPv6 才真正可达，否则那两条
+// 纯函数，便于单测：只有 bind 不是回环时局域网与 IPv6 才真正可达，否则那些项
 // 置灰并写明原因 —— 让用户知道该去设置里把监听地址改成 0.0.0.0。
-func buildDavAddrs(scheme string, port int, bind, lanIP, ip6 string) []WebDavAddrView {
+//
+// ip6s 传**全部** GUA（sysinfo.GlobalIPv6All）：一台机器同时挂着宽带动态段、
+// Windows 临时隐私地址、二级路由下发的段是常态，只显示第一条会让用户拿错地址去
+// 手机验证。
+func buildDavAddrs(scheme string, port int, bind, lanIP string, ip6s []string) []WebDavAddrView {
 	publicBind := bind != "127.0.0.1" && bind != "localhost"
-	// 明文 + 对外监听 = Basic Auth 密码裸奔（同网段可嗅探），提示一句但不拦。
+	// 明文 + 对外监听 = Basic Auth 密码可被同链路嗅探，提示一句但不拦
+	// （M58 用户定稿：局域网与公网都直接 http，https 作为可选能力保留）。
 	plainNote := ""
 	if scheme != "https" {
-		plainNote = "明文 HTTP，建议开启 TLS"
+		plainNote = "明文 HTTP 直连，密码可被同链路嗅探"
 	}
 	noteOf := func() string {
 		if !publicBind {
@@ -344,13 +364,14 @@ func buildDavAddrs(scheme string, port int, bind, lanIP, ip6 string) []WebDavAdd
 	}
 
 	out := []WebDavAddrView{{
+		ID:   "local",
 		Kind: "local", Label: "本机", OK: true,
 		// 本机恒 http：回环没有窃听面，TLS 开着也走明文（嗅探监听器
-		// 只对回环放行明文），免掉自签证书的浏览器警告。
+		// 对回环恒放行明文），免掉自签证书的浏览器警告。
 		URL: fmt.Sprintf("http://127.0.0.1:%d/", port),
 	}}
 
-	lan := WebDavAddrView{Kind: "lan", Label: "局域网", OK: publicBind}
+	lan := WebDavAddrView{ID: "lan", Kind: "lan", Label: "局域网", OK: publicBind}
 	if lanIP != "" {
 		lan.URL = fmt.Sprintf("%s://%s:%d/", scheme, lanIP, port)
 	} else {
@@ -364,24 +385,32 @@ func buildDavAddrs(scheme string, port int, bind, lanIP, ip6 string) []WebDavAdd
 	}
 	out = append(out, lan)
 
-	v6 := WebDavAddrView{Kind: "v6", Label: "IPv6", OK: false}
-	if ip6 != "" {
-		v6.URL = fmt.Sprintf("%s://[%s]:%d/", scheme, ip6, port)
-		v6.OK = publicBind
+	// 一条 IPv6 都没有时留一条占位，说明为什么没有（而不是整个下拉少一节）。
+	if len(ip6s) == 0 {
+		out = append(out, WebDavAddrView{
+			ID: "v6-0", Kind: "v6", Label: "IPv6", URL: "—",
+			Note: "没有公网 IPv6（光猫/路由要开 IPv6）",
+		})
+		return out
+	}
+	for i, ip6 := range ip6s {
+		v6 := WebDavAddrView{
+			ID:   fmt.Sprintf("v6-%d", i),
+			Kind: "v6", Label: "IPv6", OK: publicBind,
+			URL: fmt.Sprintf("%s://[%s]:%d/", scheme, ip6, port),
+		}
 		v6.Note = noteOf()
 		v6.Fix = fixOf()
-	} else {
-		v6.URL = "—"
-		v6.Note = "没有公网 IPv6（光猫/路由要开 IPv6）"
+		out = append(out, v6)
 	}
-	out = append(out, v6)
 	return out
 }
 
 // EnableLanAccess 一键开启局域网访问：监听地址改 0.0.0.0 + 开自签 HTTPS。
 //
-// 服务层硬规则是对外监听必须 TLS（见 webdavd.New 的校验），所以两个键一起改，
-// 不然实例根本起不来。只动这两个键，其它设置保持原样。
+// 三个键一起写：bind=0.0.0.0（对外监听）、tls=1（同时提供 https 能力）、
+// plain=1（同端口也放行明文 http —— M58 用户定稿：局域网与公网都能直接 http，
+// 挂载端不必处理自签证书）。只动这三个键，其它设置保持原样。
 func (s *WebDavService) EnableLanAccess(instanceID string) (*WebDavConnInfo, error) {
 	if s.mgr == nil {
 		return nil, fmt.Errorf("网盘管理尚未就绪")
@@ -390,12 +419,41 @@ func (s *WebDavService) EnableLanAccess(instanceID string) (*WebDavConnInfo, err
 		return nil, fmt.Errorf("实例不存在: %s", instanceID)
 	}
 	if err := s.mgr.ApplySettingsDiff(instanceID, map[string]string{
-		"dav.bind": "0.0.0.0",
-		"dav.tls":  "1",
+		"dav.bind":  "0.0.0.0",
+		"dav.tls":   "1",
+		"dav.plain": "1",
 	}); err != nil {
 		return nil, err
 	}
 	s.audit.Ok("ui", "webdav.enable-lan", instanceID, nil)
+	return s.GetWebDavConnInfo(instanceID)
+}
+
+// SetWebDavPort 改网盘监听端口（NAS配置窗「NAS 端口」一行用）。
+//
+// 走 ApplySettingsDiff → ApplySettings 的端口链路：dav.port 在清单里声明了
+// portRole，因此会经过 SetPort 的占用校验、端口池另选与失败回滚，运行中还会
+// 自动重启实例 —— 与「设置」对话框里改端口是同一条路，不另开一套。
+func (s *WebDavService) SetWebDavPort(instanceID string, port int) (*WebDavConnInfo, error) {
+	if s.mgr == nil {
+		return nil, fmt.Errorf("网盘管理尚未就绪")
+	}
+	if rec := s.mgr.GetRecord(instanceID); rec == nil {
+		return nil, fmt.Errorf("实例不存在: %s", instanceID)
+	}
+	if port < 1 || port > 65535 {
+		return nil, fmt.Errorf("端口 %d 非法（1-65535）", port)
+	}
+	if err := s.mgr.ApplySettingsDiff(instanceID, map[string]string{
+		"dav.port": strconv.Itoa(port),
+	}); err != nil {
+		return nil, err
+	}
+	s.audit.Ok("ui", "webdav.set-port", instanceID, map[string]any{"port": port})
+	if s.emit != nil {
+		// 首屏地址卡、扫码链接都从端口推导，改完必须让它们重取一次。
+		s.emit("webdav:conn:changed", map[string]any{"instanceId": instanceID, "port": port})
+	}
 	return s.GetWebDavConnInfo(instanceID)
 }
 
@@ -546,8 +604,8 @@ func (s *WebDavService) NASEntryURL(instanceID, path string) (string, error) {
 	if rec == nil {
 		return "", fmt.Errorf("实例不存在: %s", instanceID)
 	}
-	// 本机恒 http：TLS 只为局域网加密，回环上没有窃听面（嗅探监听器
-	// 对回环放行明文）， certificates 的自签警告一个都不要弹。
+	// 本机恒 http：回环上没有窃听面（嗅探监听器对回环恒放行明文），
+	// 自签证书的警告一个都不要弹。
 	return fmt.Sprintf("http://127.0.0.1:%d%s?_k=%s", rec.Ports["dav"], path, url.QueryEscape(token)), nil
 }
 
@@ -669,7 +727,7 @@ type WebDavQuickInfo struct {
 
 // CreateWebDavQuickToken 为共享用户生成扫码快传链接：手机扫码 → /-q?t=
 // 自动登录 → 直接落在文件管理器页面，手机与电脑间经网盘互传文件。
-// 仅局域网监听时可用——127.0.0.1 手机根本连不上（局域网监听按硬规则必 TLS）。
+// 仅对外监听时可用——127.0.0.1 手机根本连不上。
 func (s *WebDavService) CreateWebDavQuickToken(instanceID, user string) (*WebDavQuickInfo, error) {
 	dir, err := s.dir(instanceID)
 	if err != nil {
@@ -680,14 +738,16 @@ func (s *WebDavService) CreateWebDavQuickToken(instanceID, user string) (*WebDav
 	}
 	bind := "127.0.0.1"
 	tlsOn := false
+	plain := true
 	if values, err := s.mgr.EffectiveSettings(instanceID); err == nil {
 		if v := strings.TrimSpace(values["dav.bind"]); v != "" {
 			bind = v
 		}
 		tlsOn = values["dav.tls"] == "1"
+		plain = values["dav.plain"] != "0"
 	}
 	if bind == "127.0.0.1" || bind == "localhost" {
-		return nil, fmt.Errorf("当前网盘仅本机可访问，请先在「设置」里开启局域网监听（HTTPS）后再扫码")
+		return nil, fmt.Errorf("当前网盘仅本机可访问，请先在「设置」里开启对外监听后再扫码")
 	}
 	host := firstLANIPv4()
 	if host == "" {
@@ -697,9 +757,10 @@ func (s *WebDavService) CreateWebDavQuickToken(instanceID, user string) (*WebDav
 	if err != nil {
 		return nil, err
 	}
-	scheme := "https"
-	if !tlsOn {
-		scheme = "http" // 防御性兜底：局域网监听本应强制 TLS
+	// 手机扫码默认走 http：同端口双协议下 http 一定通，且手机不弹证书警告。
+	scheme := "http"
+	if tlsOn && !plain {
+		scheme = "https"
 	}
 	port := 0
 	if rec := s.mgr.GetRecord(instanceID); rec != nil {

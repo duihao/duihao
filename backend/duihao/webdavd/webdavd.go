@@ -6,9 +6,11 @@
 // 模型：一个实例一个监听端口，多个共享；共享 = Basic Auth 凭据 + 根目录。
 // URL 对所有共享相同（http://host:port/），哪个用户名登录就看到哪个根目录。
 //
-// 安全边界（v3.1 硬规则）：
-//   - 默认只监听 127.0.0.1；开局域网（0.0.0.0）必须同时开 TLS（自签证书），
-//     不提供「HTTP + 0.0.0.0」这一档；
+// 安全边界（v3.1 硬规则 + M58 调整）：
+//   - 默认只监听 127.0.0.1；开局域网/公网（0.0.0.0）后，是否加密由两项设置决定：
+//     dav.tls（是否额外提供 https）与 dav.plain（是否放行明文 http，默认放行）。
+//     TLS 开 + 明文允许 = 同端口双协议（见 tlsniff.go）；TLS 关 = 纯 http。
+//     明文下 Basic Auth 的密码可被同链路嗅探，界面常驻提示、启动日志记警告；
 //   - 路径两层防御：HTTP 层逐段校验原始 URL（见 pathsafe.go），FS 层再查一遍；
 //   - 密码只存 bcrypt 哈希；账号不存在也跑一次 dummy bcrypt（时序对齐）；
 //   - 并发连接上限 + 单请求体积上限（http.MaxBytesReader）；
@@ -59,10 +61,14 @@ import (
 
 // Config 一次启动所需的全部参数（由实例设置 + 端口渲染而来）。
 type Config struct {
-	Bind    string // 127.0.0.1（默认）/ 0.0.0.0（须 TLS）
-	Port    int
-	TLS     bool   // 自签证书 HTTPS（0.0.0.0 时强制）
-	CertDir string // 证书目录（实例下 certs/）；空则临时用内存证书
+	Bind string // 127.0.0.1（默认）/ 0.0.0.0（局域网/公网可连）
+	Port int
+	TLS  bool // 自签证书 HTTPS
+	// AllowPlain 允许明文 HTTP 连接（dav.plain，默认允许）。
+	// TLS 开着时与 https 同端口并存（按 ClientHello 首字节分流）；
+	// TLS 关着时整个服务就是纯 http。
+	AllowPlain bool
+	CertDir    string // 证书目录（实例下 certs/）；空则临时用内存证书
 
 	// Shares 共享表（来自 webdavshares.json）。至少一个启用共享才允许启动。
 	Shares []Share
@@ -112,10 +118,10 @@ func New(cfg Config) (*Server, error) {
 	if cfg.Bind == "" {
 		cfg.Bind = "127.0.0.1"
 	}
-	if cfg.Bind != "127.0.0.1" && cfg.Bind != "localhost" && !cfg.TLS {
-		// v3.1 §6.2：不提供 HTTP + 0.0.0.0 档——局域网明文传密码不行。
-		return nil, fmt.Errorf("局域网监听（%s）必须开启 TLS：WebDAV 用 Basic Auth，明文 HTTP 会把密码暴露给同网段任何人", cfg.Bind)
-	}
+	// 明文口径交给 dav.plain（M58 用户定稿：局域网与公网都要能直接 http）。
+	// 曾经这里是硬规则「对外监听必须 TLS」，现在不再拦——真正起作用的是
+	// AllowPlain：TLS 开着 + 允许明文 = 同端口双协议；TLS 关 = 纯 http。
+	// 风险由界面提示（明文下 Basic Auth 的密码可被同链路嗅探）与审计承担。
 	enabled := 0
 	for i := range cfg.Shares {
 		if err := cfg.Shares[i].Validate(); err != nil {
@@ -265,9 +271,9 @@ func (s *Server) Start() error {
 			_ = closeLog(lf)
 			return fmt.Errorf("生成自签证书失败: %w", err)
 		}
-		// 同端口双协议：TLS 照旧；明文仅放行本机回环（127.0.0.1 恒 http，
-		// 桌面与「本机」地址免证书烦恼），外部明文连接哑掉——LAN 仍 https-only。
-		ln = newPlainLoopbackListener(ln, tlsCfg.tlsConfig())
+		// 同端口双协议：TLS 照旧；明文是否放行看 dav.plain（默认放行 → http
+		// 与 https 共用这个端口，客户端爱用哪个用哪个）。
+		ln = newDualListener(ln, tlsCfg.tlsConfig(), s.cfg.AllowPlain)
 	}
 
 	limit := &connLimiter{Listener: ln, max: int64(s.cfg.MaxConns)}
@@ -286,8 +292,12 @@ func (s *Server) Start() error {
 	if s.cfg.TLS {
 		scheme = "https"
 	}
-	logger.Info("WebDAV 已启动", "addr", addr, "scheme", scheme,
+	logger.Info("WebDAV 已启动", "addr", addr, "scheme", scheme, "plain", s.cfg.AllowPlain,
 		"shares", s.shareCnt, "readonly", s.cfg.ReadOnly, "maxConns", s.cfg.MaxConns)
+	if s.cfg.AllowPlain && s.cfg.Bind != "127.0.0.1" && s.cfg.Bind != "localhost" {
+		logger.Warn("允许明文 HTTP 且对外监听：Basic Auth 密码可被同链路嗅探，仅建议在可信网络使用",
+			"addr", addr)
+	}
 
 	// 语音提醒：到点由本机出声，所以调度器跟着服务一起活（与页面无关）。
 	// 第二个参数给网盘根：GPU 引擎预合成的 wav 要落在 _appfiles/voice 下。
@@ -393,6 +403,12 @@ func (s *Server) LastError() string {
 // + 每请求按凭据装配 webdav.Handler。
 func (s *Server) guard(logger *slog.Logger, dav *webdav.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// 0) 内置窗口的窗口按钮（/-shell/<act>）：票即凭据，先于认证处理 ——
+		//    它只碰窗口，不碰文件与账号，见 shell.go。
+		if s.handleShell(w, r) {
+			return
+		}
+
 		// 0) 保留端点：登录 / 登出（先于认证，登出要能冲掉缓存的 Basic 凭据）。
 		switch {
 		case r.URL.Path == "/-login" && r.Method == "POST":
@@ -751,7 +767,7 @@ func writeDirListing(w http.ResponseWriter, r *http.Request, user string, entrie
 	}
 	b.WriteString(`<title>` + html.EscapeString(title) + `</title>`)
 	// 账号块要读 body 上的 data-user / data-role（改密码弹窗用），acct.js 也在这里引
-	b.WriteString(`<style>` + davCSS + `</style>` + acctScript + themeScript + `</head>` +
+	b.WriteString(`<style>` + davCSS + `</style>` + acctScript + themeScript + winctlScript + `</head>` +
 		`<body data-user="` + html.EscapeString(user) + `" data-role="` + html.EscapeString(hubRole) + `">`)
 	// 顶层品牌条：与导航/笔记/账本/影视四个页面（layout.html 的 .hub-top）完全同一套结构，
 	// 让网盘的「顶部」也落在最外层、横跨整窗，而不是缩进在主区 header 里。
@@ -803,7 +819,7 @@ func writeNoPermPage(w http.ResponseWriter, user, role string, perms map[string]
 	b.WriteString("<!DOCTYPE html><html lang=\"zh-CN\" data-theme=\"" + webui.ThemeAttr() + "\"><head><meta charset=\"utf-8\">")
 	b.WriteString(`<meta name="viewport" content="width=device-width, initial-scale=1">`)
 	b.WriteString(`<title>对号 NAS · 无权限</title>`)
-	b.WriteString(`<style>` + davCSS + `</style>` + acctScript + themeScript + `</head>` +
+	b.WriteString(`<style>` + davCSS + `</style>` + acctScript + themeScript + winctlScript + `</head>` +
 		`<body data-user="` + html.EscapeString(user) + `" data-role="` + html.EscapeString(role) + `">`)
 	b.WriteString(`<header class="hub-top">` +
 		`<a class="hub-brand" href="/-home"><b>对号</b><span>NAS</span></a>` +
@@ -828,9 +844,23 @@ const acctScript = `<script src="/-ui/acct.js" defer></script>`
 // 这个脚本只负责「已经打开的页面在应用里切主题时跟着变」。
 const themeScript = `<script src="/-ui/theme.js" defer></script>`
 
-const davCSS = `:root{--bg:#f4f5f7;--card:#fff;--tx:#24292f;--mut:#8a919c;--ln:#eceef1;--hov:#f6f8fa;--acc:#f0247e;--danger:#dc2626;--br:14px}
-[data-theme="dark"]{--bg:#16181c;--card:#1f2329;--tx:#e6e8eb;--mut:#7d8590;--ln:#2d333b;--hov:#262c34;--acc:#ff4d8d;--danger:#f87171}
-@media (prefers-color-scheme:dark){[data-theme="system"]{--bg:#16181c;--card:#1f2329;--tx:#e6e8eb;--mut:#7d8590;--ln:#2d333b;--hov:#262c34;--acc:#ff4d8d;--danger:#f87171}}
+// winctlScript 桌面窗口外壳（右上角三个按钮 + 顶栏拖动）。客户端开的模块窗会
+// 在 URL 上带票（_dw=…），脚本据此自绘标题栏按钮；浏览器打开时它直接 return。
+const winctlScript = `<script src="/-ui/winctl.js" defer></script>`
+
+const davCSS = `/* 主题变量 —— 与桌面端 frontend/src/style.css 同名概念逐项对齐：
+   --bg←--bg-base  --card←--bg-elevated  --tx←--text-primary
+   --mut←--text-muted  --hov←--bg-hover  --ln←--border-subtle
+   --acc←--accent（A 模式品牌玫红）  --danger←--error
+   六档主题全支持（dark / light / system / deep-blue / duihao-red / duihao-light），
+   以前只认明暗两档，深蓝/深红落到通用 dark 上，网页和 NAS 主窗就两副面孔。
+   :root 兜底 = light（system 在浅色系统下直接继承），深色系逐个覆盖。 */
+:root{--bg:#ffffff;--card:#f5f5f5;--tx:#000000;--mut:#5c5c5c;--ln:rgba(0,0,0,.08);--hov:#ebebeb;--acc:#ff4d8d;--danger:#d13438;--br:14px}
+[data-theme="dark"]{--bg:#0f0f0f;--card:#1a1a1a;--tx:#ffffff;--mut:#9a9a9a;--ln:rgba(255,255,255,.14);--hov:#303030;--acc:#ff4d8d;--danger:#f87171}
+[data-theme="deep-blue"]{--bg:#0b111e;--card:#121c30;--tx:#ffffff;--mut:#8fa1bd;--ln:rgba(255,255,255,.14);--hov:#243256;--acc:#ff4d8d;--danger:#f87171}
+[data-theme="duihao-red"]{--bg:#170d13;--card:#20121a;--tx:#ffffff;--mut:#b08a9a;--ln:rgba(255,255,255,.14);--hov:#3a2233;--acc:#ff4d8d;--danger:#ff6b6b}
+[data-theme="duihao-light"]{--bg:#fffaf9;--card:#fdf3f2;--tx:#200b10;--mut:#84636c;--ln:rgba(0,0,0,.08);--hov:#f9e9ea;--acc:#dd1553;--danger:#d13438}
+@media (prefers-color-scheme:dark){[data-theme="system"]{--bg:#0f0f0f;--card:#1a1a1a;--tx:#ffffff;--mut:#9a9a9a;--ln:rgba(255,255,255,.14);--hov:#303030;--acc:#ff4d8d;--danger:#f87171}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,"Segoe UI","Microsoft YaHei",sans-serif;height:100vh;height:100dvh;overflow:hidden;display:flex;flex-direction:column}
 /* 顶层品牌条：与 layout.html 的 .hub-top 同一套（品牌 + 五项导航 + 账号），横跨整窗 */
@@ -859,7 +889,7 @@ body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,"Segoe 
 .hub-acct-item.danger{color:var(--danger)}
 /* 整窗应用布局：顶栏固定 → 左栏固定 → 只有右侧主区的列表区滚动 */
 .shell{display:flex;flex:1;min-height:0;overflow:hidden}
-.side{flex:0 0 13.5rem;border-right:1px solid var(--ln);background:var(--card);padding:1rem .85rem;display:flex;flex-direction:column;overflow-y:auto;min-height:0}
+.side{flex:0 0 13.5rem;padding:1rem .85rem;display:flex;flex-direction:column;overflow-y:auto;min-height:0}
 .main{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden}
 .main header{flex:0 0 auto}
 .main header{padding:.9rem 1.25rem .8rem;border-bottom:1px solid var(--ln)}
@@ -1404,6 +1434,7 @@ func FromValues(dir, logPath string, ports map[string]int, values map[string]str
 		Bind:        get("dav.bind", "127.0.0.1"),
 		Port:        ports["dav"],
 		TLS:         get("dav.tls", "0") == "1",
+		AllowPlain:  get("dav.plain", "1") == "1",
 		CertDir:     certDir,
 		Shares:      shares,
 		ReadOnly:    get("dav.readonly", "0") == "1",

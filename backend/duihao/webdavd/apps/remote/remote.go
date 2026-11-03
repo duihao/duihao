@@ -117,9 +117,14 @@ func status(c appkit.Context, w http.ResponseWriter) error {
 	out := map[string]any{}
 
 	addr := sysinfo.GlobalIPv6()
+	addrs := sysinfo.GlobalIPv6All()
+	if addrs == nil {
+		addrs = []string{}
+	}
 	out["ipv6"] = map[string]any{
-		"addr": addr,
-		"out":  addr != "" && sysinfo.IPv6Outbound(),
+		"addr":  addr,
+		"addrs": addrs, // 全部 GUA：运营商会同时下发接口地址 + 隐私扩展临时地址
+		"out":   addr != "" && sysinfo.IPv6Outbound(),
 	}
 	out["public"] = map[string]any{"enabled": getKV(db, uid, "public.enabled") == "1"}
 	out["local"] = localSnapshot()
@@ -322,6 +327,14 @@ func firstUID(db *sql.DB) string {
 	return uid
 }
 
+// UpdateOnce 立刻跑一轮 DDNS 并把结果说人话 —— 桌面 IPv6 弹窗的「保存并解析」
+// 与「立即更新」走这里。刻意只做转发：执行体只能有一个（ddnsRun），网页
+// ddns.update 与桌面弹窗两条入口一旦各写一份，迟早对不上。
+func UpdateOnce(db *sql.DB, uid string) (string, bool) { return ddnsRun(db, uid) }
+
+// Kick 叫醒后台循环：改完配置立刻按新值跑一轮，不用等下一个间隔。
+func Kick() { ddnsKick() }
+
 // ddnsRun 跑一轮 DDNS 更新。返回 (人话结果, 是否成功)。
 func ddnsRun(db *sql.DB, uid string) (string, bool) {
 	ddnsMu.Lock()
@@ -388,6 +401,11 @@ func pubCacheStore(on bool) {
 	pubOn, pubAt, pubKnown = on, time.Now(), true
 	pubMu.Unlock()
 }
+
+// SetPublicEnabled 由宿主（桌面 App 的「IPv6 直连」弹窗）直接改完库后调用，
+// 让 guard 立刻看到新值。不调的话要等缓存过期（最多 30 秒）才生效 ——
+// 用户点「开启」却发现还是 403，会以为是坏的。
+func SetPublicEnabled(on bool) { pubCacheStore(on) }
 
 // PublicEnabled 公网总开关当前值。guard 对每个请求都调，所以查一次库后缓存 30 秒。
 func PublicEnabled(db *sql.DB) bool {

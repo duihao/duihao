@@ -3,8 +3,9 @@ package webdavd
 // 主题跟随（M24）的守卫：桌面端改外观设置后，NAS 网页要立刻跟着明暗切换。
 //
 // 三件事各自容易被改坏：
-//   ① 映射：前端的配色名（deep-blue / duihao-red / duihao-light）要收成
-//      dark / light / system —— 网页这边只认明暗两档；
+//   ① 透传：前端的配色名（含 deep-blue / duihao-red / duihao-light）原样写给
+//      <html data-theme> —— 网页 six 档变量齐备，不再降级成明暗两档（降级会让
+//      网页与主窗两副面孔，用户 2026-11-02 反馈过）；脏值才收成 system；
 //   ② 首帧：<html data-theme> 由服务端渲染，打开就是对的（不然先白后黑闪）；
 //   ③ 增量：SSE 端点能建连、能推当前值（已打开的页面靠它跟着变）。
 
@@ -20,10 +21,10 @@ import (
 func TestThemeMapping(t *testing.T) {
 	cases := map[string]string{
 		"dark":         "dark",
-		"deep-blue":    "dark",
-		"duihao-red":   "dark",
+		"deep-blue":    "deep-blue",
+		"duihao-red":   "duihao-red",
 		"light":        "light",
-		"duihao-light": "light",
+		"duihao-light": "duihao-light",
 		"system":       "system",
 		"":             "system",
 		"nonsense":     "system", // 脏值当跟随系统，比硬塞一个深色底安全
@@ -46,7 +47,7 @@ func TestThemeRendersIntoPages(t *testing.T) {
 	for _, tc := range []struct{ theme, attr string }{
 		{"dark", "dark"},
 		{"light", "light"},
-		{"duihao-red", "dark"},
+		{"duihao-red", "duihao-red"},
 	} {
 		SetAppTheme(tc.theme)
 		// 应用页（模板渲染）与文件管理页（Go 拼 HTML）两条路都要带上
@@ -81,7 +82,7 @@ func TestThemeAPIAndStream(t *testing.T) {
 	if r.StatusCode != http.StatusOK {
 		t.Fatalf("/-api/theme 应 200, got %d", r.StatusCode)
 	}
-	if !strings.Contains(string(b), `"theme":"dark"`) {
+	if !strings.Contains(string(b), `"theme":"deep-blue"`) {
 		t.Fatalf("/-api/theme 返回值不对: %s", string(b))
 	}
 
@@ -111,8 +112,8 @@ func TestThemeAPIAndStream(t *testing.T) {
 			first = line
 		}
 	}
-	if !strings.Contains(first, `"theme":"dark"`) {
-		t.Fatalf("SSE 首条应是当前主题 dark, got %q", first)
+	if !strings.Contains(first, `"theme":"deep-blue"`) {
+		t.Fatalf("SSE 首条应是当前主题 deep-blue, got %q", first)
 	}
 
 	SetAppTheme("light")

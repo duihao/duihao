@@ -1,7 +1,16 @@
-/* 个人空间共享样式（浅/深色跟随系统，与网盘页面同一套品牌色） */
-:root{--bg:#f4f5f7;--card:#fff;--tx:#24292f;--mut:#8a919c;--ln:#eceef1;--hov:#f6f8fa;--acc:#f0247e;--danger:#dc2626;--br:12px}
-[data-theme="dark"]{--bg:#16181c;--card:#1f2329;--tx:#e6e8eb;--mut:#7d8590;--ln:#2d333b;--hov:#262c34;--acc:#ff4d8d;--danger:#f87171}
-@media (prefers-color-scheme:dark){[data-theme="system"]{--bg:#16181c;--card:#1f2329;--tx:#e6e8eb;--mut:#7d8590;--ln:#2d333b;--hov:#262c34;--acc:#ff4d8d;--danger:#f87171}}
+/* 主题变量 —— 与桌面端 frontend/src/style.css 同名概念逐项对齐：
+   --bg←--bg-base  --card←--bg-elevated  --tx←--text-primary
+   --mut←--text-muted  --hov←--bg-hover  --ln←--border-subtle
+   --acc←--accent（A 模式品牌玫红）  --danger←--error
+   六档主题全支持（dark / light / system / deep-blue / duihao-red / duihao-light），
+   以前只认明暗两档，深蓝/深红落到通用 dark 上，网页和 NAS 主窗就两副面孔。
+   :root 兜底 = light（system 在浅色系统下直接继承），深色系逐个覆盖。 */
+:root{--bg:#ffffff;--card:#f5f5f5;--tx:#000000;--mut:#5c5c5c;--ln:rgba(0,0,0,.08);--hov:#ebebeb;--acc:#ff4d8d;--danger:#d13438;--br:12px}
+[data-theme="dark"]{--bg:#0f0f0f;--card:#1a1a1a;--tx:#ffffff;--mut:#9a9a9a;--ln:rgba(255,255,255,.14);--hov:#303030;--acc:#ff4d8d;--danger:#f87171}
+[data-theme="deep-blue"]{--bg:#0b111e;--card:#121c30;--tx:#ffffff;--mut:#8fa1bd;--ln:rgba(255,255,255,.14);--hov:#243256;--acc:#ff4d8d;--danger:#f87171}
+[data-theme="duihao-red"]{--bg:#170d13;--card:#20121a;--tx:#ffffff;--mut:#b08a9a;--ln:rgba(255,255,255,.14);--hov:#3a2233;--acc:#ff4d8d;--danger:#ff6b6b}
+[data-theme="duihao-light"]{--bg:#fffaf9;--card:#fdf3f2;--tx:#200b10;--mut:#84636c;--ln:rgba(0,0,0,.08);--hov:#f9e9ea;--acc:#dd1553;--danger:#d13438}
+@media (prefers-color-scheme:dark){[data-theme="system"]{--bg:#0f0f0f;--card:#1a1a1a;--tx:#ffffff;--mut:#9a9a9a;--ln:rgba(255,255,255,.14);--hov:#303030;--acc:#ff4d8d;--danger:#f87171}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,"Segoe UI","Microsoft YaHei",sans-serif;min-height:100vh}
 
@@ -51,7 +60,7 @@ pre{background:var(--hov);border:1px solid var(--ln);border-radius:8px;padding:.
 .bm-ico{position:relative;width:2.35rem;height:2.35rem;border-radius:999px;background:hsl(var(--h) 72% 94%);color:hsl(var(--h) 48% 38%);
   display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid var(--ln);
   font-size:.95rem;font-weight:600;transition:transform .12s,box-shadow .12s}
-[data-theme="dark"] .bm-ico{background:hsl(var(--h) 32% 26%);color:hsl(var(--h) 62% 80%)}
+:is([data-theme="dark"],[data-theme="deep-blue"],[data-theme="duihao-red"]) .bm-ico{background:hsl(var(--h) 32% 26%);color:hsl(var(--h) 62% 80%)}
 @media (prefers-color-scheme:dark){[data-theme="system"] .bm-ico{background:hsl(var(--h) 32% 26%);color:hsl(var(--h) 62% 80%)}}
 /* 取不到图标时的默认图标：按域名色相上纯色，白字居中（看起来像真图标，而不是一段文字） */
 .bm-ico:not(.has-ico){background:hsl(var(--h) 58% 52%);color:#fff;border-color:transparent;
@@ -507,7 +516,7 @@ body.vplaying{overflow:hidden}
 
 /* ── 账本（参考易等「我的账本」：统计卡 + 两级分类 chips + 明细表 + 四个弹窗）── */
 body[data-app="ledger"]{--lg-in:#e5484d;--lg-out:#0b8fd6;--lg-in-bg:rgba(229,72,77,.08);--lg-out-bg:rgba(11,143,214,.08)}
-[data-theme="dark"] body[data-app="ledger"]{--lg-in:#ff6b6b;--lg-out:#4cb3e8;--lg-in-bg:rgba(255,107,107,.14);--lg-out-bg:rgba(76,179,232,.14)}
+:is([data-theme="dark"],[data-theme="deep-blue"],[data-theme="duihao-red"]) body[data-app="ledger"]{--lg-in:#ff6b6b;--lg-out:#4cb3e8;--lg-in-bg:rgba(255,107,107,.14);--lg-out-bg:rgba(76,179,232,.14)}
 @media (prefers-color-scheme:dark){[data-theme="system"] body[data-app="ledger"]{--lg-in:#ff6b6b;--lg-out:#4cb3e8;--lg-in-bg:rgba(255,107,107,.14);--lg-out-bg:rgba(76,179,232,.14)}}
 .lg-dim{color:var(--mut);font-style:normal}
 .lg-primary{background:var(--acc);border-color:var(--acc);color:#fff}
@@ -587,7 +596,7 @@ body[data-app="ledger"]{--lg-in:#e5484d;--lg-out:#0b8fd6;--lg-in-bg:rgba(229,72,
 .c-main{display:flex;align-items:center;gap:.55rem;min-width:0}
 .lg-ico{flex:0 0 auto;width:1.85rem;height:1.85rem;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:600;
   background:hsl(var(--h) 62% 94%);color:hsl(var(--h) 48% 38%)}
-[data-theme="dark"] .lg-ico{background:hsl(var(--h) 32% 26%);color:hsl(var(--h) 62% 80%)}
+:is([data-theme="dark"],[data-theme="deep-blue"],[data-theme="duihao-red"]) .lg-ico{background:hsl(var(--h) 32% 26%);color:hsl(var(--h) 62% 80%)}
 @media (prefers-color-scheme:dark){[data-theme="system"] .lg-ico{background:hsl(var(--h) 32% 26%);color:hsl(var(--h) 62% 80%)}}
 .lg-main-txt{display:flex;flex-direction:column;gap:.1rem;min-width:0}
 .lg-main-txt b{font-weight:500;font-size:.83rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1674,6 +1683,10 @@ body[data-app="download"] .hub-main{max-width:none;padding:1.1rem 1.5rem 2.4rem}
 .rm-fact>span:first-child{font-size:.7rem;color:var(--mut);line-height:1.4}
 .rm-fact .rm-fact-v{font-size:.79rem;color:var(--tx);word-break:break-all;min-width:0;line-height:1.45}
 .rm-fact code.rm-fact-v{font-family:var(--mono,monospace);font-size:.75rem}
+/* IPv6 卡的多地址列表：一条一行（可能 2~3 条 GUA），等宽字体便于肉眼比对 */
+.rm-v6-list{display:flex;flex-direction:column;gap:.1rem;min-width:0}
+.rm-v6-list .rm-v6-line{font-family:var(--mono,monospace);font-size:.75rem;display:block;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rm-howto{margin-top:.6rem;font-size:.78rem}
 .rm-howto summary{cursor:pointer;color:var(--mut)}
 .rm-howto ol{margin:.4rem 0 0 1.2rem;padding:0;display:grid;gap:.25rem}

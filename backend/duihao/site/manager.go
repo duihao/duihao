@@ -72,6 +72,8 @@ type View struct {
 	WebPort    int    `json:"webPort"`  // nginx 实例自身的默认端口
 	SitePort   int    `json:"sitePort"` // 站点监听端口（Record.Port 的有效值）
 	URL        string `json:"url"`
+	// PlainURL https 站点附带的明文地址（空 = 只有 https）。
+	PlainURL   string `json:"plainUrl,omitempty"`
 	HostsReady bool   `json:"hostsReady"`
 	// Live 站点级状态：停用 → stopped；启用 → 跟随 web 实例（nginx 是共享的，
 	// 光看 webLive 分不出「这个站点」是开是关）。
@@ -91,8 +93,46 @@ func siteURL(port int, tls bool) string {
 	return fmt.Sprintf("%s://localhost:%d/", scheme, port)
 }
 
-// checkPortUsable 端口可用性预检。
-// Windows 下 bind <1024 需要管理员权限，非提权运行会直接报权限错误 ——
+// plainSiteURL https 站点的明文地址（PlainPort 为 0 时返回空串）。
+func plainSiteURL(port int) string {
+	if port <= 0 {
+		return ""
+	}
+	if port == DefaultSitePort {
+		return "http://localhost/"
+	}
+	return fmt.Sprintf("http://localhost:%d/", port)
+}
+
+// pickPlainPortLocked 给 https 站点挑一个明文 HTTP 端口（0 = 没挑到，不阻断建站）。
+// 候选与 http 站点同一套（80-89 / 8080-8099），并把同实例下所有站点的主端口与
+// 明文端口都算占用；selfID 传自己的 id，改配置时别把自己的端口算成别人的。
+// 调用方需持锁。
+func (m *Manager) pickPlainPortLocked(web string, webPort int, selfID string) int {
+	taken := map[int]bool{webPort: true}
+	for _, other := range m.reg.List() {
+		if other.Web != web || other.ID == selfID {
+			continue
+		}
+		taken[other.EffectivePort()] = true
+		if other.PlainPort > 0 {
+			taken[other.PlainPort] = true
+		}
+	}
+	for p := DefaultSitePort; p < DefaultSitePort+10; p++ {
+		if !taken[p] && probeFree(p) {
+			return p
+		}
+	}
+	for p := 8080; p <= 8099; p++ {
+		if !taken[p] && probeFree(p) {
+			return p
+		}
+	}
+	return 0
+}
+
+// checkPortUsable 端口可用性预检。// Windows 下 bind <1024 需要管理员权限，非提权运行会直接报权限错误 ——
 // 这里提前给出可读提示，而不是等 nginx 启动失败。
 func checkPortUsable(port int) error {
 	ln, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
@@ -118,12 +158,16 @@ func probeFree(port int) bool {
 
 // pickSitePortLocked 自动选站点端口：http 从 80 起顺延到 89，再退到 8080-8099；
 // https 从 443 起顺延到 452，再退到 8443-8459。
-// 跳过 nginx 实例自身端口与同实例下已被站点占用的端口（调用方需持锁）。
+// 跳过 nginx 实例自身端口与同实例下已被站点占用的端口（主端口与明文端口都算，
+// 调用方需持锁）。
 func (m *Manager) pickSitePortLocked(web string, webPort int, tls bool) (int, error) {
 	taken := map[int]bool{webPort: true}
 	for _, other := range m.reg.List() {
 		if other.Web == web {
 			taken[other.EffectivePort()] = true
+			if other.PlainPort > 0 {
+				taken[other.PlainPort] = true
+			}
 		}
 	}
 	var cands []int
@@ -296,6 +340,9 @@ func (m *Manager) Create(opts CreateOpts) (*Record, error) {
 		if _, _, err := ensureCert(m.inst.InstanceDirPath(rec.Web), rec.ID, domains); err != nil {
 			return nil, err
 		}
+		// 同时开一个明文端口：自签证书对挂载盘/老客户端不友好，http 直接可访问
+		// 同一份站点根。挑不到就留 0（只有 https），不打断建站。
+		rec.PlainPort = m.pickPlainPortLocked(rec.Web, webPort, rec.ID)
 	}
 
 	// 片段写入 web 实例 sites/ 目录（受控写入 + 越界拒绝）。
@@ -337,7 +384,7 @@ func (m *Manager) SetPort(id string, port int) error {
 		return fmt.Errorf("端口 %d 是 nginx 实例自身的默认端口，请换一个", port)
 	}
 	for _, other := range m.reg.List() {
-		if other.ID != id && other.Web == rec.Web && other.EffectivePort() == port {
+		if other.ID != id && other.Web == rec.Web && (other.EffectivePort() == port || other.PlainPort == port) {
 			return fmt.Errorf("端口 %d 已被站点 %s 占用", port, other.ID)
 		}
 	}
@@ -350,6 +397,13 @@ func (m *Manager) SetPort(id string, port int) error {
 	old := rec.EffectivePort()
 	updated := *rec
 	updated.Port = port
+	// 新主端口撞上自己的明文端口时重挑一个，不然同一个 server 块里出现
+	// 两个 listen 同端口，nginx 会以 duplicate listen 拒载。
+	if updated.PlainPort == port {
+		m.mu.Lock()
+		updated.PlainPort = m.pickPlainPortLocked(rec.Web, webRec.Ports["http"], rec.ID)
+		m.mu.Unlock()
+	}
 	if err := m.writeFragment(&updated); err != nil {
 		return fmt.Errorf("写入 nginx 片段失败: %w", err)
 	}
@@ -649,6 +703,7 @@ func (m *Manager) List() []View {
 			v.Live = processd.StateStopped
 		}
 		v.URL = siteURL(v.SitePort, rec.TLS())
+		v.PlainURL = plainSiteURL(rec.PlainPort)
 		v.HostsReady = HostsReady(rec.Domains)
 		out = append(out, v)
 	}
@@ -674,7 +729,7 @@ func (m *Manager) ReferencesInstance(instanceID string) []string {
 // 实例层改端口前调用：nginx 实例端口若撞上已有站点端口，启动会 emerg。
 func (m *Manager) PortInUseBy(instanceID string, port int) string {
 	for _, s := range m.reg.List() {
-		if s.Web == instanceID && s.EffectivePort() == port {
+		if s.Web == instanceID && (s.EffectivePort() == port || s.PlainPort == port) {
 			return s.ID
 		}
 	}
@@ -733,6 +788,11 @@ func renderVHost(rec *Record, phpPort int, logDir, instDir string) string {
 		fmt.Fprintf(&b, "    listen %d ssl;\n", port)
 		fmt.Fprintf(&b, "    ssl_certificate \"%s\";\n", slash(cert))
 		fmt.Fprintf(&b, "    ssl_certificate_key \"%s\";\n", slash(key))
+		// 同 server 块的明文端口：同一份 root/location，http 直接可访问。
+		// nginx 的 ssl 是 listen 的修饰符（按端口生效），混用是合法的。
+		if pp := rec.PlainPort; pp > 0 && pp != port {
+			fmt.Fprintf(&b, "    # 明文端口（自签证书不便时直接用 http，同一份站点）\n    listen %d;\n", pp)
+		}
 	} else {
 		fmt.Fprintf(&b, "    listen %d;\n", port)
 	}
@@ -1002,6 +1062,15 @@ func (m *Manager) applyUpdate(id string, opts UpdateOpts) error {
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
+
+	// https 站点要有一个明文端口（切换回 http 就清掉，别留着占端口）。
+	if updated.TLS() {
+		if updated.PlainPort <= 0 || updated.PlainPort == port {
+			updated.PlainPort = m.pickPlainPortLocked(rec.Web, webPort, rec.ID)
+		}
+	} else {
+		updated.PlainPort = 0
+	}
 
 	if err := m.writeFragment(&updated); err != nil {
 		return fmt.Errorf("写入 nginx 片段失败: %w", err)

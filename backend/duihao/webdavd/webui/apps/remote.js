@@ -111,17 +111,36 @@
 
   var lastStatus = null;
 
+  // 多行代码块：一个 IPv6 一条（可能不止一条），空则给一句兜底文案。
+  function codeLines(el, items, empty) {
+    el.textContent = '';
+    if (!items || !items.length) {
+      el.textContent = empty;
+      return;
+    }
+    items.forEach(function (t) {
+      var c = document.createElement('code');
+      c.className = 'rm-v6-line';
+      c.textContent = t;
+      c.title = t;
+      el.appendChild(c);
+    });
+  }
+
   function render(st) {
     lastStatus = st;
 
-    // IPv6
+    // IPv6：本机可能有多条 GUA（PD 接口地址 + 隐私扩展临时地址），全部列出
     var v6 = st.ipv6 || {};
-    $('r-v6-addr').textContent = v6.addr || '没有检测到公网 IPv6';
+    var alts = (v6.addrs && v6.addrs.length) ? v6.addrs : (v6.addr ? [v6.addr] : []);
+    codeLines($('r-v6-addr'), alts, '没有检测到公网 IPv6');
     $('r-v6-out').textContent = v6.addr ? (v6.out ? '通' : '有地址但出不去（多半是光猫/路由没开 IPv6）') : '—';
     setTag('r-v6-tag', v6.addr ? (v6.out ? '可用' : '地址有 · 出不去') : '本机没有', v6.addr && v6.out ? 'ok' : (v6.addr ? 'warn' : ''));
-    $('r-v6-url').textContent = v6.addr && st.local
-      ? 'https://[' + v6.addr + ']:' + st.local + '/'
-      : '—（端口在桌面端「连接管理」里看）';
+    codeLines(
+      $('r-v6-url'),
+      st.local ? alts.map(function (a) { return 'https://[' + a + ']:' + st.local + '/' }) : [],
+      '—（端口在桌面端「连接管理」里看）'
+    );
 
     // DDNS
     var d = st.ddns || {};

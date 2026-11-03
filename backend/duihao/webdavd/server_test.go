@@ -161,14 +161,71 @@ func TestReadOnlyShare(t *testing.T) {
 	}
 }
 
-func TestNoPlainHTTPOnLAN(t *testing.T) {
+// 0.0.0.0 + 无 TLS 现在允许（M58：局域网与公网都直接 http）。
+// 曾经这里是 v3.1 硬规则「对外监听必须 TLS」，改成明文由 dav.plain 控制后放开。
+func TestPlainHTTPOnLANAllowed(t *testing.T) {
 	hash, _ := HashPassword("x")
-	_, err := New(Config{
+	srv, err := New(Config{
 		Bind: "0.0.0.0", Port: 19111,
 		Shares: []Share{{ID: "s", User: "u", PassHash: hash, Root: t.TempDir(), Enabled: true}},
 	})
-	if err == nil {
-		t.Fatal("0.0.0.0 + 无 TLS 应拒绝启动（v3.1 硬规则）")
+	if err != nil {
+		t.Fatalf("0.0.0.0 + 明文应可构造, got %v", err)
+	}
+	if srv.cfg.TLS {
+		t.Fatal("未开 TLS 时 cfg.TLS 应为 false")
+	}
+}
+
+// localLANIP 取本机局域网 IPv4（用 UDP 路由选择，不真的发包）。
+func localLANIP() string {
+	c, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		return ""
+	}
+	defer c.Close()
+	host, _, err := net.SplitHostPort(c.LocalAddr().String())
+	if err != nil {
+		return ""
+	}
+	ip := net.ParseIP(host)
+	if ip == nil || ip.IsLoopback() {
+		return ""
+	}
+	return host
+}
+
+// 局域网来源的明文 HTTP 必须被接受：旧逻辑（明文只放行回环）这里连接会被掐断，
+// 客户端拿到 read EOF；现在应正常拿到 401 认证挑战。
+func TestPlainHTTPFromLANSource(t *testing.T) {
+	lan := localLANIP()
+	if lan == "" {
+		t.Skip("没有局域网 IPv4，跳过")
+	}
+	hash, _ := HashPassword("x")
+	dir := t.TempDir()
+	srv, err := New(Config{
+		Bind: "0.0.0.0", Port: 0, AllowPlain: true,
+		Shares: []Share{{ID: "s", User: "u", PassHash: hash, Root: dir, Enabled: true}},
+		MaxConns: 8, MaxBodyMB: 8, InstanceDir: dir,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := srv.Start(); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = srv.Stop() }()
+
+	_, port, _ := net.SplitHostPort(srv.Addr())
+	base := net.JoinHostPort(lan, port)
+	resp, err := newTestClient(t, false).Get("http://" + base + "/")
+	if err != nil {
+		t.Fatalf("局域网明文请求失败（连接被掐断？）: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("应 401 认证挑战, got %d", resp.StatusCode)
 	}
 }
 

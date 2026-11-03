@@ -15,7 +15,7 @@ import (
 	"sync"
 )
 
-//go:embed layout.html shared.css shell.js acct.js theme.js apps/*.html apps/*.js
+//go:embed layout.html shared.css shell.js acct.js theme.js winctl.js apps/*.html apps/*.js
 var files embed.FS
 
 // NavItem 顶栏一项。

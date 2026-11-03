@@ -10,7 +10,56 @@
     </div>
 
     <div class="rm-cards">
-      <!-- frp 可视化配置：整宽单独一行（表单 3 列 + 隧道 6 列都需要横向空间） -->
+      <!-- 「直连」这一组：IPv6 直连 + DDNS 动态域名并排（都是不经过中继的
+           自建入口）。IPv6 卡三项事实**一律上下排**，不做左右两列 —— 39 字符
+           的地址折行会顶到值列上，看着就是错位 -->
+      <div class="rm-card" id="r-card-v6">
+        <div class="rm-card-hd"><b>IPv6 直连</b><span class="rm-tag" id="r-v6-tag">检测中…</span></div>
+        <div class="rm-facts">
+          <!-- 本机可能有多个公网 IPv6（运营商 PD + 隐私扩展临时地址），全部列出来：
+               某条被运营商段封了还能试下一条，只显示一条会把可用的那条藏掉。 -->
+          <div class="rm-fact"><span>本机公网 IPv6</span><div class="rm-fact-v rm-v6-list" id="r-v6-addr">—</div></div>
+          <div class="rm-fact"><span>出口连通</span><span class="rm-fact-v" id="r-v6-out">—</span></div>
+          <div class="rm-fact"><span>访问地址</span><div class="rm-fact-v rm-v6-list" id="r-v6-url">—</div></div>
+          <div class="rm-fact"><span>动态域名访问</span><code class="rm-fact-v" id="r-v6-ddns-url">—</code></div>
+        </div>
+        <p class="muted rm-lead">自签证书，浏览器首次会提示不安全，手动信任即可。</p>
+        <details class="rm-howto" open>
+          <summary>连不上？三步排查</summary>
+          <ol>
+            <li>光猫改桥接或开 IPv6（找运营商开通最省事）</li>
+            <li>路由器防火墙放行网盘端口入站（IPv6 默认全拦）</li>
+            <li>Windows 防火墙放行对号（首次启动点「允许」）</li>
+          </ol>
+        </details>
+      </div>
+
+      <div class="rm-card" id="r-card-ddns">
+        <div class="rm-card-hd"><b>DDNS 动态域名</b><span class="rm-tag" id="r-ddns-tag">未配置</span></div>
+        <div class="rm-form">
+          <label>服务商
+            <select id="r-ddns-provider">
+              <option value="dnspod">腾讯 DNSPod</option>
+              <option value="aliyun">阿里云解析</option>
+            </select>
+          </label>
+          <label>主域名<input id="r-ddns-domain" placeholder="example.com"></label>
+          <label>子域名<input id="r-ddns-sub" placeholder="duihao（空 = 根域）"></label>
+          <label>令牌<input id="r-ddns-token" type="password"
+            placeholder="DNSPod：ID,Token ／ 阿里云：AK:SK"></label>
+          <label>间隔（分钟）<input id="r-ddns-interval" type="number" min="5" value="10"></label>
+        </div>
+        <div class="rm-acts">
+          <button class="dl-primary" id="r-ddns-save">保存</button>
+          <button class="dl-ghost" id="r-ddns-test">测一次</button>
+          <button class="dl-ghost" id="r-ddns-now">立刻更新</button>
+        </div>
+        <p class="muted rm-last" id="r-ddns-last"></p>
+      </div>
+
+      <!-- frp 可视化配置：整宽单独一行（表单 3 列 + 隧道 6 列都需要横向空间）。
+           放在「直连」组之后、公网总开关之上：上面两条是自建入口（IPv6/域名），
+           frp 是没 IPv6 时的兜底，和大开关挨着看更顺。 -->
       <div class="rm-card rm-wide" id="r-card-frp">
         <div class="rm-card-hd"><b>frp 内网穿透</b>
           <span class="rm-tag" id="r-frp-tag">未配置</span>
@@ -52,51 +101,6 @@
           <button class="dl-ghost" id="r-frp-stop">停止</button>
           <span class="muted" id="r-frp-hint"></span>
         </div>
-      </div>
-
-      <!-- 「直连」这一组：IPv6 直连 + DDNS 动态域名并排（都是不经过中继的
-           自建入口）。IPv6 卡三项事实**一律上下排**，不做左右两列 —— 39 字符
-           的地址折行会顶到值列上，看着就是错位 -->
-      <div class="rm-card" id="r-card-v6">
-        <div class="rm-card-hd"><b>IPv6 直连</b><span class="rm-tag" id="r-v6-tag">检测中…</span></div>
-        <div class="rm-facts">
-          <div class="rm-fact"><span>本机公网 IPv6</span><code class="rm-fact-v" id="r-v6-addr">—</code></div>
-          <div class="rm-fact"><span>出口连通</span><span class="rm-fact-v" id="r-v6-out">—</span></div>
-          <div class="rm-fact"><span>访问地址</span><code class="rm-fact-v" id="r-v6-url">—</code></div>
-          <div class="rm-fact"><span>动态域名访问</span><code class="rm-fact-v" id="r-v6-ddns-url">—</code></div>
-        </div>
-        <p class="muted rm-lead">自签证书，浏览器首次会提示不安全，手动信任即可。</p>
-        <details class="rm-howto" open>
-          <summary>连不上？三步排查</summary>
-          <ol>
-            <li>光猫改桥接或开 IPv6（找运营商开通最省事）</li>
-            <li>路由器防火墙放行网盘端口入站（IPv6 默认全拦）</li>
-            <li>Windows 防火墙放行对号（首次启动点「允许」）</li>
-          </ol>
-        </details>
-      </div>
-
-      <div class="rm-card" id="r-card-ddns">
-        <div class="rm-card-hd"><b>DDNS 动态域名</b><span class="rm-tag" id="r-ddns-tag">未配置</span></div>
-        <div class="rm-form">
-          <label>服务商
-            <select id="r-ddns-provider">
-              <option value="dnspod">腾讯 DNSPod</option>
-              <option value="aliyun">阿里云解析</option>
-            </select>
-          </label>
-          <label>主域名<input id="r-ddns-domain" placeholder="example.com"></label>
-          <label>子域名<input id="r-ddns-sub" placeholder="duihao（空 = 根域）"></label>
-          <label>令牌<input id="r-ddns-token" type="password"
-            placeholder="DNSPod：ID,Token ／ 阿里云：AK:SK"></label>
-          <label>间隔（分钟）<input id="r-ddns-interval" type="number" min="5" value="10"></label>
-        </div>
-        <div class="rm-acts">
-          <button class="dl-primary" id="r-ddns-save">保存</button>
-          <button class="dl-ghost" id="r-ddns-test">测一次</button>
-          <button class="dl-ghost" id="r-ddns-now">立刻更新</button>
-        </div>
-        <p class="muted rm-last" id="r-ddns-last"></p>
       </div>
     </div>
 

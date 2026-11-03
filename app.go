@@ -13,6 +13,7 @@ import (
 	"github.com/ys-ll/uniterm/backend/container"
 	"github.com/ys-ll/uniterm/backend/credentials"
 	"github.com/ys-ll/uniterm/backend/duihao/editionpkg"
+	"github.com/ys-ll/uniterm/backend/duihao/instance"
 	"github.com/ys-ll/uniterm/backend/duihao/webdavd"
 	"github.com/ys-ll/uniterm/backend/importer"
 	"github.com/ys-ll/uniterm/backend/k8s"
@@ -112,6 +113,11 @@ type App struct {
 	// B6 软件授权：设备绑定 / 权益 / 静默续签。initStores 末尾构建；
 	// 门禁唯一入口 Allows(cap)，启动绝不因授权阻塞（见 app_licence.go）。
 	licence *licence.Manager
+
+	// dhMgr 对号环境/网盘实例管理器（main 注入）。IPv6 直连弹窗要拿网盘实例
+	// 的数据目录与 dav 端口 —— 网盘服务的 HTTP 接口要登录 cookie，Wails 窗口
+	// 走 Go 绑定，只能从实例管理器这边取（见 app_v6.go）。
+	dhMgr *instance.Manager
 
 	// MCP server (external AI agents): listener + token auth + approval
 	// bridge. Lazily created once stores are ready (ensureMCPServer).

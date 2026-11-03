@@ -26,12 +26,24 @@ const isManageWindow = wMode === 'manage'
 // /?w=notify：语音提醒到点弹出的右上角卡片（V2）—— 380×124 透明无边框小窗，
 // 只挂 NotifyStandalone。窗口本身由 Go 侧创建（notify_window.go），这里只渲染。
 const isNotifyWindow = wMode === 'notify'
+// /?w=member：会员中心独立窗（B8）—— 880×620 无边框卡片窗，窗口由
+// member_window.go 创建。NAS 主窗只有 330 宽，会员中心的套餐卡 + 二维码在
+// 竖窗里塞不下，所以做成独立窗而不是 el-dialog。
+const isMemberWindow = wMode === 'member'
+// /?w=v6：IPv6 直连弹窗（860×660 无边框窗，v6_window.go 创建）—— 设置里
+// 「IPv6 远程访问」不再是跳到网盘网页的 /-remote，而是这个向导式窗口：
+// 检测 -> 激活 -> 地址/域名/解绑，一条线走完。
+const isV6Window = wMode === 'v6'
+// /?w=fixip：固定内网地址弹窗（520×640 无边框窗，fixip_window.go 创建）——
+// 设置里点「固定内网地址」不再是「即将上线」，而是真把当前网卡从 DHCP 切成
+// 固定 IP（后端 netsh + UAC）。
+const isFixIpWindow = wMode === 'fixip'
 
 // M36：IT 工具窗（原主窗）标题 = 「对号 IT工具」，与起始页大标题「对号 · IT工具」
 // 同一套叫法（用户定稿：标题栏不要只写「对号」）。仍以「对号」开头、且不含
 // 「 · 」，后端 findMainWindow 的前缀匹配照旧成立；NAS 主窗标题是「对号」，
 // 反而更容易区分。
-if (!isPaletteWindow && !isFloatWindow && !isFloatMenuWindow && !isManageWindow && !isNotifyWindow && !isNasWindow) {
+if (!isPaletteWindow && !isFloatWindow && !isFloatMenuWindow && !isManageWindow && !isNotifyWindow && !isNasWindow && !isMemberWindow && !isV6Window && !isFixIpWindow) {
   Window.SetTitle('对号 IT工具')
 }
 
@@ -149,6 +161,37 @@ if (isNasWindow) {
     manageApp.use(pinia)
     manageApp.use(ElementPlus)
     manageApp.mount('#app')
+  })
+} else if (isMemberWindow) {
+  // 会员中心独立窗：同款描边 + 圆角（win-main），语言/主题跟主窗口一致。
+  // ui-home = 品牌玫红 accent（与 NAS 主窗一致，会员是 NAS 侧入口）。
+  document.documentElement.classList.add('win-main')
+  document.documentElement.classList.add('ui-home')
+  import('./MembershipStandalone.vue').then(({ default: MembershipStandalone }) => {
+    const memberApp = createApp(MembershipStandalone)
+    memberApp.use(pinia)
+    memberApp.use(ElementPlus)
+    memberApp.mount('#app')
+  })
+} else if (isV6Window) {
+  // IPv6 直连弹窗：同款描边/圆角 + 品牌玫红
+  document.documentElement.classList.add('win-main')
+  document.documentElement.classList.add('ui-home')
+  import('./V6Standalone.vue').then(({ default: V6Standalone }) => {
+    const v6App = createApp(V6Standalone)
+    v6App.use(pinia)
+    v6App.use(ElementPlus)
+    v6App.mount('#app')
+  })
+} else if (isFixIpWindow) {
+  // 固定内网地址弹窗：同款描边/圆角 + 品牌玫红
+  document.documentElement.classList.add('win-main')
+  document.documentElement.classList.add('ui-home')
+  import('./FixIpStandalone.vue').then(({ default: FixIpStandalone }) => {
+    const fxApp = createApp(FixIpStandalone)
+    fxApp.use(pinia)
+    fxApp.use(ElementPlus)
+    fxApp.mount('#app')
   })
 } else {
   // 标记「这是主窗口」：窗口描边（style.css 的 body::after）只给主窗口画，

@@ -129,6 +129,25 @@
       </div>
       <AISidebar v-if="!effectiveHome" ref="aiSidebarRef" @open-settings="openSettings" />
     </div>
+    <!-- 主窗口底部账号栏：登录入口 / 当前用户 + 会员级别 -->
+    <div class="account-bar">
+      <template v-if="licState.loggedIn">
+        <span class="account-user" :title="licState.mobile || licState.sub">
+          {{ licState.nickname || licState.mobile || licState.sub || '—' }}
+        </span>
+        <span class="account-plan" :class="'plan-' + licState.plan">{{ planLabelOf(licState.plan) }}</span>
+        <span v-if="licState.ent" class="account-expire">{{ t('licence.expireAt', { date: fmtEntDate(licState.ent) }) }}</span>
+        <span class="account-spacer"></span>
+        <el-button size="small" link @click="openMembership">{{ t('licence.membershipCenter') }}</el-button>
+      </template>
+      <template v-else>
+        <span class="account-hint">{{ t('licence.accountBarHint') }}</span>
+        <span class="account-spacer"></span>
+        <el-button size="small" type="primary" @click="loginVisible = true">{{ t('licence.login') }}</el-button>
+      </template>
+    </div>
+
+    <LoginDialog v-model="loginVisible" />
     <ConnectionForm v-model="showConnectionForm" :edit-config="editConfig" :default-group-id="pendingGroupId" @save="onSaveOnly" @connect="(c: ConnectionConfig, ko?: boolean) => { const wasEdit = !!editConfig?.id; editConfig = null; onConnect(c, ko, wasEdit) }" @connect-only="onConnectOnly" @cancel="editConfig = null" />
 
     <CredentialPrompt
@@ -209,6 +228,7 @@ import EncryptionModeDialog from './components/EncryptionModeDialog.vue'
 import CredentialUnlockDialog from './components/CredentialUnlockDialog.vue'
 import CredentialPrompt from './components/CredentialPrompt.vue'
 import type { CredentialResult } from './components/CredentialPrompt.vue'
+import LoginDialog from './components/LoginDialog.vue'
 import MCPApprovalDialog from './components/MCPApprovalDialog.vue'
 import type { MCPApprovalRequest } from './types/mcp'
 import Menu from './components/Menu.vue'
@@ -237,7 +257,7 @@ import { useDuplicateSession } from './composables/useDuplicateSession'
 import { useTunnelCredentials } from './composables/useTunnelCredentials'
 import type { ShortcutAction } from './types/settings'
 import { useI18n } from './i18n'
-import { CreateSession, CloseSession, RecordRecentConnection, GetPlatform, GetBackgroundImage, SessionStart, RelaunchApp, ResolveMCPApproval, PaletteToggle, GetEditionHome } from '../bindings/github.com/ys-ll/uniterm/app'
+import { CreateSession, CloseSession, RecordRecentConnection, GetPlatform, GetBackgroundImage, SessionStart, RelaunchApp, ResolveMCPApproval, PaletteToggle, GetEditionHome, OpenMembershipWindow } from '../bindings/github.com/ys-ll/uniterm/app'
 import { HOME_VIEWS } from './homeviews/registry'
 import { waitForTerminalSize } from './services/terminalManager'
 import { msg } from './services/message'
@@ -491,6 +511,54 @@ watch(effectiveHome, (v) => {
 }, { immediate: true })
 const sidebarRef = ref<any>(null)
 const aiSidebarRef = ref<any>(null)
+
+// ── 底部账号栏（B6 授权）──
+// 只读 licence:state 广播；判权一律在后端 Allows(cap)，前端不参与。
+interface LicenceStateShape {
+  loggedIn: boolean
+  plan: string
+  planText: string
+  ent: number
+  tokenExp: number
+  sub: string
+  nickname?: string
+  mobile?: string
+  reason: string
+}
+const licState = ref<LicenceStateShape>({
+  loggedIn: false, plan: 'free', planText: '', ent: 0, tokenExp: 0, sub: '', nickname: '', mobile: '', reason: '',
+})
+const loginVisible = ref(false)
+// 会员中心走独立窗口（member_window.go，880×620）：el-dialog 在主窗里只有
+// 520px，套餐卡和二维码挤成一列，用户明确不要弹窗形态。
+async function openMembership() {
+  try {
+    await OpenMembershipWindow()
+  } catch (e: any) {
+    msg.error(String(e?.message || e))
+  }
+}
+
+function planLabelOf(plan: string): string {
+  switch (plan) {
+    case 'trial': return t('licence.planTrial')
+    case 'annual': return t('licence.planAnnual')
+    case 'lifetime': return t('licence.planLifetime')
+    default: return t('licence.planFree')
+  }
+}
+
+function fmtEntDate(sec: number): string {
+  try {
+    return new Date(sec * 1000).toLocaleDateString(undefined, { year: 'numeric', month: '2-digit', day: '2-digit' })
+  } catch {
+    return String(sec)
+  }
+}
+
+// 应用内购买成功后的状态刷新在会员中心窗里做（MembershipStandalone 收到
+// paid 后自己拉 LicenceState）；本窗靠 licence:state 广播跟进，无需额外回调。
+
 
 // ── 跨模式导航收口（普通模式 → 专业模式落面板）──
 // 普通模式/专有版壳下 Sidebar 是 v-if 卸载的，「app:set-sidebar-view」事件没人
@@ -855,6 +923,16 @@ function onPlatformSystemShortcut(e: KeyboardEvent) {
 onMounted(async () => {
   connectionStore.load()
   aiStore.init()
+
+  // B6 授权：底部账号栏跟随后端 licence:state 广播（Verify/登录/续签/降级）。
+  try {
+    Events.On('licence:state', (data: unknown) => {
+      const d = data as LicenceStateShape | { data?: LicenceStateShape }
+      licState.value = (d && typeof d === 'object' && 'loggedIn' in d
+        ? d
+        : (d as { data?: LicenceStateShape })?.data) as LicenceStateShape
+    })
+  } catch { /* 事件不可用时账号栏保持未登录态 */ }
 
   // M19 插件化产品线：专有版首屏决策。editions.json 声明 home.plugin 且
   // 前端注册表有该插件视图 → 主窗口隐藏侧栏，start tab 渲染插件首页。
@@ -1971,6 +2049,40 @@ watch(
   position: relative;
   z-index: 1;
 }
+
+/* ── 主窗口底部账号栏 ── */
+.account-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  height: 34px;
+  padding: 0 0.875rem;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-base);
+  font-size: 0.75rem;
+  color: var(--text-secondary, var(--el-text-color-secondary));
+  flex-shrink: 0;
+  z-index: 1;
+}
+.account-user {
+  color: var(--text-primary, var(--el-text-color-primary));
+  font-weight: 600;
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.account-plan {
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  background: var(--hover-bg, var(--el-fill-color));
+  line-height: 1.5;
+}
+.account-plan.plan-annual { color: var(--primary-color, var(--el-color-primary)); }
+.account-plan.plan-lifetime { color: #d48806; }
+.account-expire { font-size: 0.6875rem; }
+.account-hint { font-size: 0.75rem; }
+.account-spacer { flex: 1; }
 
 .tab-area {
   flex: 1;

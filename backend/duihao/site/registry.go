@@ -24,7 +24,12 @@ type Record struct {
 	// Port 站点监听端口。每个站点独立端口，默认 80（DefaultSitePort）。
 	// 0 视为未设置 → 按 80 处理（旧记录兼容）。
 	Port int    `json:"port"`
-	Root string `json:"root"` // 站点根目录（用户目录，删除站点绝不删它）
+	// PlainPort https 站点额外监听的明文 HTTP 端口（0 = 不开）。
+	// 自签证书对很多客户端不友好（挂载盘、老浏览器、嵌入式设备、手机第一次访问），
+	// 所以 https 站点同时开一个 http 端口：同一个 server 块、同一份站点根，
+	// 爱用哪个协议用哪个（M58 用户定稿：局域网与公网都直接 http）。
+	PlainPort int    `json:"plainPort,omitempty"`
+	Root      string `json:"root"` // 站点根目录（用户目录，删除站点绝不删它）
 
 	Web string `json:"web"`            // nginx 实例 id
 	PHP string `json:"php,omitempty"`  // php 实例 id（静态站点可空）

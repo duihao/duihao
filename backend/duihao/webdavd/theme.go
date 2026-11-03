@@ -40,21 +40,16 @@ func normalizeTheme(t string) string {
 	}
 }
 
-// themeAttrOf 把前端配色名映射成网页只需要知道的两档明暗 + system。
-// 深蓝 / 品红深色都是深色底，浅色系（light / duihao-light）都是浅色底。
+// themeAttrOf 把前端配色名**原样**透传给网页的 data-theme。
+//
+// 以前这里只映射成 dark/light 两档：深蓝落到通用 dark、深红也落到通用 dark，
+// 网页永远配不上主窗那层「深底 + 品牌色」的调子（用户 2026-11-02 反馈「NAS 主题
+// 样式与 NAS 主窗口不一致」）。现在 shared.css / davCSS 按桌面端 style.css 备了
+// 六档变量，直接透传即可；脏值已由 normalizeTheme 收成 system。
 //
 // 注意这是**不加锁**的纯函数：ThemeAttr / SetAppTheme 都在持锁时调它，
 // 若这里再去抢锁就是 RWMutex 自死锁（不可重入，踩过）。
-func themeAttrOf(t string) string {
-	switch t {
-	case "dark", "deep-blue", "duihao-red":
-		return "dark"
-	case "light", "duihao-light":
-		return "light"
-	default:
-		return "system"
-	}
-}
+func themeAttrOf(t string) string { return t }
 
 // ThemeAttr 当前主题对应的 data-theme 值。
 func ThemeAttr() string {

@@ -6,6 +6,106 @@
     <!-- 品牌区（logo/名称/模式徽标）在标题栏；「切换到专业模式」收进标题栏的
          ☰ 菜单（窄窗里页面顶部再放一行按钮太浪费纵向空间）。 -->
     <!-- 没有网盘实例时只留「创建」+ IT 组（IT 工具不依赖 NAS 服务，照样能进） -->
+    <!-- 账号行（M49）：问候从底部搬到存储环上方 —— 补掉标题栏到环之间那段
+         空白（对齐易等版式），底部只剩「扫码 + 会员中心」两行。
+         整行可点 → 会员中心；未登录不隐藏（隐藏又空一块），显示「未登录 ·
+         点击登录」占位，权重靠字号/描边压得比底部实心按钮低一档。 -->
+    <!-- 顶部账号行（M49/M53）：胶囊容器里两个入口 —— 主体（头像+问候+箭头，
+         整段可点 = 会员中心）+ 右侧齿轮（= 公网/IPv6 设置说明，M53 从地址卡
+         挪到这里：地址卡 4 个元素太挤，而「设置」跟身份行并列更清爽）。
+         外层必须是 div：HTML 不允许 button 嵌套 button。 -->
+    <div class="life-me">
+      <button class="life-me-main" :title="meTitle" @click="openMember">
+        <span class="life-me-av">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+            <circle cx="12" cy="8.4" r="3.6" /><path d="M4.8 20c0-3.5 3.2-6.1 7.2-6.1s7.2 2.6 7.2 6.1" />
+          </svg>
+        </span>
+        <span class="life-me-tx">{{ meText }}</span>
+        <svg class="life-me-arrow" width="11" height="11" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+          <path d="M9 6l6 6-6 6" />
+        </svg>
+      </button>
+      <!-- 设置入口 + 下拉装同一个 wrap：hover 展开、鼠标移进面板不会误关
+           （M58：齿轮旁边补「设置」二字，纯图标找不到；改为 hover 即展开） -->
+      <div class="life-set-wrap" @mouseenter="onSetHover(true)" @mouseleave="onSetHover(false)">
+      <button class="life-me-gear" :class="{ on: setOpen }" :aria-label="t('life.setTitle')" @click.stop="onSetHover(true)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.1 13.7a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V20a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.08a1.65 1.65 0 0 0 1-1.51V4a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.08a1.65 1.65 0 0 0 1.51 1H20a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+        </svg>
+        <span class="life-me-gear-tx">{{ t('life.setTitle') }}</span>
+        <!-- 下三角：跟地址下拉同一个暗示「点得开」，展开时翻上去 -->
+        <svg class="life-me-caret" :class="{ on: setOpen }" width="8" height="8" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+
+      <!-- 设置下拉（M57，参照易等的分组菜单）：三段九项，带图标+说明+右箭头。
+           能真跑的接现有页面（IPv6→公网设置 / 端口绑定→NAS配置 / 改密→NAS 用户 /
+           退出→LicenceLogout）；「固定内网地址」「清除缓存」后端还没有能力，
+           点了给「即将上线」，不装作能用。 -->
+      <div v-if="setOpen" class="life-set" @click.stop>
+        <p class="life-set-hd">{{ t('set.connGroup') }}</p>
+        <button class="life-set-it" @click="onSet('fixedIp')">
+          <span class="life-set-ico" v-html="SET_ICONS.pin"></span>
+          <span class="life-set-tx">
+            <b>{{ t('set.fixedIp') }}</b>
+            <i>{{ t('set.fixedIpHint') }}</i>
+          </span>
+          <svg class="life-set-ar" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6" /></svg>
+        </button>
+        <button class="life-set-it" @click="onSet('v6')">
+          <span class="life-set-ico" v-html="SET_ICONS.v6"></span>
+          <span class="life-set-tx">
+            <b>{{ t('set.v6') }}</b>
+            <i>{{ t('set.v6Hint') }}</i>
+          </span>
+          <svg class="life-set-ar" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6" /></svg>
+        </button>
+
+        <p class="life-set-hd">{{ t('set.expGroup') }}</p>
+        <button class="life-set-it" @click="onSet('port')">
+          <span class="life-set-ico" v-html="SET_ICONS.shield"></span>
+          <span class="life-set-tx">
+            <b>{{ t('set.portBind') }}</b>
+            <i>{{ t('set.portBindHint') }}</i>
+          </span>
+          <svg class="life-set-ar" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6" /></svg>
+        </button>
+
+        <p class="life-set-hd">{{ t('set.acctGroup') }}</p>
+        <button class="life-set-it" @click="onSet('pwd')">
+          <span class="life-set-ico" v-html="SET_ICONS.lock"></span>
+          <span class="life-set-tx">
+            <b>{{ t('set.pwd') }}</b>
+            <i>{{ t('set.pwdHint') }}</i>
+          </span>
+          <svg class="life-set-ar" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6" /></svg>
+        </button>
+        <button class="life-set-it" @click="onSet('cache')">
+          <span class="life-set-ico" v-html="SET_ICONS.trash"></span>
+          <span class="life-set-tx">
+            <b>{{ t('set.cache') }}</b>
+            <i>{{ t('set.cacheHint') }}</i>
+          </span>
+          <svg class="life-set-ar" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6" /></svg>
+        </button>
+        <!-- 未登录时没有「退出」可言，直接不渲染（比点了报错干净） -->
+        <button v-if="lic.loggedIn" class="life-set-it danger" @click="onSet('logout')">
+          <span class="life-set-ico" v-html="SET_ICONS.out"></span>
+          <span class="life-set-tx">
+            <b>{{ t('set.logout') }}</b>
+            <i>{{ t('set.logoutHint') }}</i>
+          </span>
+          <svg class="life-set-ar" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6" /></svg>
+        </button>
+      </div>
+      </div>
+    </div>
+
     <div v-if="!inst" class="life-empty">
       <p>{{ t('life.noInst') }}</p>
       <button class="life-btn primary" :disabled="busy" @click="createInst">{{ t('life.create') }}</button>
@@ -49,7 +149,7 @@
           <button class="life-url-pick" :class="{ open: pickOpen }" @click="pickOpen = !pickOpen">
             <!-- 当前选中的地址：上面方式名、下面网址（窄窗自动省略号，悬停看全文） -->
             <span class="life-url-cur">
-              <span class="life-url-kind">{{ curAddr ? kindLabel(curAddr.kind) : t('life.addrLocal') }}</span>
+              <span class="life-url-kind">{{ curAddr ? addrTitle(curAddr) : t('life.addrLocal') }}</span>
               <span class="life-url-sub" :title="curAddr?.url || ''">{{ curAddr?.url || '—' }}</span>
             </span>
             <svg class="life-caret" width="10" height="10" viewBox="0 0 24 24" fill="none"
@@ -71,12 +171,12 @@
 
           <div v-if="pickOpen" class="life-url-pop">
             <div
-              v-for="a in addrs" :key="a.kind"
-              class="life-url-item" :class="{ on: a.kind === curKind, off: !a.ok }"
+              v-for="a in addrs" :key="a.id"
+              class="life-url-item" :class="{ on: a.id === curID, off: !a.ok }"
               @click="chooseAddr(a)"
             >
               <span class="life-url-item-hd">
-                <b>{{ kindLabel(a.kind) }}</b>
+                <b>{{ addrTitle(a) }}</b>
                 <i v-if="!a.ok" class="life-url-flag">{{ a.note || '—' }}</i>
                 <button v-if="a.fix" class="life-url-fix" :disabled="fixing" @click.stop="enableLan">
                   {{ fixing ? t('life.addrEnabling') : t('life.addrEnable') }}
@@ -87,10 +187,10 @@
           </div>
         </div>
         <div class="life-acts">
-          <button class="life-btn" @click="openFiles">{{ t('life.myNas') }}</button>
-          <button class="life-btn" @click="copyUrl">{{ t('life.copy') }}</button>
-          <button class="life-btn" @click="openManage">{{ t('life.manage') }}</button>
           <button class="life-btn" :disabled="busy" @click="toggleRun">{{ running ? t('life.stop') : t('life.start') }}</button>
+          <button class="life-btn" @click="openLocalDir">{{ t('life.nasDir') }}</button>
+          <button class="life-btn" @click="openManage">{{ t('life.manage') }}</button>
+          <button class="life-btn" @click="copyUrl">{{ t('life.copy') }}</button>
         </div>
       </div>
     </div>
@@ -99,7 +199,16 @@
          NAS 未启动时宫格与扫码一律置灰不可点（服务没起，进去只有登录页），
          启动按钮本身当然要保持可点。 -->
     <div v-if="inst" class="life-group">
-      <div class="life-group-hd">{{ t('life.myNas') }}</div>
+      <div class="life-group-hd">
+        <span>{{ t('life.myNas') }}</span>
+        <!-- 同 IT 组：组头「打开 ›」只开 NAS 根页面（文件管理器），宫格各 tile 仍是一步直达 -->
+        <button class="life-grp-open" :title="t('life.myNas')" @click="openFiles">
+          {{ t('common.open') }}
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round">
+            <path d="M9 6l6 6-6 6" />
+          </svg>
+        </button>
+      </div>
       <div class="life-grid">
         <button
           v-for="tile in nasTiles" :key="tile.key" class="life-tile"
@@ -112,7 +221,17 @@
     </div>
 
     <div class="life-group">
-      <div class="life-group-hd">{{ t('life.grpIt') }}</div>
+      <div class="life-group-hd">
+        <span>{{ t('life.grpIt') }}</span>
+        <!-- 打开 IT 工具窗本体（原顶栏按钮挪到这里）：宫格四项是「亮窗+直达页面」，
+             这个是只亮窗不导航 —— 语义归组，顶栏腾地方 -->
+        <button class="life-grp-open" :title="t('life.itTools')" @click="showIT">
+          {{ t('common.open') }}
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round">
+            <path d="M9 6l6 6-6 6" />
+          </svg>
+        </button>
+      </div>
       <div class="life-grid">
         <button
           v-for="tile in itTiles" :key="tile.key" class="life-tile"
@@ -124,10 +243,20 @@
       </div>
     </div>
 
-    <button v-if="inst" class="life-scan" @click="onScan">
-      <span class="life-ico" v-html="ICONS.qr"></span>
-      <span>{{ t('life.scanNas') }}</span>
-    </button>
+    <!-- 底部两行：上「扫码自动登进NAS」（弱化虚线）、下「会员中心」实心按钮
+         （M50 恢复：顶部胶囊 hover 提示不够显性，「会员」必须常显在界面上，
+         用户才找得到买/续入口）。已登录给「续费/升级」，未登录给「登录」。
+         扫码必须服务在跑，保持 v-if。点击都开独立窗口，不跳页面。 -->
+    <div class="life-foot">
+      <button v-if="inst" class="life-scan" @click="onScan">
+        <span class="life-ico" v-html="ICONS.qr"></span>
+        <span>{{ t('life.scanNas') }}</span>
+      </button>
+      <button class="life-member" :title="memberBtnText" @click="openMember">
+        <span class="life-ico" v-html="ICONS.member"></span>
+        <span>{{ memberBtnText }}</span>
+      </button>
+    </div>
 
     <WebDavManageDialog
       v-if="inst"
@@ -152,8 +281,8 @@
 // M22 的活，这里先占位（点击提示即将上线），避免空壳被误认为坏掉。
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from '../../i18n'
-import { Browser } from '@wailsio/runtime'
-import { OpenAppWindow, OpenManageWindow, OpenITTool } from '../../../bindings/github.com/ys-ll/uniterm/app'
+import { Browser, Events } from '@wailsio/runtime'
+import { OpenAppWindow, OpenManageWindow, OpenITTool, OpenMembershipWindow, OpenV6Window, OpenFixIpWindow, LicenceState, LicenceLogout, OpenPathInExplorer, ShowITWindow, ClearAppCache } from '../../../bindings/github.com/ys-ll/uniterm/app'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import WebDavManageDialog from '../../components/WebDavManageDialog.vue'
 import DavQuickDialog from '../../components/DavQuickDialog.vue'
@@ -181,19 +310,21 @@ const quickOpen = ref(false)
 const qrOpen = ref(false)
 
 // ---- 访问地址下拉 ----
-interface AddrView { kind: string; label: string; url: string; ok: boolean; note?: string; fix?: string }
+interface AddrView { id: string; kind: string; label: string; url: string; ok: boolean; note?: string; fix?: string }
 const ADDR_KEY = 'life.addrKind'
 const addrs = computed<AddrView[]>(() => ((conn.value?.addrs || []) as AddrView[]))
-const curKind = ref('')
+const curID = ref('')
 const pickOpen = ref(false)
 const fixing = ref(false)
 const urlBox = ref<HTMLElement | null>(null)
 
 // 当前选中项：选过的还在就用它，否则退回第一个可用（局域网优先）。
+// 用 id 而不是 kind —— 一台机器常有多条公网 IPv6（宽带动态段、临时隐私地址、
+// 二级路由下发的段），光靠 kind='v6' 永远只会落到第一条。
 const curAddr = computed<AddrView | null>(() => {
   const list = addrs.value
   if (!list.length) return null
-  return list.find(a => a.kind === curKind.value) || list.find(a => a.ok) || list[0]
+  return list.find(a => a.id === curID.value) || list.find(a => a.ok) || list[0]
 })
 
 function kindLabel(kind: string): string {
@@ -202,18 +333,27 @@ function kindLabel(kind: string): string {
   return t('life.addrLocal')
 }
 
+// 下拉里多条 IPv6 要能分清：按 IPv6 出现顺序加序号（数字不带语言，不用翻译）。
+function addrTitle(a: AddrView): string {
+  const base = kindLabel(a.kind)
+  if (a.kind !== 'v6') return base
+  const v6s = addrs.value.filter(x => x.kind === 'v6')
+  if (v6s.length < 2) return base
+  return `${base} ${v6s.findIndex(x => x.id === a.id) + 1}`
+}
+
 // 默认落「局域网」（手机扫码最常用），它不可用才退本机；用户手选过就记住。
 function pickDefaultAddr() {
   const list = addrs.value
   if (!list.length) return
-  if (list.some(a => a.kind === curKind.value && a.ok)) return
+  if (list.some(a => a.id === curID.value && a.ok)) return
   let kept = ''
   try { kept = localStorage.getItem(ADDR_KEY) || '' } catch { /* 隐私模式 */ }
   const pick =
-    list.find(a => a.kind === kept && a.ok) ||
+    list.find(a => a.id === kept && a.ok) ||
     list.find(a => a.kind === 'lan' && a.ok) ||
     list.find(a => a.ok) || list[0]
-  curKind.value = pick.kind
+  curID.value = pick.id
 }
 
 function chooseAddr(a: AddrView) {
@@ -223,8 +363,8 @@ function chooseAddr(a: AddrView) {
     return
   }
   pickOpen.value = false
-  curKind.value = a.kind
-  try { localStorage.setItem(ADDR_KEY, a.kind) } catch { /* 隐私模式 */ }
+  curID.value = a.id
+  try { localStorage.setItem(ADDR_KEY, a.id) } catch { /* 隐私模式 */ }
 }
 
 // 一键开启局域网访问：监听地址 0.0.0.0 + 自签 HTTPS（服务层硬规则，缺 TLS 起不来）。
@@ -252,8 +392,98 @@ async function enableLan() {
 }
 
 function onDocClick(e: MouseEvent) {
-  if (!pickOpen.value) return
-  if (urlBox.value && !urlBox.value.contains(e.target as Node)) pickOpen.value = false
+  if (pickOpen.value) {
+    if (!urlBox.value || !urlBox.value.contains(e.target as Node)) pickOpen.value = false
+  }
+  // 设置下拉：点面板以外任何地方收起。面板内部自带 @click.stop
+  if (setOpen.value && !(e.target as HTMLElement)?.closest?.('.life-me')) setOpen.value = false
+}
+
+// ---- 设置下拉（齿轮）----
+const setOpen = ref(false)
+
+// hover 展开（M58）：移入即开，移出延 180ms 关 —— 按钮和面板之间留着 0.3rem 空隙，
+// 立刻关会让鼠标斜着划进面板时闪一下。
+let setLeaveTimer: number | undefined
+function onSetHover(v: boolean) {
+  if (setLeaveTimer) { clearTimeout(setLeaveTimer); setLeaveTimer = undefined }
+  if (v) setOpen.value = true
+  else setLeaveTimer = window.setTimeout(() => { setOpen.value = false }, 180)
+}
+const SET_ICONS = {
+  pin: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="7" height="7" rx="1.4"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.4"/><rect x="4" y="14" width="6.5" height="6.5" rx="1.4"/><path d="M14 14h3v3h-3zM18.5 18.5h2"/></svg>',
+  v6: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8.6"/><path d="M3.4 12h17.2M12 3.4c2.6 2.4 4 5.3 4 8.6s-1.4 6.2-4 8.6c-2.6-2.4-4-5.3-4-8.6s1.4-6.2 4-8.6z"/></svg>',
+  shield: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3.4 19 6v6c0 4-3 7.1-7 8.6C8 19.1 5 16 5 12V6z"/><path d="M9.2 12.1l2 2 3.6-4"/></svg>',
+  lock: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="4.6" y="10.4" width="14.8" height="9.6" rx="2.2"/><path d="M8.2 10.4V8a3.8 3.8 0 0 1 7.6 0v2.4"/></svg>',
+  trash: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4.5 7h15M9.5 7V5.2h5V7M6.6 7l.9 12.2h9l.9-12.2"/><path d="M10.4 11v5M13.6 11v5"/></svg>',
+  out: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.6H6.2v14.8h8.3"/><path d="M12.2 12h8.2M17.6 9.2l2.8 2.8-2.8 2.8"/></svg>'
+}
+
+// 设置项落地：现在九项里有八项能真跑（只有「清除缓存」在不同平台行为不同，
+// Windows 下清 WebView 缓存 + 临时目录，不动网盘数据与登录态）。
+// 「固定内网地址」开独立窗（520×640）：网卡配置六行 + 三段说明，330 宽的
+// NAS 主窗塞不下；顺手把当前访问地址写进 localStorage，多网卡时后端靠它
+// 认出「NAS 走的是哪块网卡」。
+function onSet(k: string) {
+  setOpen.value = false
+  switch (k) {
+    // IPv6：独立弹窗（检测 → 激活 → 地址/域名/解绑），不再跳网盘网页的 /-remote
+    case 'v6': void OpenV6Window(); break
+    case 'fixedIp': {
+      try { localStorage.setItem('dh.fixip.hint', curAddr.value?.url || '') } catch { /* 隐私模式 */ }
+      void OpenFixIpWindow()
+      break
+    }
+    // 端口绑定：实例端口/RUL 都在 NAS配置窗（连接信息卡），先开到那儿
+    case 'port': void openManage(); break
+    case 'pwd': openApp('/-users', t('life.users')); break
+    case 'cache': void doClearCache(); break
+    case 'logout': void doLogout(); break
+    default: ElMessage.info(t('common.soon'))
+  }
+}
+
+// 清除缓存：只清网页缓存与临时文件，网盘文件 / 站点 / 登录状态一概不动。
+function mb(n: number): string {
+  if (!n) return '0 MB'
+  const m = n / (1024 * 1024)
+  return m >= 1024 ? `${(m / 1024).toFixed(2)} GB` : m >= 10 ? `${Math.round(m)} MB` : `${m.toFixed(1)} MB`
+}
+
+async function doClearCache() {
+  try {
+    await ElMessageBox.confirm(t('set.cacheAsk'), t('set.cache'), {
+      confirmButtonText: t('set.cache'),
+      cancelButtonText: t('common.cancel')
+    })
+  } catch { return }
+  try {
+    const r = await ClearAppCache()
+    const freed = Number(r?.freed || 0)
+    const locked = Number(r?.locked || 0)
+    if (freed > 0) ElMessage.success(t('set.cacheDone', { size: mb(freed) }))
+    else ElMessage.info(t('set.cacheNone'))
+    if (locked > 0) ElMessage.warning(t('set.cacheLocked', { size: mb(locked) }))
+  } catch (e: any) {
+    ElMessage.error(t('set.cacheFail', { msg: String(e?.message || e) }))
+  }
+}
+
+async function doLogout() {
+  try {
+    await ElMessageBox.confirm(t('set.logoutAsk'), t('set.logout'), {
+      confirmButtonText: t('set.logout'),
+      cancelButtonText: t('common.cancel'),
+      type: 'warning'
+    })
+  } catch { return }
+  try {
+    await LicenceLogout()
+    await refreshLic()
+    ElMessage.success(t('set.loggedOut'))
+  } catch (e: any) {
+    ElMessage.error(String(e?.message || e))
+  }
 }
 
 // 地球：系统浏览器打开当前地址（内置窗入口是下面的「网盘」按钮）。
@@ -327,9 +557,13 @@ const ICONS = {
   // IT 专业工具组：环境软件 / 站点管理 / 创建连接 / 连接管理
   plug: '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M9 3v5M15 3v5M7 8h10v4a5 5 0 0 1-10 0z"/><path d="M12 17v4"/></svg>',
   site: '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.8 2.6 3 15.4 0 18M12 3c-2.8 2.6-3 15.4 0 18"/></svg>',
-  connNew: '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="10" cy="12" r="7.5"/><path d="M10 8.5v7M6.5 12h7"/><path d="M17.5 16.5l3 3M20.5 16.5l-3 3"/></svg>',
+  // 「新建连接」= 圆 + 加号。原来圆里加号、右下角再挂一个叉，21px 下两道
+  // 描边挤成一团，看着像「一堆小叉」——去掉那个叉，只留最清楚的加号。
+  connNew: '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 8.2v7.6M8.2 12h7.6"/></svg>',
   connList: '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="4.5" width="18" height="6" rx="2"/><rect x="3" y="13.5" width="18" height="6" rx="2"/><path d="M6.5 7.5h.01M6.5 16.5h.01"/></svg>',
   qr: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="6.5" height="6.5" rx="1"/><rect x="14" y="3.5" width="6.5" height="6.5" rx="1"/><rect x="3.5" y="14" width="6.5" height="6.5" rx="1"/><path d="M14 14h2.5v2.5H14zM19 14h1.5M14 19v1.5M18.5 19H21M21 16.5V19"/></svg>',
+  // 底部「会员中心」：皇冠（权益/等级语义，比星形更贴会员）
+  member: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18.5h16"/><path d="M4.2 15.6 2.8 7.2l4.6 3.1L12 5l4.6 5.3 4.6-3.1-1.4 8.4z"/></svg>',
 }
 
 // 我的 NAS 组：个人空间各模块（与网盘顶栏同名同序）+ 用户管理。
@@ -361,6 +595,11 @@ const itTiles = [
 
 function onIT(tile: { view: string; action: string }) {
   OpenITTool(tile.view, tile.action).catch(() => { /* 老版本 exe 没有这个方法：静默 */ })
+}
+
+// 只亮起 IT 工具窗、不导航（组标题行的「打开 ›」，原顶栏「IT工具」按钮）。
+function showIT() {
+  ShowITWindow().catch(() => {})
 }
 
 // 网盘就是实例根地址（"/"），不加 /-files 别名。内置 webview 新窗打开。
@@ -396,6 +635,30 @@ function openFiles() {
     OpenAppWindow(t('life.files'), url).catch(() => Browser.OpenURL(url))
   })
 }
+// NAS目录：直接在资源管理器里打开网盘的**实际本地目录**（用户定稿）——
+// 不是网页文件管理器（那是组头「打开 ›」/宫格「网盘」的事）。
+// 路径取 GetStorageStats 的 root（= 当前启用共享账号的根目录，随共享配置变），
+// 拿不到才提示；不需要服务在跑，看磁盘本来就跟 NAS 进程无关。
+async function openLocalDir() {
+  let dir = stats.value?.root || ''
+  if (!dir && inst.value) {
+    try {
+      const s = await GetStorageStats(inst.value.id)
+      stats.value = s
+      dir = s?.root || ''
+    } catch { /* 下面统一提示 */ }
+  }
+  if (!dir) {
+    ElMessage.warning(t('life.noDir'))
+    return
+  }
+  try {
+    await OpenPathInExplorer(dir)
+  } catch (e: any) {
+    ElMessage.error(String(e?.message || e))
+  }
+}
+
 // 网盘配置：直接开独立管理窗（M20 管理窗，panel=webdav），不再是弹窗。
 // 开窗失败（老版本 exe 等）退回弹窗，功能不断。
 async function openManage() {
@@ -452,6 +715,82 @@ function onScan() {
   }
   quickOpen.value = true
 }
+
+// 会员中心：开独立窗口（member_window.go，880×640）。不在这里套 el-dialog
+// —— NAS 主窗只有 330 宽，套餐卡 + 二维码在竖窗里塞成一列很难看。
+async function openMember() {
+  try {
+    await OpenMembershipWindow()
+  } catch (e: any) {
+    ElMessage.error(String(e?.message || e))
+  }
+}
+
+// 会员问候（顶部账号行）：登录后显示「您好！手机号（档位）· 到期」，
+// 未登录退回「未登录 · 点击登录」占位（行不能消失，否则顶部又空一块）。
+// 数据源与会员中心窗一致（LicenceState + licence:state 广播），
+// 会员中心窗里登录/购买后本窗问候行同步刷新。
+type LicShape = { loggedIn: boolean; plan: string; ent: number; mobile?: string; nickname?: string; sub?: string }
+const lic = ref<LicShape>({ loggedIn: false, plan: 'free', ent: 0 })
+
+async function refreshLic() {
+  try {
+    const s = (await LicenceState()) as unknown as LicShape
+    if (s && typeof s === 'object') lic.value = s
+  } catch {
+    /* 未登录/接口异常都不打扰主界面 */
+  }
+}
+
+// 回到前台补一次授权状态（最小化/隐藏期间漏掉的事件靠这个追平）
+let licTimer: ReturnType<typeof setInterval> | null = null
+function onLicVisible() {
+  if (document.visibilityState === 'visible') void refreshLic()
+}
+
+// 到期文案单独算：顶部胶囊只放「您好！手机号（档位）」，到期时间收进悬浮提示
+// （用户定稿：问候行别塞到期，「到…」被省略号切半截更难看；想看全文悬停即可）。
+const licEnt = computed(() => {
+  if (!lic.value.loggedIn) return ''
+  if (lic.value.plan === 'free') {
+    return '' // 与会员中心窗 entLabel 同口径：免费不给到期文案
+  }
+  if (lic.value.plan === 'lifetime' || !lic.value.ent) {
+    return t('licence.expireNever')
+  }
+  try {
+    const dt = new Date(lic.value.ent * 1000)
+    // 悬浮里给完整日期（年月日），不再按同年缩成 MM/DD —— 空间不受限
+    const d = dt.toLocaleDateString(undefined, { year: 'numeric', month: '2-digit', day: '2-digit' })
+    return t('licence.expireAt', { date: d })
+  } catch {
+    return String(lic.value.ent)
+  }
+})
+
+const licGreet = computed(() => {
+  if (!lic.value.loggedIn) return ''
+  const who = lic.value.mobile || lic.value.nickname || lic.value.sub || '—'
+  const plan = lic.value.plan === 'trial' ? t('licence.planTrial')
+    : lic.value.plan === 'annual' ? t('licence.planAnnual')
+    : lic.value.plan === 'lifetime' ? t('licence.planLifetime')
+    : t('licence.planFree')
+  return t('member.hello', { mobile: who, plan })
+})
+
+// 顶部账号行文案：已登录给问候，未登录给「未登录 · 点击登录」占位
+const meText = computed(() => licGreet.value || t('member.notLoggedIn'))
+
+// 悬浮提示 = 问候 + 到期/永久 + 「点击进入会员中心」（与底部按钮双入口，
+// 悬停处也说明这行点得进去）。空段自动丢掉，免费用户不会留空行。
+const meTitle = computed(() =>
+  [meText.value, licEnt.value, t('member.openCenterHint')].filter(Boolean).join('\n'),
+)
+
+// 会员中心按钮：已登录点明「要续费/升级」，未登录点明「要登录」
+const memberBtnText = computed(() =>
+  lic.value.loggedIn ? t('member.centerRenew') : t('member.centerLogin'),
+)
 
 // 存储统计：盘容量秒回，NAS 占用是后端后台 walk 出来的，第一次拿到 -1（还在算）。
 // 这里补几轮轻量轮询把「NAS 占用」填上，最多 8 次（≈12 秒），别一直打后端。
@@ -518,10 +857,28 @@ async function toggleRun() {
 onMounted(() => {
   document.addEventListener('click', onDocClick)
   refresh()
+  void refreshLic()
+  // 登录/购买/续签都由后端广播 licence:state（App.vue、会员中心窗同款跟随模式）
+  Events.On('licence:state', (ev: unknown) => {
+    const d = ev as LicShape | { data?: LicShape }
+    const s = (d && typeof d === 'object' && 'loggedIn' in d) ? (d as LicShape) : (d as { data?: LicShape })?.data
+    if (s && typeof s === 'object') lic.value = s
+  })
+  // NAS配置窗里改端口后由后端广播：首屏地址卡/扫码链接立即跟着换端口。
+  Events.On('webdav:conn:changed', () => { void refresh() })
+  // 兜底同步（M57）：事件只覆盖本进程内发起的登录/退出/到账。窗口被隐藏过、
+  // webview 还没挂上监听、或状态在别处（网页端、会员中心窗的老版本路径）变了，
+  // 都会漏事件 —— 所以回到前台立刻拉一次，平时 60s 自愈一次。LicenceState 是
+  // 内存快照，不打后端，成本可以忽略。
+  document.addEventListener('visibilitychange', onLicVisible)
+  licTimer = setInterval(() => { void refreshLic() }, 60000)
 })
 onBeforeUnmount(() => {
   document.removeEventListener('click', onDocClick)
+  document.removeEventListener('visibilitychange', onLicVisible)
   if (statsTimer) clearTimeout(statsTimer)
+  if (licTimer) clearInterval(licTimer)
+  if (setLeaveTimer) clearTimeout(setLeaveTimer)
 })
 </script>
 
@@ -539,11 +896,12 @@ onBeforeUnmount(() => {
   /* 不露滚动条（用户定稿）：780 高度按实测排得下，溢出只是兜底 ——
      仍可用滚轮滚，但看不见条，免得右侧多一根竖线破坏竖窗观感 */
   scrollbar-width: none;
-  padding: 0.75rem 1rem 1rem;
+  padding: 0.625rem 1rem 0.875rem;
 }
 .life-home::-webkit-scrollbar { width: 0; height: 0; }
 .life-empty {
-  margin-top: 3rem;
+  /* 顶部已有账号行，空状态不用再顶出 3rem 的大留白 */
+  margin-top: 1.75rem;
   text-align: center;
   color: var(--text-muted);
   font-size: 0.8125rem;
@@ -553,8 +911,9 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 0.875rem;
-  margin-top: 0.25rem;
+  gap: 0.75rem;
+  /* 上方已有 .life-me（自带 0.75rem 下边距），这里不再叠一层顶部间距 */
+  margin-top: 0;
 }
 .life-ring {
   /* NAS 弧 / 色点专用色：中性灰。刻意不用品红系 —— 已用弧是品牌玫红，
@@ -578,7 +937,7 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
   justify-content: center;
   gap: 0.2rem 0.7rem;
-  margin-top: 0.55rem;
+  margin-top: 0.45rem;
   font-size: 0.6875rem;
   color: var(--text-muted);
   white-space: nowrap;
@@ -752,7 +1111,9 @@ onBeforeUnmount(() => {
 /* 四个操作两列排，窄窗里不会把按钮压成「复制…」这种省略号 */
 .life-acts {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* 一行四个（用户定稿）：我的NAS / 复制链接 / NAS配置 / 启动NAS —— 文案都是
+     3~4 字，298px 内容宽里每个约 70px 放得下；溢出兜底仍是省略号 */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.375rem;
 }
 .life-btn {
@@ -790,14 +1151,41 @@ onBeforeUnmount(() => {
   padding: 0 1rem;
 }
 .life-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-/* 宫格分组：我的 NAS / IT 专业工具 —— 小标题 + 四列宫格 */
-.life-group { margin-top: 1.05rem; }
-.life-group + .life-group { margin-top: 0.9rem; }
+/* 宫格分组：我的 NAS / IT 专业工具 —— 小标题 + 四列宫格。
+   纵向节奏在 M51 收紧过一档：顶部多了账号胶囊、底部两行间距也加大了，
+   780 高的窗口必须从宫格这里省回来，否则底部行会被挤出可视区。 */
+.life-group { margin-top: 0.9rem; }
+.life-group + .life-group { margin-top: 0.8rem; }
 .life-group-hd {
+  display: flex;
+  align-items: center;
   font-size: 0.625rem;
   color: var(--text-muted);
   letter-spacing: 0.06em;
-  margin: 0 0 0.4rem 0.15rem;
+  margin: 0 0 0.35rem 0.15rem;
+}
+/* 组头右侧「打开 ›」：IT 工具窗本体入口（原顶栏按钮挪来），品牌色常显强调、hover 减淡 */
+.life-grp-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  margin-left: auto;
+  margin-right: 0.15rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.625rem;
+  letter-spacing: 0;
+  /* 显式小手：全局 `button:not(:disabled){cursor:default!important}` 是原生
+     风格约定（见 style.css），这里要压过它 —— 同样 !important 时比特指度：
+     本规则编译后是 .life-grp-open[data-v-x]（0,2,0），胜过 button:not(:disabled)
+     的（0,1,1）。别改成裸 `button` 选择器，那样会输。 */
+  cursor: pointer !important;
+}
+.life-grp-open:hover {
+  opacity: 0.78;
 }
 .life-grid {
   display: grid;
@@ -806,35 +1194,231 @@ onBeforeUnmount(() => {
 }
 /* 宫格与扫码行之间至少留一点缝（扫码行的 margin-top:auto 在底部有富余时
    会吃掉全部剩余空间，没富余时这里兜住间距） */
-.life-home .life-group:last-of-type { margin-bottom: 0.9rem; }
-/* 扫码：单独一行，不占宫格位；margin-top:auto 让它吃掉底部多余高度（窗口
-   拉高时贴底，不留一块空白 —— 同时保证正常高度下不会把内容顶出滚动条） */
-.life-scan {
+.life-home .life-group:last-of-type { margin-bottom: 0.7rem; }
+/* 底部两行：上扫码（虚线弱化）、下会员中心（品牌实心）。
+   margin-top:auto 挂在容器上（原来挂在扫码按钮上）：窗口拉高时整块贴底，
+   正常高度下不额外占高。 */
+.life-foot {
   margin-top: auto;
-  padding-top: 0;
+  display: flex;
+  flex-direction: column;
+  /* 两行按钮间距（M51 定 0.875rem；M60 用户要求扫码按钮再往上提一点 →
+     1.35rem）。会员按钮由 margin-top:auto 压底，所以加大 gap 只会把上面那行
+     往上推，底部留白保持不变。 */
+  gap: 1.35rem;
+  flex: 0 0 auto;
+}
+.life-foot > button {
   width: 100%;
   height: 2.1rem;
-  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
+  gap: 0.3rem;
+  padding: 0 0.4rem;
   border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 0.6875rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.life-scan {
   border: 1px dashed var(--border-subtle);
   background: var(--bg-elevated);
   color: var(--text-secondary);
-  font-size: 0.6875rem;
-  cursor: pointer;
 }
 .life-scan:hover { border-color: var(--accent); color: var(--accent); }
-.life-scan .life-ico { display: inline-flex; }
+/* 会员中心：品牌实心，作为销售入口比扫码更「亮」一档（M50 恢复）。
+   顶部胶囊与它双入口分工：胶囊 = 身份/悬浮说明，这里 = 常显主行动。 */
+.life-member {
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--on-accent, #fff);
+}
+.life-member:hover { filter: brightness(1.08); }
+/* 顶部账号行（M49/M53）：胶囊容器 = 主体按钮（头像+问候+箭头，点会员中心）
+   + 齿轮按钮（点公网设置）。容器只管外观，点击都在内部两个 button 上 ——
+   HTML 不允许 button 套 button，所以外层从 <button> 改成了 <div>。
+   溢出走省略号，全文在 title 悬浮里。 */
+.life-me {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 0.15rem;
+  width: 100%;
+  min-width: 0;
+  flex: 0 0 auto;
+  margin: 0 0 0.625rem;
+  padding: 0.25rem 0.4rem 0.25rem 0.25rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 0.6875rem;
+  line-height: 1.3;
+}
+.life-me:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+/* 主体入口：吃掉齿轮以外的全部宽度，透明无边框（外观由容器提供） */
+.life-me-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+/* 齿轮 + 下拉的定位锚（M58）：面板贴着按钮往左下展开，鼠标从按钮划到面板
+   全程都在 wrap 内，不会触发外层的 mouseleave */
+.life-set-wrap {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+}
+/* 齿轮：胶囊右侧的「⚙ 设置」小标签，hover 展开下拉 */
+.life-me-gear {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  align-self: center;
+  height: 1.5rem;
+  padding: 0 0.4rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.5625rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.life-me-gear:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+/* 齿轮打开状态：跟 hover 同款，再加品牌色图标，一眼看出菜单是这个键开的 */
+.life-me-gear.on {
+  background: var(--bg-hover);
+  color: var(--accent);
+}
+/* 「设置」二字：跟图标同色系，hover 时随按钮一起变亮 */
+.life-me-gear-tx {
+  line-height: 1;
+  cursor: pointer;
+}
+/* 下三角：暗示这里点得开下拉，展开时翻成上三角（跟地址行那颗同一个手势） */
+.life-me-caret {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  transition: transform 0.15s;
+}
+.life-me-gear.on .life-me-caret { transform: rotate(180deg); color: var(--accent); }
+/* 设置下拉面板（M57）：贴胶囊下方右对齐，三段分组 + 图标/说明/箭头。
+   胶囊在 330 宽窗口里几乎占满，所以面板宽度单独定，不受父级 flex 影响。 */
+.life-set {
+  position: absolute;
+  /* 锚点改成 .life-set-wrap（= 按钮本身），所以多让 0.15rem 才落回胶囊下沿外侧 */
+  top: calc(100% + 0.45rem);
+  right: -0.1rem;
+  z-index: 60;
+  width: 15.5rem;
+  max-width: calc(100vw - 1.5rem);
+  padding: 0.35rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.34);
+  color: var(--text-primary);
+  cursor: default;
+}
+.life-set-hd {
+  margin: 0.4rem 0.25rem 0.2rem;
+  font-size: 0.5625rem;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+.life-set-hd:first-child { margin-top: 0.15rem; }
+.life-set-it {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.3rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer !important;
+}
+.life-set-it:hover { background: var(--bg-hover); }
+.life-set-ico { flex: 0 0 auto; display: inline-flex; color: var(--accent); }
+.life-set-tx {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+.life-set-tx b {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.life-set-tx i {
+  font-style: normal;
+  font-size: 0.5625rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.life-set-ar { flex: 0 0 auto; color: var(--text-muted); }
+/* 退出用危险色（红）：唯一不可逆的一项，不能跟上面几项长得一样 */
+.life-set-it.danger,
+.life-set-it.danger .life-set-ico { color: var(--error); }
+.life-me-av {
+  flex: 0 0 1.375rem;
+  width: 1.375rem;
+  height: 1.375rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  /* 头像底走玫红 16% 混色：深色主题里是暗玫红，浅色主题里是淡粉，都不用另配 */
+  background: color-mix(in srgb, var(--accent) 16%, var(--bg-surface));
+  color: var(--accent);
+}
+.life-me-tx {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.life-me-arrow {
+  flex: 0 0 auto;
+  opacity: 0.45;
+}
+.life-foot .life-ico { display: inline-flex; }
 .life-tile {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.625rem 0.125rem 0.5rem;
+  padding: 0.55rem 0.125rem 0.45rem;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-subtle);
   background: var(--bg-elevated);
@@ -858,6 +1442,8 @@ onBeforeUnmount(() => {
   button.life-btn,
   button.life-tile,
   button.life-scan,
+  button.life-member,
+  button.life-me,
   button.life-icon,
   button.life-url-pick,
   button.life-url-item,
