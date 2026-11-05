@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/log"
+	"github.com/duihao/duihao/backend/log"
 )
 
 // EsIndexInfo holds cat/indices row fields used by the UI.

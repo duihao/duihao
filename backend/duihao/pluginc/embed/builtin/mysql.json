@@ -14,6 +14,7 @@
       "platforms": {
         "windows-amd64": {
           "url": "https://dev.mysql.com/get/Downloads/MySQL-8.0/mysql-8.0.40-winx64.zip",
+          "urls": ["https://cdn.mysql.com/archives/mysql-8.0/mysql-8.0.40-winx64.zip"],
           "sha256": "",
           "size": 0
         }
@@ -25,6 +26,7 @@
       "platforms": {
         "windows-amd64": {
           "url": "https://dev.mysql.com/get/Downloads/MySQL-8.4/mysql-8.4.4-winx64.zip",
+          "urls": ["https://cdn.mysql.com/archives/mysql-8.4/mysql-8.4.4-winx64.zip"],
           "sha256": "",
           "size": 0
         }
@@ -36,6 +38,7 @@
       "platforms": {
         "windows-amd64": {
           "url": "https://dev.mysql.com/get/Downloads/MySQL-5.7/mysql-5.7.44-winx64.zip",
+          "urls": ["https://cdn.mysql.com/archives/mysql-5.7/mysql-5.7.44-winx64.zip"],
           "sha256": "",
           "size": 0
         }
@@ -65,7 +68,7 @@
       {
         "action": "write",
         "dst": "{dir}/my.ini",
-        "from": "[mysqld]\nbasedir={runtime}\ndatadir={dir}/data\nport={port:db}\nbind-address=127.0.0.1\ncharacter-set-server={set:mysql.charset}\ndefault-storage-engine={set:mysql.engine}\n{setif:mysql.skip_name_resolve:skip-name-resolve}\n{setif:mysql.skip_networking:skip-networking}\n{setif:mysql.log_error:log-error={dir}/logs/mysql.err}\n{setif:mysql.binlog:log-bin=mysql-bin}\n{setif:mysql.slow_query_log:slow_query_log=1\nlong_query_time=2}\nmax_connections={set:mysql.max_connections}\nthread_cache_size={set:mysql.thread_cache_size}\ntable_open_cache={set:mysql.table_open_cache}\nwait_timeout={set:mysql.wait_timeout}\nsort_buffer_size={set:mysql.sort_buffer_size}K\nread_buffer_size={set:mysql.read_buffer_size}K\nmax_allowed_packet={set:mysql.max_allowed_packet}M\ntmp_table_size={set:mysql.tmp_table_size}M\nmax_heap_table_size={set:mysql.max_heap_table_size}M\nkey_buffer_size={set:mysql.key_buffer_size}M\ninnodb_buffer_pool_size={set:mysql.innodb_buffer_pool_size}M\ninnodb_log_buffer_size={set:mysql.innodb_log_buffer_size}M\n{setifver:8.0.30:innodb_redo_log_capacity={set:mysql.innodb_redo_log_capacity}M}\ninnodb_flush_log_at_trx_commit={set:mysql.innodb_flush_log_at_trx_commit}\ninnodb_lock_wait_timeout={set:mysql.innodb_lock_wait_timeout}\nmyisam_max_sort_file_size={set:mysql.myisam_max_sort_file_size}G\nmyisam_sort_buffer_size={set:mysql.myisam_sort_buffer_size}M\n\n[client]\nport={port:db}\ndefault-character-set={set:mysql.charset}\n"
+        "from": "[mysqld]\nbasedir=\"{runtime}\"\ndatadir=\"{dir}/data\"\nport={port:db}\nbind-address=127.0.0.1\ncharacter-set-server={set:mysql.charset}\ndefault-storage-engine={set:mysql.engine}\n{setif:mysql.skip_name_resolve:skip-name-resolve}\n{setif:mysql.skip_networking:skip-networking}\n{setif:mysql.log_error:log-error=\"{dir}/logs/mysql.err\"}\n{setif:mysql.binlog:log-bin=mysql-bin}\n{setif:mysql.slow_query_log:slow_query_log=1\nlong_query_time=2}\nmax_connections={set:mysql.max_connections}\nthread_cache_size={set:mysql.thread_cache_size}\ntable_open_cache={set:mysql.table_open_cache}\nwait_timeout={set:mysql.wait_timeout}\nsort_buffer_size={set:mysql.sort_buffer_size}K\nread_buffer_size={set:mysql.read_buffer_size}K\nmax_allowed_packet={set:mysql.max_allowed_packet}M\ntmp_table_size={set:mysql.tmp_table_size}M\nmax_heap_table_size={set:mysql.max_heap_table_size}M\nkey_buffer_size={set:mysql.key_buffer_size}M\ninnodb_buffer_pool_size={set:mysql.innodb_buffer_pool_size}M\ninnodb_log_buffer_size={set:mysql.innodb_log_buffer_size}M\n{setifver:8.0.30:innodb_redo_log_capacity={set:mysql.innodb_redo_log_capacity}M}\ninnodb_flush_log_at_trx_commit={set:mysql.innodb_flush_log_at_trx_commit}\ninnodb_lock_wait_timeout={set:mysql.innodb_lock_wait_timeout}\nmyisam_max_sort_file_size={set:mysql.myisam_max_sort_file_size}G\nmyisam_sort_buffer_size={set:mysql.myisam_sort_buffer_size}M\n\n[client]\nport={port:db}\ndefault-character-set={set:mysql.charset}\n"
       },
       {
         "action": "write",
@@ -101,7 +104,7 @@
     "interval": 10
   },
   "config": {
-    "signature": "2026-10-22-m13-multiver"
+    "signature": "2026-11-03-quote-paths"
   },
   "settings": {
     "configFile": "my.ini",

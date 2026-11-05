@@ -563,7 +563,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, onActivated, onDeactivated, watch, nextTick } from 'vue'
-import { SetMonitorActiveTab, SetMonitorPaused, GetProcessDetail, KillProcess, GetPorts, GetDisks, GetNetworkCards, GetServices, GetServiceDetail, GetServiceLogs, ServiceAction, GetDevices, GetHardwareFru, GetHardwareLan, GetHardwareSensors } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { SetMonitorActiveTab, SetMonitorPaused, GetProcessDetail, KillProcess, GetPorts, GetDisks, GetNetworkCards, GetServices, GetServiceDetail, GetServiceLogs, ServiceAction, GetDevices, GetHardwareFru, GetHardwareLan, GetHardwareSensors } from '../../bindings/github.com/duihao/duihao/app'
 import { msg } from '../services/message'
 import { Close, RefreshRight } from '@element-plus/icons-vue'
 import { ChevronRight } from '@lucide/vue'

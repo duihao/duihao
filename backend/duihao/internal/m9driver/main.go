@@ -11,10 +11,10 @@ import (
 
 	"github.com/jlaffaye/ftp"
 
-	duihao "github.com/ys-ll/uniterm/backend/duihao"
-	"github.com/ys-ll/uniterm/backend/duihao/audit"
-	"github.com/ys-ll/uniterm/backend/duihao/ftpd"
-	"github.com/ys-ll/uniterm/backend/duihao/instance"
+	duihao "github.com/duihao/duihao/backend/duihao"
+	"github.com/duihao/duihao/backend/duihao/audit"
+	"github.com/duihao/duihao/backend/duihao/ftpd"
+	"github.com/duihao/duihao/backend/duihao/instance"
 )
 
 var fails int

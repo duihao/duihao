@@ -20,7 +20,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/webui"
+	"github.com/duihao/duihao/backend/duihao/webdavd/webui"
 )
 
 var (

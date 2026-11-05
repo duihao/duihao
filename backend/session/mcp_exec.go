@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/ssh"
 
-	"github.com/ys-ll/uniterm/backend/log"
+	"github.com/duihao/duihao/backend/log"
 )
 
 // MCP exec support: run commands on an authenticated SSH client over a

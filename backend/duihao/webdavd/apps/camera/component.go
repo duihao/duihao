@@ -10,8 +10,8 @@
 package camera
 
 import (
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/appkit"
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/compkit"
+	"github.com/duihao/duihao/backend/duihao/webdavd/appkit"
+	"github.com/duihao/duihao/backend/duihao/webdavd/compkit"
 )
 
 // componentList 监控用到的可选组件。

@@ -35,9 +35,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/appkit"
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/sysinfo"
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/webui"
+	"github.com/duihao/duihao/backend/duihao/webdavd/appkit"
+	"github.com/duihao/duihao/backend/duihao/webdavd/sysinfo"
+	"github.com/duihao/duihao/backend/duihao/webdavd/webui"
 )
 
 // timeLayout 与其它模块一致（本地时间字符串，便于直接看库）。

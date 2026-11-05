@@ -4,7 +4,7 @@ import type { HistoryEntry } from '../types/database'
 const MAX = 50
 
 function key(sessionId: string) {
-  return `uniterm.db.sqlHistory.${sessionId}`
+  return `duihao.db.sqlHistory.${sessionId}`
 }
 
 export function loadSqlHistory(sessionId: string): HistoryEntry[] {

@@ -3,7 +3,7 @@ package camera
 import (
 	"io"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/childproc"
+	"github.com/duihao/duihao/backend/duihao/webdavd/childproc"
 )
 
 // childProc 监控内部用的子进程句柄。真正的实现在 childproc 包（下载模块的

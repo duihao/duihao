@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ys-ll/uniterm/backend/platform"
-	"github.com/ys-ll/uniterm/backend/session"
+	"github.com/duihao/duihao/backend/platform"
+	"github.com/duihao/duihao/backend/session"
 )
 
 type desktopCaptureTestSession struct {

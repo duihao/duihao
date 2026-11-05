@@ -10,23 +10,23 @@ import (
 	"fmt"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/services/notifications"
-	"github.com/ys-ll/uniterm/backend/container"
-	"github.com/ys-ll/uniterm/backend/credentials"
-	"github.com/ys-ll/uniterm/backend/duihao/editionpkg"
-	"github.com/ys-ll/uniterm/backend/duihao/instance"
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd"
-	"github.com/ys-ll/uniterm/backend/importer"
-	"github.com/ys-ll/uniterm/backend/k8s"
-	"github.com/ys-ll/uniterm/backend/log"
-	"github.com/ys-ll/uniterm/backend/mcp"
-	"github.com/ys-ll/uniterm/backend/mcpclient"
-	"github.com/ys-ll/uniterm/backend/platform"
-	"github.com/ys-ll/uniterm/backend/session"
-	"github.com/ys-ll/uniterm/backend/store"
-	"github.com/ys-ll/uniterm/backend/sync"
-	"github.com/ys-ll/uniterm/backend/update"
-	"github.com/ys-ll/uniterm/licence"
-	"github.com/ys-ll/uniterm/backend/utils"
+	"github.com/duihao/duihao/backend/container"
+	"github.com/duihao/duihao/backend/credentials"
+	"github.com/duihao/duihao/backend/duihao/editionpkg"
+	"github.com/duihao/duihao/backend/duihao/instance"
+	"github.com/duihao/duihao/backend/duihao/webdavd"
+	"github.com/duihao/duihao/backend/importer"
+	"github.com/duihao/duihao/backend/k8s"
+	"github.com/duihao/duihao/backend/log"
+	"github.com/duihao/duihao/backend/mcp"
+	"github.com/duihao/duihao/backend/mcpclient"
+	"github.com/duihao/duihao/backend/platform"
+	"github.com/duihao/duihao/backend/session"
+	"github.com/duihao/duihao/backend/store"
+	"github.com/duihao/duihao/backend/sync"
+	"github.com/duihao/duihao/backend/update"
+	"github.com/duihao/duihao/licence"
+	"github.com/duihao/duihao/backend/utils"
 	"golang.org/x/crypto/ssh"
 	"io"
 	"net"
@@ -131,8 +131,8 @@ type App struct {
 	mcpTokenCache      map[string]mcp.TokenInfo
 	mcpTokenCacheMtime time.Time
 
-	// MCP client (uniTerm connects to external MCP servers). Separate from the
-	// mcpServer above: that one exposes uniTerm to external agents; this one
+	// MCP client (Duihao connects to external MCP servers). Separate from the
+	// mcpServer above: that one exposes Duihao to external agents; this one
 	// feeds external tools into the built-in AI panel. Lazily created.
 	mcpClient      *mcpclient.Manager
 	mcpClientStore *store.MCPClientStore
@@ -144,7 +144,7 @@ type App struct {
 	jobOnce stdsync.Once
 
 	// Session-lifetime screen emulators backing CaptureScreen (the MCP
-	// uniterm_capture tool and the frontend's collect-output fallback). One
+	// duihao_capture tool and the frontend's collect-output fallback). One
 	// per session, attached before connecting; fed via additive data
 	// taps, removed when the session disconnects.
 	captureMu stdsync.Mutex
@@ -2491,14 +2491,18 @@ func (a *App) OnConnectionsChanged(callback func(session.ConnectionStoreData)) {
 }
 
 type AppInfo struct {
-	Name    string `json:"name"`
-	Version string `json:"version"`
+	Name        string `json:"name"`
+	Version     string `json:"version"`
+	BuildCommit string `json:"buildCommit"`
+	BuildDate   string `json:"buildDate"`
 }
 
 func (a *App) GetAppInfo() AppInfo {
 	return AppInfo{
-		Name:    "Carrear's Terminal",
-		Version: Version,
+		Name:        "Carrear's Terminal",
+		Version:     Version,
+		BuildCommit: BuildCommit,
+		BuildDate:   BuildDate,
 	}
 }
 

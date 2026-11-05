@@ -112,7 +112,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from '../i18n'
-import { LicenceLogin, LicencePasswordLogin, LicenceSendCode } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { LicenceLogin, LicencePasswordLogin, LicenceSendCode } from '../../bindings/github.com/duihao/duihao/app'
 
 const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{

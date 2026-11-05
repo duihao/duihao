@@ -3,7 +3,7 @@ package site
 import (
 	"fmt"
 
-	"github.com/ys-ll/uniterm/backend/duihao/processd"
+	"github.com/duihao/duihao/backend/duihao/processd"
 )
 
 // PortDiagnosis 端口诊断结果（界面「换端口」用）。

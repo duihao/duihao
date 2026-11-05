@@ -8,7 +8,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/ys-ll/uniterm/backend/session"
+	"github.com/duihao/duihao/backend/session"
 )
 
 // FileBackend 实现 session.ContainerFileBackend 接口，把 Pod 容器内的文件

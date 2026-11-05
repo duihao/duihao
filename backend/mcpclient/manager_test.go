@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/ys-ll/uniterm/backend/store"
+	"github.com/duihao/duihao/backend/store"
 )
 
 // fakeSession stands in for *mcp.ClientSession in tests; it returns a fixed tool

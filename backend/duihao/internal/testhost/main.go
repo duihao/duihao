@@ -16,10 +16,10 @@ import (
 	"strings"
 	"syscall"
 
-	duihao "github.com/ys-ll/uniterm/backend/duihao"
-	"github.com/ys-ll/uniterm/backend/duihao/audit"
-	"github.com/ys-ll/uniterm/backend/duihao/processd"
-	"github.com/ys-ll/uniterm/backend/duihao/runtimepkg"
+	duihao "github.com/duihao/duihao/backend/duihao"
+	"github.com/duihao/duihao/backend/duihao/audit"
+	"github.com/duihao/duihao/backend/duihao/processd"
+	"github.com/duihao/duihao/backend/duihao/runtimepkg"
 )
 
 // resolveReq 描述取包请求：存在时先走 runtimepkg 五级取包，再把

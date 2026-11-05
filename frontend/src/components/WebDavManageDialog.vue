@@ -240,12 +240,12 @@ import { ref, reactive, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Browser } from '@wailsio/runtime'
 import { useI18n } from '../i18n'
-import { OpenDirectoryDialog, OpenManageWindow } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { OpenDirectoryDialog, OpenManageWindow } from '../../bindings/github.com/duihao/duihao/app'
 import {
   ListWebDavShares, CreateWebDavShare, UpdateWebDavShare, SetWebDavSharePassword,
   DeleteWebDavShare, GetWebDavConnInfo, ListWebDavSiteRoots, HubAccountInfo,
   SetWebDavPort,
-} from '../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/webdavservice'
+} from '../../bindings/github.com/duihao/duihao/backend/duihao/service/webdavservice'
 import DavBrowseDialog from './DavBrowseDialog.vue'
 import DavQuickDialog from './DavQuickDialog.vue'
 import ManageTitleBar from './ManageTitleBar.vue'

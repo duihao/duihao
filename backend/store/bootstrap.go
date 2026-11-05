@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ys-ll/uniterm/backend/log"
+	"github.com/duihao/duihao/backend/log"
 )
 
 const bootstrapFileName = "bootstrap.json"
@@ -17,13 +17,13 @@ type bootstrap struct {
 	DataDir string `json:"dataDir,omitempty"`
 }
 
-// DefaultDataDir returns the OS user-config data dir (<UserConfigDir>/uniTerm).
+// DefaultDataDir returns the OS user-config data dir (<UserConfigDir>/Duihao).
 func DefaultDataDir() (string, error) {
 	cfg, err := os.UserConfigDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(cfg, "uniTerm"), nil
+	return filepath.Join(cfg, "Duihao"), nil
 }
 
 func exeDir() (string, error) {
@@ -42,7 +42,7 @@ func bootstrapPath() (string, error) {
 	return filepath.Join(dir, "data", bootstrapFileName), nil
 }
 
-// userConfigDir returns the user config dir (<UserConfigDir>/uniTerm) that
+// userConfigDir returns the user config dir (<UserConfigDir>/Duihao) that
 // holds the bootstrap pointer for non-portable setups. Unlike the exe/data
 // location it is writable for installs under a read-only Program Files /
 // Applications.

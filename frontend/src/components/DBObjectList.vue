@@ -94,7 +94,7 @@
 import { ref, computed, watch } from 'vue'
 import { Table2, Eye, Eraser, Trash2, Plus } from '@lucide/vue'
 import { useI18n } from '../i18n'
-import { GetTables, CreateTable, DropTable, DropView, TruncateTable } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { GetTables, CreateTable, DropTable, DropView, TruncateTable } from '../../bindings/github.com/duihao/duihao/app'
 import { msg } from '../services/message'
 import type { TableInfo } from '../types/database'
 import { uiPx } from '../utils/uiScale'

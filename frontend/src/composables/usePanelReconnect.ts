@@ -4,7 +4,7 @@
 // 「重连」 and the refresh-triggered auto-reconnect share one implementation:
 // close the old session, create a fresh one from the panel's stored config,
 // rebind the panel, and wait for the new session to report connected.
-import { CreateSession, CloseSession, ListSessions } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { CreateSession, CloseSession, ListSessions } from '../../bindings/github.com/duihao/duihao/app'
 import { usePanelStore } from '../stores/panelStore'
 import { useSessionStore } from '../stores/sessionStore'
 import { fileTransferProto } from '../utils/fileTransferUtils'

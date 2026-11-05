@@ -92,7 +92,7 @@ import { usePanelStore } from '../stores/panelStore'
 import { useSessionStore } from '../stores/sessionStore'
 import type { ConnectionConfig } from '../types/session'
 import { Events } from '@wailsio/runtime'
-import { CreateSession, CloseSession, SetSPICEKeyboardCapture } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { CreateSession, CloseSession, SetSPICEKeyboardCapture } from '../../bindings/github.com/duihao/duihao/app'
 const { t } = useI18n()
 const panelStore = usePanelStore()
 const sessionStore = useSessionStore()

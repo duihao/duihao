@@ -24,7 +24,7 @@
 import { ref, watch } from 'vue'
 import { useI18n } from '../i18n'
 import { msg } from '../services/message'
-import { ExportConnections, SaveFileDialogFiltered } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { ExportConnections, SaveFileDialogFiltered } from '../../bindings/github.com/duihao/duihao/app'
 
 const props = defineProps<{ visible: boolean }>()
 const emit = defineEmits<{ (e: 'update:visible', v: boolean): void; (e: 'done'): void }>()
@@ -43,7 +43,7 @@ function onCancel() { emit('update:visible', false) }
 async function onExport() {
   if (!password.value) { msg.error(t('importExport.configPassword')); return }
   if (password.value !== confirmPassword.value) { msg.error(t('importExport.passwordMismatch')); return }
-  const dest = await SaveFileDialogFiltered(t('importExport.exportTitle'), 'uniterm-connections.utm', 'uniTerm (*.utm)', '*.utm')
+  const dest = await SaveFileDialogFiltered(t('importExport.exportTitle'), 'duihao-connections.utm', 'Duihao (*.utm)', '*.utm')
   if (!dest) return
   exporting.value = true
   try {

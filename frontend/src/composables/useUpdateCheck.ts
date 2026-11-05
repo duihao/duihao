@@ -1,7 +1,7 @@
 import { reactive, ref, watch, h } from 'vue'
 import { ElMessage } from 'element-plus'
 import { msg } from '../services/message'
-import { CheckForUpdate, GetAppInfo, DownloadUpdate, ApplyUpdate } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { CheckForUpdate, GetAppInfo, DownloadUpdate, ApplyUpdate } from '../../bindings/github.com/duihao/duihao/app'
 import { useI18n, locale } from '../i18n'
 import { useSettingsStore } from '../stores/settingsStore'
 import { isMobilePlatform } from '../utils/platform'
@@ -13,6 +13,10 @@ const CHECK_TIMEOUT = 15000
 const updateInfo = ref<UpdateInfo | null>(null)
 const checking = ref(false)
 const autoCheck = ref(true)
+// Build metadata from GetAppInfo (main.BuildCommit / main.BuildDate, injected
+// via ldflags). Empty on dev builds — the About page hides the suffix then.
+const buildCommit = ref('')
+const buildDate = ref('')
 // Update source preference: "auto" resolves from the UI language, or is
 // pinned to "github" / "gitee" by the user (settings.updateSource).
 const source = ref<'auto' | 'github' | 'gitee'>('auto')
@@ -207,6 +211,8 @@ function initAutoCheck() {
 
   // Fetch current version immediately so About page shows it
   GetAppInfo().then(info => {
+    buildCommit.value = (info as any).buildCommit || ''
+    buildDate.value = (info as any).buildDate || ''
     if (!updateInfo.value) {
       updateInfo.value = { hasUpdate: false, current: info.version, latest: '', releaseUrl: '', changelog: '', assets: [] }
     }
@@ -248,6 +254,8 @@ const state = reactive({
   checking,
   autoCheck,
   source,
+  buildCommit,
+  buildDate,
   checkForUpdate,
   setSource,
   initAutoCheck,

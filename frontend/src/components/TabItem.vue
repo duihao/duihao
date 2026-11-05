@@ -150,7 +150,7 @@ import {
   DisableSessionOutputLog,
   GetSessionOutputLogInfo,
   OpenPathInExplorer,
-} from '../../bindings/github.com/ys-ll/uniterm/app'
+} from '../../bindings/github.com/duihao/duihao/app'
 import { msg } from '../services/message'
 import { ElMessageBox } from 'element-plus'
 import { saveWorkspaceToConnections } from '../composables/savedWorkspace'

@@ -4,7 +4,7 @@
 // can render localized text via i18n instead of relying on Go-side message
 // strings. The wire format is
 //
-//	unitermerr:<code>[|<arg0>[|<arg1>...]]
+//	duihaoerr:<code>[|<arg0>[|<arg1>...]]
 //
 // The frontend helper (src/utils/backendError.ts) locates the marker anywhere
 // in the message (wrapper layers may prepend context), strips it, looks up
@@ -19,7 +19,7 @@ import (
 )
 
 // apperrPrefix marks an error as carrying a frontend-localizable code.
-const apperrPrefix = "unitermerr:"
+const apperrPrefix = "duihaoerr:"
 
 // UserErr returns a coded, user-facing error. Args are interpolated into the
 // localized template at {0}, {1}, ...

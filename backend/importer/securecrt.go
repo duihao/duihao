@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ys-ll/uniterm/backend/session"
+	"github.com/duihao/duihao/backend/session"
 )
 
 type secureCRTNode struct {

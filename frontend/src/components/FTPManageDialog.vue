@@ -129,12 +129,12 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useI18n } from '../i18n'
-import { OpenDirectoryDialog } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { OpenDirectoryDialog } from '../../bindings/github.com/duihao/duihao/app'
 import InstancePower from './InstancePower.vue'
 import {
   ListFTPAccounts, CreateFTPAccount, UpdateFTPAccount, SetFTPAccountPassword,
   DeleteFTPAccount, ListFTPSiteRoots,
-} from '../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/ftpservice'
+} from '../../bindings/github.com/duihao/duihao/backend/duihao/service/ftpservice'
 
 const props = defineProps<{ instanceId: string; instanceName?: string }>()
 const visible = defineModel<boolean>('visible', { default: false })

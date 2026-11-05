@@ -18,7 +18,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/appkit"
+	"github.com/duihao/duihao/backend/duihao/webdavd/appkit"
 )
 
 type trendPoint struct {

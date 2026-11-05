@@ -11,7 +11,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd"
+	"github.com/duihao/duihao/backend/duihao/webdavd"
 )
 
 func main() {

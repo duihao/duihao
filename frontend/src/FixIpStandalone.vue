@@ -85,7 +85,7 @@ import { Window } from '@wailsio/runtime'
 import { ElMessage } from 'element-plus'
 import { useI18n } from './i18n'
 import { useWindowDrag } from './composables/useWindowDrag'
-import { FixIpLoad, FixIpApply, FixIpRestoreDHCP, FixIpOpenNetworkSettings } from '../bindings/github.com/ys-ll/uniterm/app'
+import { FixIpLoad, FixIpApply, FixIpRestoreDHCP, FixIpOpenNetworkSettings } from '../bindings/github.com/duihao/duihao/app'
 
 interface FixIPState {
   found: boolean

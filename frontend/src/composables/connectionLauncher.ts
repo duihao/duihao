@@ -9,7 +9,7 @@
 // The generic terminal path (ssh/telnet/mosh/local/wsl/tcp/serial) is genuinely
 // different — it must wait for the real xterm size before SessionStart — so it
 // stays in App.vue and is handed in per call via `connectTerminal`.
-import { CreateSession, RecordRecentConnection } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { CreateSession, RecordRecentConnection } from '../../bindings/github.com/duihao/duihao/app'
 import { useConnectionStore } from '../stores/connectionStore'
 import { usePanelStore } from '../stores/panelStore'
 import { useTabStore } from '../stores/tabStore'

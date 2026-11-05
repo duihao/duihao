@@ -24,7 +24,7 @@ import (
 
 	"golang.org/x/sys/windows"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/appkit"
+	"github.com/duihao/duihao/backend/duihao/webdavd/appkit"
 )
 
 const driveRemovable = 2

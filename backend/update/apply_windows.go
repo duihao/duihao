@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/ys-ll/uniterm/backend/log"
+	"github.com/duihao/duihao/backend/log"
 )
 
 func (m *Manager) applyPlatform(pend *PendingUpdate, onProgress func(Progress)) error {
@@ -82,11 +82,15 @@ func launchInstallerUpdate(pend *PendingUpdate, onProgress func(Progress)) error
 		return err
 	}
 	appDir := filepath.Dir(appExe)
+	// Wait on the RUNNING binary's image name, not a hard-coded one — the
+	// executable is duihao.exe today, and the wait loop must track whatever
+	// process currently holds the install directory.
+	appImage := filepath.Base(appExe)
 
 	script := filepath.Join(pend.StageDir, "updater.cmd")
 	content := fmt.Sprintf(`@echo off
 :waitloop
-tasklist /FI "IMAGENAME eq uniTerm.exe" 2>nul | find /I "uniTerm.exe" >nul
+tasklist /FI "IMAGENAME eq %s" 2>nul | find /I "%s" >nul
 if not errorlevel 1 (
   timeout /t 1 /nobreak >nul
   goto waitloop
@@ -95,7 +99,7 @@ start "" /wait "%s" /S /D=%s
 start "" "%s"
 rmdir /s /q "%s"
 del "%%~f0"
-`, pend.FilePath, appDir, appExe, pend.StageDir)
+`, appImage, appImage, pend.FilePath, appDir, appExe, pend.StageDir)
 	if err := os.WriteFile(script, []byte(content), 0644); err != nil {
 		return err
 	}

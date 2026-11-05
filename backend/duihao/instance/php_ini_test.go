@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ys-ll/uniterm/backend/duihao/pluginc"
+	"github.com/duihao/duihao/backend/duihao/pluginc"
 )
 
 func phpManifest(t *testing.T) *pluginc.Manifest {

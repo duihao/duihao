@@ -18,7 +18,7 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 
-	"github.com/ys-ll/uniterm/backend/log"
+	"github.com/duihao/duihao/backend/log"
 )
 
 const (

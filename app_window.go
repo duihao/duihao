@@ -21,8 +21,8 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd"
-	"github.com/ys-ll/uniterm/backend/log"
+	"github.com/duihao/duihao/backend/duihao/webdavd"
+	"github.com/duihao/duihao/backend/log"
 )
 
 // NAS 应用窗标题**固定**为「对号 NAS」。

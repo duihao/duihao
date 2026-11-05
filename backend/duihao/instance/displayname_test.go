@@ -3,7 +3,7 @@ package instance
 import (
 	"testing"
 
-	"github.com/ys-ll/uniterm/backend/duihao/pluginc"
+	"github.com/duihao/duihao/backend/duihao/pluginc"
 )
 
 // 早期装配的实例没有落 name，List 必须在视图层按清单名回填，

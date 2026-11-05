@@ -8,7 +8,7 @@ import {
   K8sStartLogStream,
   K8sStopLogStream,
   K8sExecSession,
-} from '../../bindings/github.com/ys-ll/uniterm/app'
+} from '../../bindings/github.com/duihao/duihao/app'
 import { Events } from '@wailsio/runtime'
 import type { K8sContextInfo, K8sWatchEvent } from '../types/k8s'
 

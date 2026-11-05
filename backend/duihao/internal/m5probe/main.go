@@ -4,7 +4,7 @@ package main
 import (
 	"fmt"
 
-	duihao "github.com/ys-ll/uniterm/backend/duihao"
+	duihao "github.com/duihao/duihao/backend/duihao"
 )
 
 func main() {

@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/utils"
+	"github.com/duihao/duihao/backend/utils"
 )
 
 // skillsListCacheTTL bounds how long a merged List result is reused before

@@ -111,9 +111,9 @@ import { ElMessage } from 'element-plus'
 import MySQLManageDialog from './MySQLManageDialog.vue'
 import RedisManageDialog from './RedisManageDialog.vue'
 import FTPManageDialog from './FTPManageDialog.vue'
-import { ListInstances, ListPlugins, StartInstance, StopInstance } from '../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/plugincenterservice'
-import { ListSites, StartSite, StopSite, OpenSite, OpenSiteRoot } from '../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/siteservice'
-import { LoadConnections, PaletteNavigate, PaletteConnect, PaletteAction, ShowNasWindow } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { ListInstances, ListPlugins, StartInstance, StopInstance } from '../../bindings/github.com/duihao/duihao/backend/duihao/service/plugincenterservice'
+import { ListSites, StartSite, StopSite, OpenSite, OpenSiteRoot } from '../../bindings/github.com/duihao/duihao/backend/duihao/service/siteservice'
+import { LoadConnections, PaletteNavigate, PaletteConnect, PaletteAction, ShowNasWindow } from '../../bindings/github.com/duihao/duihao/app'
 
 const props = defineProps<{ visible: boolean }>()
 const emit = defineEmits<{ (e: 'update:visible', v: boolean): void }>()

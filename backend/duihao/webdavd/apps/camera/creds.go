@@ -15,7 +15,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/credentials"
+	"github.com/duihao/duihao/backend/duihao/webdavd/credentials"
 )
 
 // splitCred 把 rtsp 地址里的 `user:pass@` 摘下来。

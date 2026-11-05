@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/appkit"
+	"github.com/duihao/duihao/backend/duihao/webdavd/appkit"
 )
 
 // 分段录像：每台相机一个 ffmpeg 进程，`-c copy -f segment` 每 5 分钟落一片。

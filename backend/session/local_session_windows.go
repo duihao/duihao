@@ -22,8 +22,8 @@ import (
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/transform"
 
-	"github.com/ys-ll/uniterm/backend/log"
-	"github.com/ys-ll/uniterm/backend/platform"
+	"github.com/duihao/duihao/backend/log"
+	"github.com/duihao/duihao/backend/platform"
 )
 
 const cpUTF8 = 65001

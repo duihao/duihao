@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/appkit"
+	"github.com/duihao/duihao/backend/duihao/webdavd/appkit"
 )
 
 // ONVIF 发现：往 WS-Discovery 组播地址发一个 Probe，局域网里的摄像机自己回话。

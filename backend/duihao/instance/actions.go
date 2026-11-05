@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ys-ll/uniterm/backend/duihao/audit"
-	"github.com/ys-ll/uniterm/backend/duihao/pluginc"
+	"github.com/duihao/duihao/backend/duihao/audit"
+	"github.com/duihao/duihao/backend/duihao/pluginc"
 )
 
 // Vars 动作执行时的变量上下文（token 替换源）。

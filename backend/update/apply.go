@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/minio/selfupdate"
-	"github.com/ys-ll/uniterm/backend/log"
+	"github.com/duihao/duihao/backend/log"
 )
 
 // Apply installs the staged update in place and reports progress. The caller

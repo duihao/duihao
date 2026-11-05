@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { GetFavoriteConnections, SaveFavoriteConnections } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { GetFavoriteConnections, SaveFavoriteConnections } from '../../bindings/github.com/duihao/duihao/app'
 import { Events } from '@wailsio/runtime'
 
 // Module-level un-subscriber for the cross-window store:favorites:changed listener.

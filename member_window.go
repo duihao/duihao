@@ -19,7 +19,7 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 
-	"github.com/ys-ll/uniterm/backend/log"
+	"github.com/duihao/duihao/backend/log"
 )
 
 // 会员中心窗几何：左栏会员权益（商品摘要，10 条左右）+ 右栏问候/套餐/支付

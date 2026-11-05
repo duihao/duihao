@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { LoadIdentities, SaveIdentities } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { LoadIdentities, SaveIdentities } from '../../bindings/github.com/duihao/duihao/app'
 import { Events } from '@wailsio/runtime'
 import type { Identity, IdentityStoreData } from '../types/identity'
 

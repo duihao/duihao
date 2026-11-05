@@ -162,7 +162,7 @@ import { useI18n } from '../i18n'
 import { useCompanionStore } from '../stores/companionStore'
 import { usePanelStore } from '../stores/panelStore'
 import { Events } from '@wailsio/runtime'
-import { SetMonitorActiveTab, SetMonitorPaused, GetDisks } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { SetMonitorActiveTab, SetMonitorPaused, GetDisks } from '../../bindings/github.com/duihao/duihao/app'
 const { t } = useI18n()
 const companionStore = useCompanionStore()
 const panelStore = usePanelStore()

@@ -12,8 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ys-ll/uniterm/backend/session"
-	"github.com/ys-ll/uniterm/backend/utils"
+	"github.com/duihao/duihao/backend/session"
+	"github.com/duihao/duihao/backend/utils"
 	"golang.org/x/crypto/pbkdf2"
 )
 

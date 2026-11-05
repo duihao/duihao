@@ -216,12 +216,12 @@ import SyntaxEditor from './SyntaxEditor.vue'
 import DBResultGrid from './DBResultGrid.vue'
 import Menu from './Menu.vue'
 import MenuItem from './MenuItem.vue'
-import { ExecuteQuery, ExecuteStatement, GetTables, GetTableSchema, DBDefaultTableQuery, DBInsertRow, DBUpdateRow, DBDeleteRow, ExecuteSQLScript, OpenFileDialogFiltered, ReadFileBase64, SaveFileDialogFiltered, WriteFileBase64 } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { ExecuteQuery, ExecuteStatement, GetTables, GetTableSchema, DBDefaultTableQuery, DBInsertRow, DBUpdateRow, DBDeleteRow, ExecuteSQLScript, OpenFileDialogFiltered, ReadFileBase64, SaveFileDialogFiltered, WriteFileBase64 } from '../../bindings/github.com/duihao/duihao/app'
 import { chat } from '../services/llm'
 import { msg } from '../services/message'
 import { loadSqlHistory, pushSqlHistory } from '../composables/useDbSqlHistory'
 import type { QueryResult, ExecResult, ColumnInfo, HistoryEntry } from '../types/database'
-import { ScriptResult } from '../../bindings/github.com/ys-ll/uniterm/backend/database/models'
+import { ScriptResult } from '../../bindings/github.com/duihao/duihao/backend/database/models'
 
 const { t } = useI18n()
 

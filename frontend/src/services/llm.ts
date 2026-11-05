@@ -1,4 +1,4 @@
-import { ChatCompletion } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { ChatCompletion } from '../../bindings/github.com/duihao/duihao/app'
 import { Events } from '@wailsio/runtime'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useAIStore } from '../stores/aiStore'
@@ -97,7 +97,7 @@ export async function chat(options: ChatOptions): Promise<void> {
   const aiStore = useAIStore()
   const activeModel = settingsStore.activeModel
 
-  const sessionId = aiStore.currentSessionId || `uniterm-${Date.now()}`
+  const sessionId = aiStore.currentSessionId || `duihao-${Date.now()}`
 
   const apiKey = activeModel?.apiKey || ''
   const baseURL = activeModel?.baseURL || ''

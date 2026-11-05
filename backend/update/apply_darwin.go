@@ -8,14 +8,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ys-ll/uniterm/backend/log"
+	"github.com/duihao/duihao/backend/log"
 )
 
 func (m *Manager) applyPlatform(pend *PendingUpdate, onProgress func(Progress)) error {
 	if err := applyBinary(pend.NewBinary, onProgress); err != nil {
 		return err
 	}
-	// Replacing Contents/MacOS/uniTerm invalidates the bundle signature.
+	// Replacing the bundle payload invalidates the code signature.
 	// Releases ship ad-hoc signed, so re-apply an ad-hoc signature.
 	reSignBundle()
 	return nil

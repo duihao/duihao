@@ -4,20 +4,20 @@ import (
 	"os"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/log"
-	"github.com/ys-ll/uniterm/backend/update"
+	"github.com/duihao/duihao/backend/log"
+	"github.com/duihao/duihao/backend/update"
 )
 
 // autotestUpdate drives the full update pipeline (check → download → verify →
-// apply → restart) unattended. It is inert unless UNITERM_UPDATE_AUTOTEST=1;
-// combine with UNITERM_UPDATE_API_BASE pointing at a local release server to
+// apply → restart) unattended. It is inert unless DUIHAO_UPDATE_AUTOTEST=1;
+// combine with DUIHAO_UPDATE_API_BASE pointing at a local release server to
 // end-to-end test a locally built old/new version pair:
 //
 //	run 1 (old binary): check → download → apply → relaunch itself with the
 //	                    same env, then quit
 //	run 2 (new binary): check finds no newer version → log PASS → exit 0
 //
-// The verdict is observable in ~/.uniterm/uniterm.log:
+// The verdict is observable in ~/Duihao/duihao.log:
 //
 //	[autotest] APPLIED vX → vY
 //	[autotest] PASS: running latest vY
@@ -59,7 +59,7 @@ func (a *App) autotestUpdate() {
 	log.Writef("[autotest] APPLIED %s -> %s; relaunching same env", Version, info.Latest)
 
 	// Relaunch through the shared quit-then-spawn path: run 2 inherits the
-	// full environment (including UNITERM_UPDATE_AUTOTEST) and starts only
+	// full environment (including DUIHAO_UPDATE_AUTOTEST) and starts only
 	// after run 1 has released the single-instance lock. Spawning first
 	// would make run 2 exit as a "second instance".
 	relaunchPending.Store(true)

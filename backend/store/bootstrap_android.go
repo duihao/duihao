@@ -5,7 +5,7 @@ package store
 import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 
-	"github.com/ys-ll/uniterm/backend/utils"
+	"github.com/duihao/duihao/backend/utils"
 )
 
 // androidFilesDir is a var so device tests can stub the bridge call. The real

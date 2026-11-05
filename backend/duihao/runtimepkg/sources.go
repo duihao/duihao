@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	duihao "github.com/ys-ll/uniterm/backend/duihao"
+	duihao "github.com/duihao/duihao/backend/duihao"
 )
 
 // ---- 通用 JSON / 哈希工具 ----

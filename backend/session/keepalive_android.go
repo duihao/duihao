@@ -8,7 +8,7 @@ import (
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 
-	"github.com/ys-ll/uniterm/backend/log"
+	"github.com/duihao/duihao/backend/log"
 )
 
 // startForegroundKeepalive promotes the app to a foreground service so the
@@ -21,7 +21,7 @@ func startForegroundKeepalive(n int) {
 		Title string `json:"title"`
 		Text  string `json:"text"`
 	}{
-		Title: "uniTerm",
+		Title: "Duihao",
 		Text:  fmt.Sprintf("%d active connection(s)", n),
 	})
 	application.Android.StartForegroundService(string(payload))

@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/session"
-	"github.com/ys-ll/uniterm/backend/store"
+	"github.com/duihao/duihao/backend/session"
+	"github.com/duihao/duihao/backend/store"
 )
 
 // TestWithExitCredOverride locks the override semantics: inline user/password

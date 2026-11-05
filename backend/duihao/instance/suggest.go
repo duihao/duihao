@@ -3,8 +3,8 @@ package instance
 import (
 	"fmt"
 
-	"github.com/ys-ll/uniterm/backend/duihao/pluginc"
-	"github.com/ys-ll/uniterm/backend/duihao/processd"
+	"github.com/duihao/duihao/backend/duihao/pluginc"
+	"github.com/duihao/duihao/backend/duihao/processd"
 )
 
 // SuggestPort 给实例的某个端口角色找一个可用端口（池内 + 未被其他实例占用）。

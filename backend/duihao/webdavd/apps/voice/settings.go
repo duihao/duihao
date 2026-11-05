@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/appkit"
+	"github.com/duihao/duihao/backend/duihao/webdavd/appkit"
 )
 
 // saveSettings 保存引擎设置。

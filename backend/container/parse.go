@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/log"
+	"github.com/duihao/duihao/backend/log"
 )
 
 // jsonLines 逐行解析 line-delimited JSON；坏行跳过并记日志。

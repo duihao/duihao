@@ -3,7 +3,7 @@ package home
 import (
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/appkit"
+	"github.com/duihao/duihao/backend/duihao/webdavd/appkit"
 )
 
 // 默认收藏数据（2026-10-29 用户提供，已去掉「易等」分组）：

@@ -5,7 +5,7 @@ import { FitAddon } from '@xterm/addon-fit'
 import { SearchAddon } from '@xterm/addon-search'
 import { WebLinksAddon } from '@xterm/addon-web-links'
 import '@xterm/xterm/css/xterm.css'
-import { SessionResize } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { SessionResize } from '../../bindings/github.com/duihao/duihao/app'
 import { queuedSessionWrite } from '../services/sessionWriter'
 import { writeClipboard } from './useClipboardWrite'
 import { useSettingsStore } from '../stores/settingsStore'
@@ -85,9 +85,9 @@ export function getXtermTheme(name: string, customThemes?: CustomTerminalTheme[]
     brightWhite: '#d0d0d8'
   }
   switch (name) {
-    case 'uniterm-dark':
+    case 'duihao-dark':
       return base
-    case 'uniterm-light':
+    case 'duihao-light':
       return {
         background: '#e8e8e8',
         foreground: '#2c2c2c',

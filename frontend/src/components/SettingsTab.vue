@@ -979,7 +979,7 @@
           <div class="about-appname">对号</div>
           <p class="about-desc">{{ t('settings.aboutDesc') }}</p>
           <div class="about-version">
-            {{ t('settings.version') }}: {{ updateCheck.updateInfo?.current || '...' }}
+            {{ t('settings.version') }}: {{ updateCheck.updateInfo?.current || '...' }}<template v-if="updateCheck.buildCommit"><span class="about-buildinfo"> ({{ updateCheck.buildCommit }}<template v-if="updateCheck.buildDate"> · {{ updateCheck.buildDate }}</template>)</span></template>
           </div>
           <div class="about-links">
             <a href="#" class="about-link" @click.prevent="Browser.OpenURL('https://duihao.cn')">
@@ -1348,7 +1348,7 @@
         </div>
       </div>
 
-      <!-- MCP 客户端 (uniTerm 作为 client 连接外部服务器) — 无 Android 后端,入口已在移动端隐藏 -->
+      <!-- MCP 客户端 (Duihao 作为 client 连接外部服务器) — 无 Android 后端,入口已在移动端隐藏 -->
       <div v-if="settingsStore.activeCategory === 'mcp-client'" class="settings-section">
         <h2 class="section-title">{{ t('settings.mcpClientSection') }}</h2>
         <p class="section-desc">{{ t('settings.mcpClientSectionDesc') }}</p>
@@ -1634,7 +1634,7 @@
 import { ref, reactive, watch, computed, onMounted, onUnmounted, onActivated } from 'vue'
 import { Settings, Monitor, MessageCircleMore, Info, RefreshCw, Pencil, Trash2, Globe, Keyboard, Plus, BookOpen, Wrench, FolderOpen, Key, Network, ArrowRightLeft, ChevronLeft, ChevronRight, Plug, Server, UserRound } from '@lucide/vue'
 import { msg } from '../services/message'
-import { FetchModels, ChatCompletion, GetPlatform, GetAllFonts, GetDefaultSessionLogDir, OpenDirectoryDialog, OpenFileDialogFiltered, SetBackgroundImage, ClearBackgroundImage, GetBackgroundImage, RelaunchApp, ListExternalEditors, GenerateMCPToken, RevokeMCPToken, ListMCPTokens, GetMCPStatus, ListMCPClients, SaveMCPClient, UpdateMCPClient, RemoveMCPClient, TestMCPClient, MCPClientStatuses } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { FetchModels, ChatCompletion, GetPlatform, GetAllFonts, GetDefaultSessionLogDir, OpenDirectoryDialog, OpenFileDialogFiltered, SetBackgroundImage, ClearBackgroundImage, GetBackgroundImage, RelaunchApp, ListExternalEditors, GenerateMCPToken, RevokeMCPToken, ListMCPTokens, GetMCPStatus, ListMCPClients, SaveMCPClient, UpdateMCPClient, RemoveMCPClient, TestMCPClient, MCPClientStatuses } from '../../bindings/github.com/duihao/duihao/app'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useSyncStore, SYNC_FILE_ITEMS } from '../stores/syncStore'
 import { useLocalStateStore } from '../stores/localStateStore'
@@ -2062,7 +2062,7 @@ async function revokeToken(name: string) {
 
 onMounted(refreshMcpState)
 
-// ── MCP client (uniTerm connects to external servers) ──────────
+// ── MCP client (Duihao connects to external servers) ──────────
 // List persisted in mcp_clients.json via app bindings; live health comes from
 // MCPClientStatuses. Separate from the MCP server block above.
 interface MCPClientForm {
@@ -3018,7 +3018,7 @@ async function testConnection() {
       modelForm.protocol,
       modelForm.userAgent || '',
       modelForm.proxyId || '',
-      `uniterm-test-${Date.now()}`
+      `duihao-test-${Date.now()}`
     )
     testResult.value = true
     msg.success(t('settings.testSuccess'))
@@ -3438,6 +3438,11 @@ async function onToggleSystemTitleBar(v: boolean) {
   font-size: 0.75rem;
   color: var(--text-muted);
   font-family: var(--font-mono);
+}
+.about-buildinfo {
+  color: var(--text-muted);
+  opacity: 0.75;
+  font-size: 0.7rem;
 }
 .about-links {
   display: flex;

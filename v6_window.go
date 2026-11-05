@@ -18,7 +18,7 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 
-	"github.com/ys-ll/uniterm/backend/log"
+	"github.com/duihao/duihao/backend/log"
 )
 
 // 弹窗几何：默认 640×480（用户定稿：弹窗就该小，一开别占半屏）。

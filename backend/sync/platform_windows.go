@@ -28,7 +28,7 @@ func keychainDelete(service, key string) error {
 }
 
 // keychainList enumerates the generic credentials whose target name starts
-// with the app's service prefix ("uniTerm:"), returning the entry names
+// with the app's service prefix ("Duihao:"), returning the entry names
 // after the prefix. Same convention go-keyring's own DeleteAll uses to find
 // entries under a service.
 func keychainList(service string) ([]string, error) {
@@ -53,7 +53,7 @@ func syncMetaDir() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	dir := filepath.Join(cfgDir, "uniTerm")
+	dir := filepath.Join(cfgDir, "Duihao")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", err
 	}

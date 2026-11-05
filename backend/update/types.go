@@ -4,7 +4,7 @@ package update
 // ordered by preference (primary update source first, then the fallback
 // mirror), so downloaders can simply try them in order.
 type UpdateAsset struct {
-	Name   string `json:"name"`   // filename, e.g. uniterm-linux-amd64-v1.9.2.tar.gz
+	Name   string `json:"name"`   // filename, e.g. duihao-windows-amd64-installer-v1.0.0.exe
 	URL    string `json:"url"`    // direct download URL
 	SHA256 string `json:"sha256"` // expected sha256 hex from checksums.txt; "" when unknown
 	Source string `json:"source"` // "github" | "gitee"

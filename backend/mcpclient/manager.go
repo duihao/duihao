@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/ys-ll/uniterm/backend/store"
+	"github.com/duihao/duihao/backend/store"
 	"net/http"
 	"os/exec"
 	"strings"
@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/ys-ll/uniterm/backend/log"
+	"github.com/duihao/duihao/backend/log"
 )
 
 // Session is the subset of *mcp.ClientSession the Manager needs. Extracted as

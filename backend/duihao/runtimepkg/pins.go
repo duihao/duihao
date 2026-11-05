@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	duihao "github.com/ys-ll/uniterm/backend/duihao"
+	duihao "github.com/duihao/duihao/backend/duihao"
 )
 
 type pinFile struct {

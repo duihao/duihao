@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ys-ll/uniterm/backend/duihao/audit"
-	"github.com/ys-ll/uniterm/backend/duihao/pluginc"
+	"github.com/duihao/duihao/backend/duihao/audit"
+	"github.com/duihao/duihao/backend/duihao/pluginc"
 )
 
 // TestExecOnceGuardAcceptsForwardSlash 回归：applyTokens 把 {bin} 渲染成

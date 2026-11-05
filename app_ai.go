@@ -25,10 +25,10 @@ import (
 	_ "image/png"  // registered for image.DecodeConfig
 
 	"github.com/mattn/go-ieproxy"
-	"github.com/ys-ll/uniterm/backend/log"
-	"github.com/ys-ll/uniterm/backend/mcpclient"
-	"github.com/ys-ll/uniterm/backend/session"
-	"github.com/ys-ll/uniterm/backend/store"
+	"github.com/duihao/duihao/backend/log"
+	"github.com/duihao/duihao/backend/mcpclient"
+	"github.com/duihao/duihao/backend/session"
+	"github.com/duihao/duihao/backend/store"
 )
 
 // llmProxy is the Proxy function for the shared LLM transport. It resolves
@@ -1695,7 +1695,7 @@ type responsesStreamEvent struct {
 
 // Attachment support for the AI assistant.
 //
-// uniTerm is a model proxy: it never performs OCR, image recognition or any
+// Duihao is a model proxy: it never performs OCR, image recognition or any
 // other multimodal inference itself. Attachments are validated here and then
 // forwarded verbatim to the upstream multimodal model, which does the actual
 // understanding. The frontend builds Anthropic-format content blocks; this
@@ -2056,9 +2056,9 @@ func (a *App) ReadLocalAttachmentFile(path string) (LocalAttachmentFile, error) 
 	}, nil
 }
 
-// MCP client wiring: uniTerm connects to external MCP servers and feeds their
+// MCP client wiring: Duihao connects to external MCP servers and feeds their
 // tools into the built-in AI assistant. This is the CLIENT half; the SERVER
-// half (uniTerm exposed to external agents) lives in app_mcp.go / backend/mcp.
+// half (Duihao exposed to external agents) lives in app_mcp.go / backend/mcp.
 // The two share no state and persist independently.
 
 // ensureMCPClient lazily builds the manager over mcp_clients.json.

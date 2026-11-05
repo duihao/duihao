@@ -218,7 +218,7 @@ import { Pencil, Trash2, Plus } from '@lucide/vue'
 import { ElMessageBox } from 'element-plus'
 import { msg } from '../services/message'
 import { useI18n } from '../i18n'
-import { GetTableSchema, AddColumn, ModifyColumn, DropColumn, AddIndex, DropIndexOp, GetDBCapabilities } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { GetTableSchema, AddColumn, ModifyColumn, DropColumn, AddIndex, DropIndexOp, GetDBCapabilities } from '../../bindings/github.com/duihao/duihao/app'
 import type { SchemaResult, ColumnInfo, IndexInfo } from '../types/database'
 import { uiPx } from '../utils/uiScale'
 

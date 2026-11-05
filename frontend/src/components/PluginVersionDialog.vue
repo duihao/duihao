@@ -11,9 +11,8 @@
       <div class="pv-hint">{{ t('plugins.versionsHint') }}</div>
 
       <div class="pv-list">
+        <template v-for="row in rows" :key="row.version">
         <div
-          v-for="row in rows"
-          :key="row.version"
           class="pv-row"
           :class="{ 'pv-row-off': !row.inst }"
         >
@@ -61,6 +60,16 @@
             >{{ t('plugins.install') }}</el-button>
           </div>
         </div>
+        <!-- 安装中：行下方显示取包进度（阶段/百分比/速度/重试），与市场卡片同款 -->
+        <div v-if="row.version === installingVer && progFrame" class="pv-prog">
+          <div class="pv-prog-head">
+            <span class="pv-prog-phase">{{ phaseLabel(progFrame) }}</span>
+            <span class="pv-prog-pct">{{ barPct(progFrame) }}</span>
+          </div>
+          <div class="pv-prog-bar"><i :class="{ 'is-indet': isIndet(progFrame) }" :style="{ width: barWidth(progFrame) }" /></div>
+          <div class="pv-prog-meta">{{ sizeText(progFrame) }}</div>
+        </div>
+        </template>
 
         <div v-if="!rows.length" class="pv-empty">{{ t('plugins.noVersions') }}</div>
       </div>
@@ -69,12 +78,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useI18n } from '../i18n'
+import { useRuntimeProgress } from '../composables/useRuntimeProgress'
 import {
   CreateInstance, StartInstance, StopInstance, RemoveInstance,
-} from '../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/plugincenterservice'
+} from '../../bindings/github.com/duihao/duihao/backend/duihao/service/plugincenterservice'
 
 interface PluginView {
   id: string; name: string; kind: string; category: string; description: string
@@ -106,6 +116,20 @@ const emit = defineEmits<{
 const show = defineModel<boolean>({ default: false })
 const { t } = useI18n()
 const busy = ref('')
+
+// ---- 取包进度（与市场卡片共用 composable）----
+const {
+  progFor, phaseLabel, barPct, isIndet, barWidth, sizeText,
+  startProgressPoll, stopProgressPoll,
+} = useRuntimeProgress()
+// 正在安装的版本（busy = 'new:<ver>'）→ 该行下方显示进度条
+const installingVer = computed(() => (busy.value.startsWith('new:') ? busy.value.slice(4) : ''))
+const progFrame = computed(() => (props.plugin ? progFor(props.plugin.id) : null))
+// 弹窗打开期间才轮询；若打开时安装已在进行（从市场点开），第一拍就能拿到帧
+watch(show, (v) => {
+  if (v) startProgressPoll()
+  else stopProgressPoll()
+})
 
 const title = computed(() =>
   `${props.plugin?.name || ''} · ${t('plugins.versions')}`)
@@ -175,6 +199,7 @@ async function onInstall(ver: string) {
   const p = props.plugin
   if (!p) return
   busy.value = 'new:' + ver
+  startProgressPoll()
   try {
     await CreateInstance(p.id, ver, '', [])
     ElMessage.success(t('plugins.instanceCreated'))
@@ -279,6 +304,39 @@ function parseErr(e: unknown): string {
 .pv-op { padding: 0 0.375rem; }
 
 .pv-empty { padding: 1rem 0; text-align: center; font-size: 0.6875rem; color: var(--text-muted); }
+
+/* 安装中进度条（与市场卡片 .rp-prog 同款） */
+.pv-prog {
+  margin: -0.25rem 0 0.125rem; padding: 0.5rem 0.625rem 0.625rem;
+  border: 1px dashed var(--border-subtle); border-top: none;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  background: var(--bg-elevated);
+}
+.pv-prog-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  font-size: 0.625rem; color: var(--text-muted); line-height: 1.4;
+}
+.pv-prog-phase { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pv-prog-pct { flex: 0 0 auto; margin-left: 0.5rem; color: var(--accent); font-variant-numeric: tabular-nums; }
+.pv-prog-bar {
+  margin-top: 0.25rem; height: 4px; border-radius: 2px; overflow: hidden;
+  background: var(--bg-hover);
+}
+.pv-prog-bar > i {
+  display: block; height: 100%; width: 0; border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent), #ff8ab5);
+  transition: width 0.35s ease;
+}
+/* 服务端没给 Content-Length（CDN 流式响应）时走不定态：一块扫光代替百分比 */
+.pv-prog-bar > i.is-indet { animation: pv-prog-indet 1.1s linear infinite; }
+.pv-prog-meta {
+  margin-top: 0.25rem; font-size: 0.5625rem; color: var(--text-muted);
+  font-variant-numeric: tabular-nums; letter-spacing: 0.01em;
+}
+@keyframes pv-prog-indet {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(285%); }
+}
 
 @media (max-width: 720px) {
   .pv-row { flex-wrap: wrap; }

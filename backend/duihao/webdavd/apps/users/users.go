@@ -13,9 +13,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/appkit"
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/hubusers"
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/webui"
+	"github.com/duihao/duihao/backend/duihao/webdavd/appkit"
+	"github.com/duihao/duihao/backend/duihao/webdavd/hubusers"
+	"github.com/duihao/duihao/backend/duihao/webdavd/webui"
 )
 
 type App struct{}

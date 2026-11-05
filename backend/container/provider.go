@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ys-ll/uniterm/backend/session"
+	"github.com/duihao/duihao/backend/session"
 )
 
 type Provider struct {

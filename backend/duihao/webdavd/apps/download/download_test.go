@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/appkit"
+	"github.com/duihao/duihao/backend/duihao/webdavd/appkit"
 )
 
 // 引擎参数里藏着几条安全/行为红线，改参数时必须有断言兜住。

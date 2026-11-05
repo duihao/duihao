@@ -14,9 +14,9 @@ import (
 	"go.bug.st/serial"
 
 	"github.com/google/uuid"
-	"github.com/ys-ll/uniterm/backend/log"
-	"github.com/ys-ll/uniterm/backend/session"
-	"github.com/ys-ll/uniterm/backend/store"
+	"github.com/duihao/duihao/backend/log"
+	"github.com/duihao/duihao/backend/session"
+	"github.com/duihao/duihao/backend/store"
 )
 
 // SessionManager methods
@@ -1211,7 +1211,7 @@ func (a *App) setSessionLogFilename(filenameTemplate string) {
 
 // GetDefaultSessionLogDir returns the directory a fresh session log
 // would land in: the user's override if set, otherwise the OS default
-// (~/Documents/uniTerm/logs on all platforms). Used by the settings UI
+// (~/Documents/Duihao/logs on all platforms). Used by the settings UI
 // to show the current default path as a placeholder.
 func (a *App) GetDefaultSessionLogDir() string {
 	a.sessionLogSettingsMu.RLock()

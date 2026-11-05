@@ -33,8 +33,8 @@ import (
 	"sync"
 	"time"
 
-	duihao "github.com/ys-ll/uniterm/backend/duihao"
-	"github.com/ys-ll/uniterm/backend/duihao/runtimepkg"
+	duihao "github.com/duihao/duihao/backend/duihao"
+	"github.com/duihao/duihao/backend/duihao/runtimepkg"
 )
 
 // Spec 一个可选运行组件。Version 只作为落点目录名 —— latest 会漂移，

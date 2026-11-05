@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	duihao "github.com/ys-ll/uniterm/backend/duihao"
+	duihao "github.com/duihao/duihao/backend/duihao"
 )
 
 func hostsPath() string {

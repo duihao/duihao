@@ -13,10 +13,10 @@ import (
 	"time"
 
 	"github.com/wailsapp/wails/v3/pkg/services/notifications"
-	"github.com/ys-ll/uniterm/backend/log"
-	"github.com/ys-ll/uniterm/backend/mcp"
-	"github.com/ys-ll/uniterm/backend/session"
-	"github.com/ys-ll/uniterm/backend/store"
+	"github.com/duihao/duihao/backend/log"
+	"github.com/duihao/duihao/backend/mcp"
+	"github.com/duihao/duihao/backend/session"
+	"github.com/duihao/duihao/backend/store"
 )
 
 // MCP server wiring: settings persistence (mcp.json), token management, the
@@ -1115,7 +1115,7 @@ type sessionCapture struct {
 }
 
 // CaptureScreen snapshots a live session's terminal screen — what the user
-// currently sees, redraw-resolved. Serves the MCP uniterm_capture tool and
+// currently sees, redraw-resolved. Serves the MCP duihao_capture tool and
 // the built-in panel's collect-output fallback.
 func (a *App) CaptureScreen(sessionID string, tailLines int) (string, error) {
 	if a.sessionManager == nil {
@@ -1182,7 +1182,7 @@ func (a *App) removeCapture(id string) {
 
 // SendKey types text or a control key into a live session's terminal — the
 // backend twin of the built-in panel's send_terminal_key, shared by the MCP
-// uniterm_send_key tool. control is "ctrl_c" | "ctrl_d" | "enter"; with text,
+// duihao_send_key tool. control is "ctrl_c" | "ctrl_d" | "enter"; with text,
 // sendEnter appends the shell newline.
 func (a *App) SendKey(sessionID, text, control string, sendEnter bool) error {
 	if a.sessionManager == nil {

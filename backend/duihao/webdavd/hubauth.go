@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/hubusers"
+	"github.com/duihao/duihao/backend/duihao/webdavd/hubusers"
 )
 
 // hubPrefix 会话 token 里 NAS 账号的标记前缀。

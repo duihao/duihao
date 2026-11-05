@@ -141,7 +141,7 @@ import { ref, computed, watch } from 'vue'
 import { Lock } from '@lucide/vue'
 import { useI18n } from '../i18n'
 import { useSyncStore } from '../stores/syncStore'
-import { SyncVerifyPassword, SyncUpdateRemotePassword } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { SyncVerifyPassword, SyncUpdateRemotePassword } from '../../bindings/github.com/duihao/duihao/app'
 import { backendErrorText } from '../utils/backendError'
 import { msg } from '../services/message'
 

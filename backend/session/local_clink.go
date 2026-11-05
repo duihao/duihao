@@ -41,7 +41,7 @@ func clinkProfileDir() string {
 		return clinkProfileDirOverride
 	}
 	if cfg, err := os.UserConfigDir(); err == nil {
-		return filepath.Join(cfg, "uniTerm", "clink")
+		return filepath.Join(cfg, "Duihao", "clink")
 	}
 	return filepath.Join(os.TempDir(), "uniterm-clink")
 }

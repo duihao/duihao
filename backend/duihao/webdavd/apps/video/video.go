@@ -26,8 +26,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/appkit"
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/webui"
+	"github.com/duihao/duihao/backend/duihao/webdavd/appkit"
+	"github.com/duihao/duihao/backend/duihao/webdavd/webui"
 )
 
 type App struct{}

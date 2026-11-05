@@ -26,12 +26,12 @@ import (
 	"github.com/jlaffaye/ftp"
 	"github.com/redis/go-redis/v9"
 
-	duihao "github.com/ys-ll/uniterm/backend/duihao"
-	"github.com/ys-ll/uniterm/backend/duihao/audit"
-	"github.com/ys-ll/uniterm/backend/duihao/dbadmin"
-	"github.com/ys-ll/uniterm/backend/duihao/ftpd"
-	"github.com/ys-ll/uniterm/backend/duihao/instance"
-	"github.com/ys-ll/uniterm/backend/duihao/service"
+	duihao "github.com/duihao/duihao/backend/duihao"
+	"github.com/duihao/duihao/backend/duihao/audit"
+	"github.com/duihao/duihao/backend/duihao/dbadmin"
+	"github.com/duihao/duihao/backend/duihao/ftpd"
+	"github.com/duihao/duihao/backend/duihao/instance"
+	"github.com/duihao/duihao/backend/duihao/service"
 )
 
 var fails int

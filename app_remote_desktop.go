@@ -11,8 +11,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/wailsapp/wails/v3/pkg/application"
-	"github.com/ys-ll/uniterm/backend/platform"
-	"github.com/ys-ll/uniterm/backend/session"
+	"github.com/duihao/duihao/backend/platform"
+	"github.com/duihao/duihao/backend/session"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/japanese"
 	"golang.org/x/text/encoding/korean"
@@ -132,7 +132,7 @@ func (a *App) ClipboardBeginFileTransfer(files []ClipboardFileInfo) (string, err
 		}
 		seen[key] = true
 	}
-	dir, err := os.MkdirTemp("", "uniterm-clipboard-")
+	dir, err := os.MkdirTemp("", "duihao-clipboard-")
 	if err != nil {
 		return "", err
 	}

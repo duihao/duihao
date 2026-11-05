@@ -10,10 +10,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ys-ll/uniterm/backend/duihao"
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/appkit"
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/childproc"
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/compkit"
+	"github.com/duihao/duihao/backend/duihao"
+	"github.com/duihao/duihao/backend/duihao/webdavd/appkit"
+	"github.com/duihao/duihao/backend/duihao/webdavd/childproc"
+	"github.com/duihao/duihao/backend/duihao/webdavd/compkit"
 )
 
 // frp 内网穿透：frpc 进程连用户自己的 frps。

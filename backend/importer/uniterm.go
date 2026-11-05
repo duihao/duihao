@@ -6,12 +6,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ys-ll/uniterm/backend/credentials"
-	"github.com/ys-ll/uniterm/backend/session"
-	"github.com/ys-ll/uniterm/backend/store"
+	"github.com/duihao/duihao/backend/credentials"
+	"github.com/duihao/duihao/backend/session"
+	"github.com/duihao/duihao/backend/store"
 )
 
-const unitermFormat = "uniterm"
+const unitermFormat = "duihao"
 
 type utmKDF struct {
 	Algo       string `json:"algo"`
@@ -120,10 +120,10 @@ func MaterializeForExport(data session.ConnectionStoreData, resolve session.Iden
 func parseUniterm(data []byte, opts ParseOptions) (*ImportResult, error) {
 	var f utmFile
 	if err := json.Unmarshal(data, &f); err != nil {
-		return nil, fmt.Errorf("parse uniterm json: %w", err)
+		return nil, fmt.Errorf("parse duihao json: %w", err)
 	}
 	if f.Format != unitermFormat {
-		return nil, fmt.Errorf("not a uniterm file (format=%q)", f.Format)
+		return nil, fmt.Errorf("not a Duihao file (format=%q)", f.Format)
 	}
 	if f.Encrypted {
 		if opts.Password == "" {

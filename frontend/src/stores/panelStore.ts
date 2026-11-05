@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { shallowReactive } from 'vue'
 import type { Panel, PanelStatus, ConnectionConfig } from '../types/workspace'
-import { DisableSessionOutputLog, RegisterSessionForPanel, UnregisterSession } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { DisableSessionOutputLog, RegisterSessionForPanel, UnregisterSession } from '../../bindings/github.com/duihao/duihao/app'
 
 export interface TransferFileState {
   path: string

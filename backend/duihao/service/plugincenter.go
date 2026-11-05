@@ -10,12 +10,13 @@ import (
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 
-	duihao "github.com/ys-ll/uniterm/backend/duihao"
-	"github.com/ys-ll/uniterm/backend/duihao/audit"
-	"github.com/ys-ll/uniterm/backend/duihao/clirun"
-	"github.com/ys-ll/uniterm/backend/duihao/instance"
-	"github.com/ys-ll/uniterm/backend/duihao/pluginc"
-	"github.com/ys-ll/uniterm/backend/duihao/site"
+	duihao "github.com/duihao/duihao/backend/duihao"
+	"github.com/duihao/duihao/backend/duihao/audit"
+	"github.com/duihao/duihao/backend/duihao/clirun"
+	"github.com/duihao/duihao/backend/duihao/instance"
+	"github.com/duihao/duihao/backend/duihao/pluginc"
+	"github.com/duihao/duihao/backend/duihao/runtimepkg"
+	"github.com/duihao/duihao/backend/duihao/site"
 )
 
 // PluginView 插件卡片视图（清单 + 安装状态）。
@@ -181,6 +182,12 @@ func (s *PluginCenterService) Install(pluginID, version string) (string, error) 
 		return "", errNotReady()
 	}
 	return s.mgr.InstallRuntime(context.Background(), pluginID, version)
+}
+
+// RuntimeProgress 取包进度快照（前端在「安装中」时轮询，500ms 一次）。
+// 下载 244MB 的 MySQL 包要几分钟，没有进度用户只能猜「是不是卡死了」。
+func (s *PluginCenterService) RuntimeProgress() []runtimepkg.Progress {
+	return runtimepkg.Snapshot()
 }
 
 // CreateInstance 装配并注册实例。

@@ -13,17 +13,16 @@ package runtimepkg
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	duihao "github.com/ys-ll/uniterm/backend/duihao"
+	duihao "github.com/duihao/duihao/backend/duihao"
 )
 
 // VersionSpec 描述一个待取包的运行时版本（由上层插件注册表从清单 versions[] 提供）。
@@ -210,12 +209,17 @@ func Resolve(ctx context.Context, spec VersionSpec, auditLog interface {
 		allowDownload = *spec.AllowDownload
 	}
 	if allowDownload && spec.Source != "mirror-only" && spec.URL != "" {
+		forgetProgress(spec.PluginID)
 		r, err := downloadAndExtract(ctx, spec)
 		if err != nil {
+			report(Progress{PluginID: spec.PluginID, Version: spec.Version,
+				Phase: PhaseFail, Source: "download", Message: err.Error()})
 			auditLog.Fail(actor, "resolve.runtime", spec.PluginID+"@"+spec.Version,
 				map[string]any{"level": "download", "err": err.Error()})
 			return Result{}, err
 		}
+		report(Progress{PluginID: spec.PluginID, Version: spec.Version,
+			Phase: PhaseDone, Source: "download", Received: 1, Total: 1, Percent: 100})
 		auditLog.Ok(actor, "resolve.runtime", spec.PluginID+"@"+spec.Version,
 			map[string]any{"source": "download", "url": spec.URL})
 		return r, nil
@@ -331,39 +335,59 @@ func candidateURLs(spec VersionSpec) []string {
 	return out
 }
 
-// downloadOne：流式下载 → 边下边算 SHA256 → 落临时文件 → 解压。
+// downloadAttempts 单个源最多尝试次数。国内到 dev.mysql.com / windows.php.net
+// 经常几 KB/s 或中途掐断，一次失败就整包重来（244MB）等于永远装不上。
+const downloadAttempts = 3
+
+// downloadOne：流式下载（断点续传 + 失败重试）→ 校验 → 解压。
+//
+// 为什么改成「落盘后再算摘要」：续传是往同一个临时文件末尾追加，
+// 没法只对增量求 SHA256。整包读一遍算摘要（244MB 约 1 秒）
+// 换来「断了能接上」，这笔账划算。
 func downloadOne(ctx context.Context, spec VersionSpec, url string) (Result, error) {
 	tmpZip, err := os.CreateTemp("", "duihao-dl-*.zip")
 	if err != nil {
 		return Result{}, err
 	}
 	tmpZipPath := tmpZip.Name()
+	tmpZip.Close()
 	defer os.Remove(tmpZipPath)
 
-	h := sha256.New()
-	n, err := func() (int64, error) {
-		defer tmpZip.Close()
-		req, err := newRequest(ctx, url)
-		if err != nil {
-			return 0, err
+	var n int64
+	var lastErr error
+	for attempt := 1; attempt <= downloadAttempts; attempt++ {
+		if attempt > 1 {
+			select {
+			case <-ctx.Done():
+				return Result{}, ctx.Err()
+			case <-time.After(time.Duration(attempt-1) * 2 * time.Second):
+			}
 		}
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			return 0, err
+		n, lastErr = fetchTo(ctx, spec, url, tmpZipPath, attempt)
+		if lastErr == nil {
+			break
 		}
-		defer resp.Body.Close()
-		if resp.StatusCode != 200 {
-			return 0, fmt.Errorf("下载返回 %s", resp.Status)
-		}
-		return io.Copy(io.MultiWriter(tmpZip, h), resp.Body)
-	}()
-	if err != nil {
-		return Result{}, err
+		report(Progress{
+			PluginID: spec.PluginID, Version: spec.Version, Phase: PhaseDownload,
+			Source: "download", URL: url, Received: n, Total: spec.Size, Attempt: attempt,
+			Message: fmt.Sprintf("第 %d 次尝试失败（%v），准备续传", attempt, lastErr),
+			Active:  true,
+		})
+	}
+	if lastErr != nil {
+		return Result{}, fmt.Errorf("下载失败（共尝试 %d 次）：%w", downloadAttempts, lastErr)
 	}
 	if spec.Size != 0 && spec.Size != n {
 		return Result{}, fmt.Errorf("下载大小不符：期望 %d 实际 %d", spec.Size, n)
 	}
-	sum := hex.EncodeToString(h.Sum(nil))
+	report(Progress{
+		PluginID: spec.PluginID, Version: spec.Version, Phase: PhaseVerify,
+		Source: "download", URL: url, Received: n, Total: n, Percent: 100, Active: true,
+	})
+	sum, _, err := sha256File(tmpZipPath)
+	if err != nil {
+		return Result{}, err
+	}
 	if spec.SHA256 != "" && spec.SHA256 != sum {
 		return Result{}, fmt.Errorf("SHA256 不匹配：期望 %s 实际 %s", short(spec.SHA256), short(sum))
 	}
@@ -380,6 +404,10 @@ func downloadOne(ctx context.Context, spec VersionSpec, url string) (Result, err
 	}
 	tmpDir := finalDir + ".tmp-" + fmt.Sprint(time.Now().UnixNano())
 	defer os.RemoveAll(tmpDir)
+	report(Progress{
+		PluginID: spec.PluginID, Version: spec.Version, Phase: PhaseExtract,
+		Source: "download", URL: url, Received: n, Total: n, Percent: 100, Active: true,
+	})
 	if err := unzip(tmpZipPath, tmpDir); err != nil {
 		return Result{}, fmt.Errorf("解压失败: %w", err)
 	}
@@ -398,6 +426,108 @@ func downloadOne(ctx context.Context, spec VersionSpec, url string) (Result, err
 		return Result{Dir: finalDir, Source: "download"}, err
 	}
 	return Result{Dir: finalDir, Source: "download"}, nil
+}
+
+// fetchTo 把 url 追加下载到 dst：dst 已有内容时带 Range 续传，服务端
+// 不支持续传（回 200）则清空重下。返回 dst 最终字节数。
+func fetchTo(ctx context.Context, spec VersionSpec, url, dst string, attempt int) (int64, error) {
+	var have int64
+	if st, err := os.Stat(dst); err == nil {
+		have = st.Size()
+	}
+	req, err := newRequest(ctx, url)
+	if err != nil {
+		return have, err
+	}
+	if have > 0 {
+		req.Header.Set("Range", fmt.Sprintf("bytes=%d-", have))
+	}
+	report(Progress{
+		PluginID: spec.PluginID, Version: spec.Version, Phase: PhaseConnect,
+		Source: "download", URL: url, Received: have, Total: spec.Size,
+		Attempt: attempt, Active: true,
+	})
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return have, err
+	}
+	defer resp.Body.Close()
+
+	total := spec.Size
+	switch resp.StatusCode {
+	case http.StatusOK:
+		have = 0 // 服务端不认 Range：整包重来
+		total = resp.ContentLength
+	case http.StatusPartialContent:
+		if resp.ContentLength >= 0 {
+			total = have + resp.ContentLength
+		}
+	default:
+		return have, fmt.Errorf("下载返回 %s", resp.Status)
+	}
+
+	f, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return have, err
+	}
+	defer f.Close()
+	if have == 0 {
+		if err := f.Truncate(0); err != nil {
+			return 0, err
+		}
+	}
+	if _, err := f.Seek(have, 0); err != nil {
+		return have, err
+	}
+
+	pr := &progressReader{
+		r: resp.Body, pluginID: spec.PluginID, version: spec.Version, url: url,
+		attempt: attempt, base: have, total: total,
+		last: time.Now(), lastBytes: have,
+	}
+	n, copyErr := io.Copy(f, pr)
+	pr.flush(have + n)
+	if copyErr != nil {
+		return have + n, copyErr
+	}
+	return have + n, nil
+}
+
+// progressReader 边读边按 250ms 节流上报进度（每 4 次上报 ≈ 1 秒，够顺滑）。
+type progressReader struct {
+	r         io.Reader
+	pluginID  string
+	version   string
+	url       string
+	attempt   int
+	base      int64 // 本轮开始前的已有字节（续传）
+	total     int64
+	got       int64
+	last      time.Time
+	lastBytes int64
+	speed     int64
+}
+
+func (p *progressReader) Read(b []byte) (int, error) {
+	n, err := p.r.Read(b)
+	p.got += int64(n)
+	if time.Since(p.last) >= 250*time.Millisecond || err != nil {
+		p.flush(p.base + p.got)
+	}
+	return n, err
+}
+
+func (p *progressReader) flush(received int64) {
+	now := time.Now()
+	if dt := now.Sub(p.last).Seconds(); dt > 0 {
+		p.speed = movingAvg(p.speed, int64(float64(received-p.lastBytes)/dt))
+	}
+	p.last, p.lastBytes = now, received
+	report(Progress{
+		PluginID: p.pluginID, Version: p.version, Phase: PhaseDownload,
+		Source: "download", URL: p.url, Received: received, Total: p.total,
+		Speed: p.speed, Attempt: p.attempt, Active: true,
+	})
 }
 
 func writeSourceInfo(dir string, info SourceInfo) error {

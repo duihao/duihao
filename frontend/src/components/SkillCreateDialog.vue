@@ -85,7 +85,7 @@ import { ElMessage } from 'element-plus'
 import { FileUp, CircleCheck } from '@lucide/vue'
 import { useI18n } from '../i18n'
 import { useSkillStore } from '../stores/skillStore'
-import { OpenFileDialogFiltered, OpenDirectoryDialog, ImportSkillFromZip, ImportSkillFromDir } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { OpenFileDialogFiltered, OpenDirectoryDialog, ImportSkillFromZip, ImportSkillFromDir } from '../../bindings/github.com/duihao/duihao/app'
 
 const { t } = useI18n()
 const store = useSkillStore()

@@ -1,14 +1,14 @@
-import { ListMCPTools, CallMCPTool } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { ListMCPTools, CallMCPTool } from '../../bindings/github.com/duihao/duihao/app'
 
 /**
  * External MCP client tools.
  *
- * uniTerm connects to user-configured external MCP servers (stdio /
+ * Duihao connects to user-configured external MCP servers (stdio /
  * streamable-http / sse) and surfaces their tools to the built-in agent. Each
  * remote tool is namespaced as `mcp__<server>__<tool>` so it can never collide
  * with a built-in tool name, and routed back to the Go client manager on call.
  *
- * This is the CLIENT half. The MCP Server section in settings (uniTerm exposed
+ * This is the CLIENT half. The MCP Server section in settings (Duihao exposed
  * to external agents) is unrelated and unchanged.
  */
 

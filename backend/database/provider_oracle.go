@@ -296,11 +296,11 @@ func (p *oracleProvider) GetTableSchema(db *sql.DB, dbName, tableName string) (*
 // ── DDL: Database ──
 
 func (p *oracleProvider) CreateDatabase(db *sql.DB, dbName string) error {
-	return fmt.Errorf("oracle provider does not support CREATE DATABASE; create users or schemas outside uniTerm")
+	return fmt.Errorf("oracle provider does not support CREATE DATABASE; create users or schemas outside Duihao")
 }
 
 func (p *oracleProvider) DropDatabase(db *sql.DB, dbName string) error {
-	return fmt.Errorf("oracle provider does not support DROP DATABASE; drop users or schemas outside uniTerm")
+	return fmt.Errorf("oracle provider does not support DROP DATABASE; drop users or schemas outside Duihao")
 }
 
 // ── DDL: Table ──

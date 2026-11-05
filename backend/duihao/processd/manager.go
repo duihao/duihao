@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	duihao "github.com/ys-ll/uniterm/backend/duihao"
-	"github.com/ys-ll/uniterm/backend/duihao/audit"
+	duihao "github.com/duihao/duihao/backend/duihao"
+	"github.com/duihao/duihao/backend/duihao/audit"
 )
 
 func jsonUnmarshal(data []byte, v any) error { return json.Unmarshal(data, v) }

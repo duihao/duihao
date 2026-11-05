@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/ys-ll/uniterm/backend/session"
+	"github.com/duihao/duihao/backend/session"
 )
 
 const storeFileName = "connections.json"

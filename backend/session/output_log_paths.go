@@ -138,9 +138,9 @@ func removeAllTokensWithSeparator(template, token string) string {
 func defaultSessionLogDir() string {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return filepath.Join(os.TempDir(), "uniTerm", "logs")
+		return filepath.Join(os.TempDir(), "Duihao", "logs")
 	}
-	return filepath.Join(home, "Documents", "uniTerm", "logs")
+	return filepath.Join(home, "Documents", "Duihao", "logs")
 }
 
 // DefaultSessionLogDir exposes the OS-default log directory for the

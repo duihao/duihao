@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/log"
+	"github.com/duihao/duihao/backend/log"
 )
 
 // release mirrors the GitHub/Gitee release payload subset. Both APIs expose
@@ -167,7 +167,7 @@ func cachePath(source string) string {
 	if err != nil {
 		return ""
 	}
-	return filepath.Join(dir, "uniTerm", "update_cache_"+source+".json")
+	return filepath.Join(dir, "Duihao", "update_cache_"+source+".json")
 }
 
 func loadCache(source string) *cacheEntry {
@@ -200,20 +200,21 @@ func saveCache(source string, entry *cacheEntry) {
 }
 
 // sourceAPIURL returns the latest-release API endpoint for a source.
-// UNITERM_UPDATE_API_BASE overrides the API base for both sources — used by
+// DUIHAO_UPDATE_API_BASE overrides the API base for all sources — used by
 // the local end-to-end autotest (autotest_update.go) and by self-hosted
 // mirror setups; production builds leave it unset. The base must serve a
 // GitHub-style GET <base>/releases/latest payload.
 func sourceAPIURL(source string) string {
-	// 对号有自己的仓库（gitee.com/duihao/duihao），不能再去查 uniTerm 的 release：
-	// 那样会提示「发现新版本 v1.11.2」并引导用户装成 uniTerm。
 	if base := os.Getenv("DUIHAO_UPDATE_API_BASE"); base != "" {
 		return strings.TrimRight(base, "/") + "/releases/latest"
 	}
-	if base := os.Getenv("UNITERM_UPDATE_API_BASE"); base != "" {
-		return strings.TrimRight(base, "/") + "/releases/latest"
-	}
-	if source == "gitee" {
+	switch source {
+	case "duihao":
+		// 自建源：duihao.com 上的静态 GitHub-release 风格 JSON（见
+		// site/_tools/publish_update_source.py）。gitee/github 都没有
+		// release 时的兜底，发布节奏完全自己掌握。
+		return "https://www.duihao.com/update/releases/latest"
+	case "gitee":
 		return "https://gitee.com/api/v5/repos/duihao/duihao/releases/latest"
 	}
 	return "https://api.github.com/repos/duihao/duihao/releases/latest"
@@ -223,6 +224,9 @@ func sourceAPIURL(source string) string {
 func sourceReleaseURL(source string) string {
 	if source == "gitee" {
 		return "https://gitee.com/duihao/duihao/releases/latest"
+	}
+	if source == "duihao" {
+		return "https://www.duihao.com/"
 	}
 	return "https://github.com/duihao/duihao/releases/latest"
 }
@@ -243,7 +247,7 @@ func fetchRelease(source string) (*release, error) {
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
 	}
-	req.Header.Set("User-Agent", "uniTerm")
+	req.Header.Set("User-Agent", "Duihao")
 	if prev := loadCache(source); prev != nil && prev.ETag != "" {
 		req.Header.Set("If-None-Match", prev.ETag)
 	}
@@ -308,7 +312,7 @@ func fetchChecksums(rel *release) map[string]string {
 		if err != nil {
 			continue
 		}
-		req.Header.Set("User-Agent", "uniTerm")
+		req.Header.Set("User-Agent", "Duihao")
 		resp, err := downloadHTTPClient().Do(req)
 		if err != nil || resp.StatusCode != http.StatusOK {
 			if resp != nil {
@@ -345,14 +349,15 @@ func classifyAsset(name string) string {
 }
 
 // assetMatchesPlatform reports whether the asset targets the given OS/arch.
-// Asset names are anchored to the uniterm-<os>-<arch>- prefix.
+// Asset names are anchored to the duihao-<os>-<arch>- prefix.
 func assetMatchesPlatform(osName, arch, name string) bool {
 	switch osName {
 	case "windows", "linux", "darwin":
 	default:
 		return false
 	}
-	return strings.HasPrefix(name, "uniterm-"+osName+"-"+arch+"-")
+	prefix := osName + "-" + arch + "-"
+	return strings.HasPrefix(name, "duihao-"+prefix)
 }
 
 // kindPreference returns the asset kinds usable for a channel, best first.
@@ -407,13 +412,19 @@ func Check(currentVersion, source string) (*UpdateInfo, error) {
 
 	primary, err := fetchRelease(source)
 	if err != nil {
-		// The preferred source is unreachable — fail the whole check over to
-		// the mirror instead of erroring out.
-		if rel2, err2 := fetchRelease(otherSource(source)); err2 == nil {
-			log.Writef("[update] %s failed (%v); using %s", source, err, otherSource(source))
-			source = otherSource(source)
-			primary = rel2
-		} else {
+		// The preferred source is unreachable — fail over to the mirror,
+		// then to the self-hosted duihao.com source, before erroring out.
+		fellBack := false
+		for _, alt := range []string{otherSource(source), "duihao"} {
+			if rel2, err2 := fetchRelease(alt); err2 == nil {
+				log.Writef("[update] %s failed (%v); using %s", source, err, alt)
+				source = alt
+				primary = rel2
+				fellBack = true
+				break
+			}
+		}
+		if !fellBack {
 			return nil, err
 		}
 	}

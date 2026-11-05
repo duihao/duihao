@@ -21,7 +21,7 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/credentials"
+	"github.com/duihao/duihao/backend/duihao/webdavd/credentials"
 )
 
 // Modules 可授权的业务模块（顺序跟顶栏一致，授权面板照此展开）。

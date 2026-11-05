@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	duihao "github.com/ys-ll/uniterm/backend/duihao"
+	duihao "github.com/duihao/duihao/backend/duihao"
 )
 
 // Record 站点记录（config\sites.json）。

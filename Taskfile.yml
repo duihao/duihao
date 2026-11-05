@@ -9,9 +9,27 @@ vars:
   # by `wails3 build GOOS=...` (or the GOOS env var) for cross-compilation. The
   # tasks below dispatch to the matching platform Taskfile via this variable.
   GOOS: '{{.GOOS | default OS}}'
-  # Release version injected into each platform binary via -ldflags
-  # "-X main.Version=...". Empty for dev builds (main.Version stays "dev").
-  VERSION: '{{.VERSION | default ""}}'
+  # Release version — SINGLE SOURCE OF TRUTH: build/windows/VERSION.
+  # Injected into every platform binary via -ldflags "-X main.Version=...";
+  # the windows build uses the same value for exe file properties and the
+  # installer. Bump build/windows/VERSION, then run:
+  #   python build/windows/sync_version.py
+  # (mirrors it into build/config.yml + the three info*.json).
+  # Never leave this empty for a release: an empty VERSION keeps main.Version
+  # at "dev", which flips devBuild=true and silently disables update downloads.
+  VERSION:
+    sh: cat build/windows/VERSION 2>/dev/null | tr -d '\r\n' || cat ../windows/VERSION 2>/dev/null | tr -d '\r\n' || echo ""
+
+  # Build metadata injected via -ldflags "-X main.BuildCommit=...". Empty
+  # outside a git checkout (release tarballs) — the About page hides the
+  # suffix then. BUILD_DATE is UTC ISO-ish "YYYY-MM-DDTHH:MM" for quick
+  # package-age identification — NO space allowed (it would split the
+  # -ldflags argument). Both are cosmetic and never parsed by the updater.
+  BUILD_COMMIT:
+    sh: git rev-parse --short HEAD 2>/dev/null | tr -d '\r\n' || echo ""
+  BUILD_DATE:
+    sh: date -u '+%Y-%m-%dT%H:%M' 2>/dev/null | tr -d '\r\n' || echo ""
+
   # Target architecture, forwarded to per-platform build tasks
   # (e.g. `wails3 build ARCH=arm64` cross-compiles windows/arm64).
   ARCH: '{{.ARCH | default ""}}'
@@ -35,6 +53,8 @@ tasks:
           VERSION: '{{.VERSION}}'
           ARCH: '{{.ARCH}}'
           EXTRA_TAGS: '{{.EXTRA_TAGS}}'
+          BUILD_COMMIT: '{{.BUILD_COMMIT}}'
+          BUILD_DATE: '{{.BUILD_DATE}}'
           # M6: edition build passes its own version-info JSON for exe properties
           INFO_JSON: '{{.INFO_JSON | default ""}}'
 

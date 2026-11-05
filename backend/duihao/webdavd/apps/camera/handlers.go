@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/appkit"
+	"github.com/duihao/duihao/backend/duihao/webdavd/appkit"
 )
 
 // 组件安装 / 离线导入 / 手动清理——这三个动作都在页面按钮后面，不在启动路径上。

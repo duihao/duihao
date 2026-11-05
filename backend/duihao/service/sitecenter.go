@@ -4,7 +4,7 @@ package service
 import (
 	"fmt"
 
-	"github.com/ys-ll/uniterm/backend/duihao/site"
+	"github.com/duihao/duihao/backend/duihao/site"
 )
 
 // SiteService 站点管理服务。
@@ -47,7 +47,7 @@ func (s *SiteService) CreateSite(name string, domains []string, port int, root, 
 	return s.mgr.ViewOf(rec.ID)
 }
 
-// SiteDefaultRoot 新建站点的默认根目录（数据目录下的 www），前端用来预填。
+// SiteDefaultRoot 新建站点的默认根目录（数据目录下的 sites，前端用来预填）。
 func (s *SiteService) SiteDefaultRoot() string { return site.RootDir() }
 
 // SiteDefaultPorts 两种协议的默认端口（前端切 http/https 时填）。

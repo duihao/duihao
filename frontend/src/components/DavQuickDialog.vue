@@ -29,7 +29,7 @@ import { ref, computed, watch } from 'vue'
 import QRCode from 'qrcode'
 import { ElMessage } from 'element-plus'
 import { useI18n } from '../i18n'
-import { CreateWebDavQuickToken } from '../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/webdavservice'
+import { CreateWebDavQuickToken } from '../../bindings/github.com/duihao/duihao/backend/duihao/service/webdavservice'
 
 const props = defineProps<{ instanceId: string; user: string }>()
 const visible = defineModel<boolean>('visible', { default: false })

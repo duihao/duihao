@@ -123,7 +123,7 @@ import { useI18n } from '../i18n'
 import {
   RedisOverview, RedisScanKeys, RedisGetKey, RedisDeleteKey, RedisFlushDB,
   RedisBackup, ListRedisBackups, DeleteRedisBackup,
-} from '../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/redisservice'
+} from '../../bindings/github.com/duihao/duihao/backend/duihao/service/redisservice'
 import InstancePower from './InstancePower.vue'
 
 const props = defineProps<{ instanceId: string; instanceName?: string }>()

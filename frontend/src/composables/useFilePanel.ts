@@ -8,7 +8,7 @@ import {
   SftpCancelTransfer, SftpPauseTransfer, SftpResumeTransfer,
   SftpRetryTransfer, SftpDismissTransfer, SftpListLocal,
   OpenMultipleFilesDialog, OpenDirectoryDialog,
-} from '../../bindings/github.com/ys-ll/uniterm/app'
+} from '../../bindings/github.com/duihao/duihao/app'
 import { Events } from '@wailsio/runtime'
 import { useLocalStateStore } from '../stores/localStateStore'
 import { useSettingsStore } from '../stores/settingsStore'

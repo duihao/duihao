@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/duihao/pluginc"
-	"github.com/ys-ll/uniterm/backend/duihao/processd"
+	"github.com/duihao/duihao/backend/duihao/pluginc"
+	"github.com/duihao/duihao/backend/duihao/processd"
 )
 
 func settingsPath(id string) string {

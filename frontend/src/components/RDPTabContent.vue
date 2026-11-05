@@ -98,7 +98,7 @@ import { useI18n } from '../i18n'
 import type { ConnectionConfig } from '../types/session'
 import { CreateSession, CloseSession, FrontendLog, ClipboardGetFiles, ClipboardReadFileChunkByID,
   ClipboardBeginFileTransfer, ClipboardWriteFileChunk, ClipboardFinishFileTransfer,
-  ClipboardAbortFileTransfer, SetRDPKeyboardCapture } from '../../bindings/github.com/ys-ll/uniterm/app'
+  ClipboardAbortFileTransfer, SetRDPKeyboardCapture } from '../../bindings/github.com/duihao/duihao/app'
 import { backendErrorText, backendErrorTextOf } from '../utils/backendError'
 import { Events } from '@wailsio/runtime'
 import { usePanelStore } from '../stores/panelStore'
@@ -165,7 +165,7 @@ const statusResolution = computed(() => {
 
 const CONNECT_TIMEOUT = 30_000
 
-// Frontend log channel → app log file (~/.uniterm/uniterm.log), alongside the
+// Frontend log channel → app log file (~/.duihao/duihao.log), alongside the
 // Go proxy's [IronRDPProxy] lines.
 function rdpLog(message: string) {
   try { FrontendLog('rdp', message) } catch (_) { console.error(message) }

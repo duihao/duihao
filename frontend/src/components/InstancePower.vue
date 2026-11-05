@@ -19,7 +19,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useI18n } from '../i18n'
-import { ListInstances, StartInstance, StopInstance } from '../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/plugincenterservice'
+import { ListInstances, StartInstance, StopInstance } from '../../bindings/github.com/duihao/duihao/backend/duihao/service/plugincenterservice'
 
 const props = defineProps<{ instanceId: string }>()
 const emit = defineEmits<{ (e: 'changed', running: boolean): void }>()

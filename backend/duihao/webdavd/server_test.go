@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/hubusers"
+	"github.com/duihao/duihao/backend/duihao/webdavd/hubusers"
 )
 
 // 服务集成测试：起真实监听，走完整 HTTP 管线（auth → 路径守卫 → webdav）。

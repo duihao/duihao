@@ -299,7 +299,7 @@ import {
   MongoCreateCollection,
   MongoDropCollection,
   MongoDropDatabase,
-} from '../../bindings/github.com/ys-ll/uniterm/app'
+} from '../../bindings/github.com/duihao/duihao/app'
 import MongoDBCollectionView from './MongoDBCollectionView.vue'
 import Menu from './Menu.vue'
 import MenuItem from './MenuItem.vue'

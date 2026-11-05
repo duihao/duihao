@@ -16,7 +16,8 @@
           "url": "https://gh-proxy.com/https://github.com/tporadowski/redis/releases/download/v5.0.14.1/Redis-x64-5.0.14.1.zip",
           "urls": [
             "https://github.com/tporadowski/redis/releases/download/v5.0.14.1/Redis-x64-5.0.14.1.zip",
-            "https://ghfast.top/https://github.com/tporadowski/redis/releases/download/v5.0.14.1/Redis-x64-5.0.14.1.zip"
+            "https://ghfast.top/https://github.com/tporadowski/redis/releases/download/v5.0.14.1/Redis-x64-5.0.14.1.zip",
+            "https://ghproxy.net/https://github.com/tporadowski/redis/releases/download/v5.0.14.1/Redis-x64-5.0.14.1.zip"
           ],
           "sha256": "",
           "size": 0
@@ -34,7 +35,8 @@
   "ports": [
     {
       "name": "redis",
-      "pool": "misc"
+      "pool": "misc",
+      "default": 6379
     }
   ],
   "workers": 0,
@@ -47,7 +49,7 @@
       {
         "action": "write",
         "dst": "{dir}/redis.conf",
-        "from": "bind {set:redis.bind}\nport {port:redis}\ntimeout {set:redis.timeout}\nmaxclients {set:redis.maxclients}\ndatabases {set:redis.databases}\nmaxmemory {set:redis.maxmemory}mb\n{setif:redis.requirepass:requirepass {set:redis.requirepass}}\ndir {dir}/data\nsave \"\"\nappendonly no\nprotected-mode yes\nmaxmemory-policy allkeys-lru\n"
+        "from": "bind {set:redis.bind}\nport {port:redis}\ntimeout {set:redis.timeout}\nmaxclients {set:redis.maxclients}\ndatabases {set:redis.databases}\nmaxmemory {set:redis.maxmemory}mb\n{setif:redis.requirepass:requirepass {set:redis.requirepass}}\ndir \"{dir}/data\"\nsave \"\"\nappendonly no\nprotected-mode yes\nmaxmemory-policy allkeys-lru\n"
       }
     ]
   },
@@ -66,7 +68,7 @@
     "interval": 10
   },
   "config": {
-    "signature": "2026-10-22-m8-settings"
+    "signature": "2026-11-03-quote-paths"
   },
   "settings": {
     "configFile": "redis.conf",

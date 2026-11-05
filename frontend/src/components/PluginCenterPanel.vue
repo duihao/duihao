@@ -97,6 +97,16 @@
             @click="onInstall(g.plugin)"
           >{{ t('plugins.install') }}</el-button>
         </div>
+
+        <!-- 取包进度：下载 / 校验 / 解压期间显示，没有它只能盯着「安装中」干等 -->
+        <div v-if="progFor(g.plugin.id)" class="rp-prog">
+          <div class="rp-prog-head">
+            <span class="rp-prog-phase">{{ phaseLabel(progFor(g.plugin.id)!) }}</span>
+            <span class="rp-prog-pct">{{ barPct(progFor(g.plugin.id)!) }}</span>
+          </div>
+          <div class="rp-prog-bar"><i :class="{ 'is-indet': isIndet(progFor(g.plugin.id)!) }" :style="{ width: barWidth(progFor(g.plugin.id)!) }" /></div>
+          <div class="rp-prog-meta">{{ sizeText(progFor(g.plugin.id)!) }}</div>
+        </div>
       </div>
     </div>
 
@@ -181,9 +191,10 @@ import { ref, computed, onMounted, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useI18n } from '../i18n'
 import { useSettingsStore } from '../stores/settingsStore'
-import { OpenManageWindow } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { OpenManageWindow } from '../../bindings/github.com/duihao/duihao/app'
 import SettingsDialog from './SettingsDialog.vue'
 import PluginVersionDialog from './PluginVersionDialog.vue'
+import { useRuntimeProgress } from '../composables/useRuntimeProgress'
 import SoftwareMarketDialog from './SoftwareMarketDialog.vue'
 import MySQLManageDialog from './MySQLManageDialog.vue'
 import RedisManageDialog from './RedisManageDialog.vue'
@@ -194,7 +205,7 @@ import {
   StartInstance, StopInstance, RemoveInstance, InstanceLogs, ManifestWarnings,
   DiagnoseInstancePort, AutoFixInstancePort,
   SetInstancePort, DataRoot, IsPortable, OpenDataRoot,
-} from '../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/plugincenterservice'
+} from '../../bindings/github.com/duihao/duihao/backend/duihao/service/plugincenterservice'
 
 // bindings 为 any 模块（见 types/bindings.d.ts），本地声明视图形状。
 interface VersionInfo { version: string; url?: string; sha256?: string; size?: number; installed: boolean }
@@ -221,6 +232,11 @@ const warnings = ref<string[]>([])
 const busy = ref('')
 const dataRoot = ref('')
 const portable = ref(false)
+
+// ---- 取包进度：公共 composable（多版本弹窗 PluginVersionDialog 同款）----
+const {
+  prog, startProgressPoll, stopProgressPoll, pollProgress, progFor, phaseLabel, barPct, isIndet, barWidth, sizeText,
+} = useRuntimeProgress()
 
 const logDrawer = ref(false)
 const logTitle = ref('')
@@ -401,6 +417,7 @@ async function onOpenDataRoot() {
 
 async function onInstall(p: PluginView) {
   busy.value = p.id
+  startProgressPoll()
   try {
     await CreateInstance(p.id, p.defaultVersion, '', [])
     ElMessage.success(t('plugins.instanceCreated'))
@@ -409,6 +426,9 @@ async function onInstall(p: PluginView) {
     ElMessage.error(String(parseErr(e)))
   } finally {
     busy.value = ''
+    // 收尾再取一帧，让 100% / 完成态停一下再消失
+    await pollProgress()
+    setTimeout(stopProgressPoll, 2200)
   }
 }
 
@@ -582,7 +602,12 @@ function parseErr(e: unknown): string {
   try { return JSON.stringify(e) } catch { return String(e) }
 }
 
-onMounted(refresh)
+onMounted(async () => {
+  await refresh()
+  // 面板可能是安装进行中才被打开的：先探一帧，有活动任务才开轮询
+  await pollProgress()
+  if (Object.keys(prog.value).length) startProgressPoll()
+})
 </script>
 
 <style scoped>
@@ -684,6 +709,34 @@ onMounted(refresh)
   justify-content: center;
   overflow: visible;
   text-overflow: clip;
+}
+
+/* 取包进度条：卡片底部一行，紧跟按钮之下，不改变卡片高度节奏 */
+.rp-prog { margin-top: 0.5rem; }
+.rp-prog-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  font-size: 0.625rem; color: var(--text-muted); line-height: 1.4;
+}
+.rp-prog-phase { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rp-prog-pct { flex: 0 0 auto; margin-left: 0.5rem; color: var(--accent); font-variant-numeric: tabular-nums; }
+.rp-prog-bar {
+  margin-top: 0.25rem; height: 4px; border-radius: 2px; overflow: hidden;
+  background: var(--bg-hover);
+}
+.rp-prog-bar > i {
+  display: block; height: 100%; width: 0; border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent), #ff8ab5);
+  transition: width 0.35s ease;
+}
+/* 服务端没给 Content-Length（CDN 流式响应）时走不定态：一块扫光代替百分比 */
+.rp-prog-bar > i.is-indet { animation: rp-prog-indet 1.1s linear infinite; }
+.rp-prog-meta {
+  margin-top: 0.25rem; font-size: 0.5625rem; color: var(--text-muted);
+  font-variant-numeric: tabular-nums; letter-spacing: 0.01em;
+}
+@keyframes rp-prog-indet {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(285%); }
 }
 
 /* 极窄：只收一点卡片内边距 */

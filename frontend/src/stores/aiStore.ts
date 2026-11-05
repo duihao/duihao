@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed, reactive, watch } from 'vue'
 import type { AIAttachment, AIMessage, ExecutionMode, AISession, AIAgentStatus } from '../types/ai'
-import { SaveAISessions, LoadAISessions } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { SaveAISessions, LoadAISessions } from '../../bindings/github.com/duihao/duihao/app'
 import { buildUserContent, redactAttachmentsForLog } from '../services/attachments'
 import { useLocalStateStore } from './localStateStore'
 import { useTabStore } from './tabStore'
@@ -48,7 +48,7 @@ function estimateMessageTokens(msg: AIMessage): number {
  * Static AI system rules — immutable per app version, always cacheable.
  * Dynamic shell/panel context is injected into the latest user message instead.
  */
-const SYSTEM_RULES = `You are an AI assistant inside uniTerm, a terminal emulator. You can execute shell commands in the user's active terminal to help them complete tasks.
+const SYSTEM_RULES = `You are an AI assistant inside Duihao, a terminal. You can execute shell commands in the user's active terminal to help them complete tasks.
 
 AVAILABLE TOOLS:
 1. execute_command — Run a shell command and wait for its output. Set timeout_ms based on expected duration; the unit is milliseconds. Use head_lines/tail_lines to control how much output you receive.
@@ -510,7 +510,7 @@ export const useAIStore = defineStore('ai', () => {
     const lines: string[] = [
       `# ${s.name}`,
       '',
-      `> ${new Date(s.createdAt).toLocaleString()} · uniTerm AI Assistant`,
+      `> ${new Date(s.createdAt).toLocaleString()} · Duihao AI Assistant`,
     ]
     for (const m of s.messages) {
       if (m.role === 'tool') continue

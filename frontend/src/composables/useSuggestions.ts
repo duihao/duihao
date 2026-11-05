@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { SaveTerminalHistory, LoadTerminalHistory } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { SaveTerminalHistory, LoadTerminalHistory } from '../../bindings/github.com/duihao/duihao/app'
 import { chat } from '../services/llm'
 import { useQuickCommandStore } from '../stores/quickCommandStore'
 import { useI18n } from '../i18n'

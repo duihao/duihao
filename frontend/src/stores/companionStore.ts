@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { CreateSession, CloseSession, ListSessions } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { CreateSession, CloseSession, ListSessions } from '../../bindings/github.com/duihao/duihao/app'
 import { usePanelStore } from './panelStore'
 import { useSessionStore } from './sessionStore'
 import { useTabStore } from './tabStore'

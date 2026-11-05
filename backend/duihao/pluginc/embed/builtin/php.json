@@ -69,7 +69,7 @@
       {
         "action": "write",
         "dst": "{dir}/php.ini",
-        "from": "; 对号生成 · 最小 php.ini（完整配置可在下方「配置文件」Tab 编辑）\nmemory_limit = {set:php.memory_limit}M\nupload_max_filesize = {set:php.upload_max_filesize}M\npost_max_size = {set:php.post_max_size}M\nmax_execution_time = {set:php.max_execution_time}\nmax_input_time = {set:php.max_input_time}\nexpose_php = {setonoff:php.expose_php}\ndisplay_errors = {setonoff:php.display_errors}\nlog_errors = On\nerror_log = {dir}/logs/php.err\ndate.timezone = {set:php.timezone}\nextension_dir = ext\n\n; ── 扩展 · 常用 ──\n{setif:php.ext_curl:extension=curl}\n{setif:php.ext_mbstring:extension=mbstring}\n{setif:php.ext_openssl:extension=openssl}\n{setif:php.ext_pdo_mysql:extension=pdo_mysql}\n{setif:php.ext_mysqli:extension=mysqli}\n{setif:php.ext_fileinfo:extension=fileinfo}\n{setif:php.ext_gd:extension=gd}\n{setif:php.ext_exif:extension=exif}\n{setif:php.ext_intl:extension=intl}\n{setif:php.ext_zip:extension=zip}\n{setif:php.ext_sockets:extension=sockets}\n{setif:php.ext_sodium:extension=sodium}\n{setif:php.ext_opcache:zend_extension=php_opcache.dll}\n\n; ── 扩展 · 数据库 ──\n{setif:php.ext_pgsql:extension=pgsql}\n{setif:php.ext_pdo_pgsql:extension=pdo_pgsql}\n{setif:php.ext_odbc:extension=odbc}\n{setif:php.ext_pdo_odbc:extension=pdo_odbc}\n{setif:php.ext_sqlite3:extension=sqlite3}\n{setif:php.ext_pdo_sqlite:extension=pdo_sqlite}\n\n; ── 扩展 · 网络与邮件 ──\n{setif:php.ext_ftp:extension=ftp}\n{setiflt:8.4.0:{setif:php.ext_imap:extension=imap}}\n{setif:php.ext_ldap:extension=ldap}\n{setif:php.ext_snmp:extension=snmp}\n\n; ── 扩展 · 文档与编码 ──\n{setif:php.ext_soap:extension=soap}\n{setif:php.ext_xsl:extension=xsl}\n{setif:php.ext_tidy:extension=tidy}\n{setif:php.ext_gettext:extension=gettext}\n\n; ── 扩展 · 压缩与系统 ──\n{setif:php.ext_bz2:extension=bz2}\n{setif:php.ext_gmp:extension=gmp}\n{setif:php.ext_dba:extension=dba}\n{setif:php.ext_shmop:extension=shmop}\n{setif:php.ext_sysvshm:extension=sysvshm}\n{setif:php.ext_ffi:extension=ffi}\n{setif:php.ext_com_dotnet:extension=com_dotnet}\n{setif:php.ext_enchant:extension=enchant}\n"
+        "from": "; 对号生成 · 最小 php.ini（完整配置可在下方「配置文件」Tab 编辑）\nmemory_limit = {set:php.memory_limit}M\nupload_max_filesize = {set:php.upload_max_filesize}M\npost_max_size = {set:php.post_max_size}M\nmax_execution_time = {set:php.max_execution_time}\nmax_input_time = {set:php.max_input_time}\nexpose_php = {setonoff:php.expose_php}\ndisplay_errors = {setonoff:php.display_errors}\nlog_errors = On\nerror_log = \"{dir}/logs/php.err\"\ndate.timezone = {set:php.timezone}\nextension_dir = ext\n\n; ── 扩展 · 常用 ──\n{setif:php.ext_curl:extension=curl}\n{setif:php.ext_mbstring:extension=mbstring}\n{setif:php.ext_openssl:extension=openssl}\n{setif:php.ext_pdo_mysql:extension=pdo_mysql}\n{setif:php.ext_mysqli:extension=mysqli}\n{setif:php.ext_fileinfo:extension=fileinfo}\n{setif:php.ext_gd:extension=gd}\n{setif:php.ext_exif:extension=exif}\n{setif:php.ext_intl:extension=intl}\n{setif:php.ext_zip:extension=zip}\n{setif:php.ext_sockets:extension=sockets}\n{setif:php.ext_sodium:extension=sodium}\n{setif:php.ext_opcache:zend_extension=php_opcache.dll}\n\n; ── 扩展 · 数据库 ──\n{setif:php.ext_pgsql:extension=pgsql}\n{setif:php.ext_pdo_pgsql:extension=pdo_pgsql}\n{setif:php.ext_odbc:extension=odbc}\n{setif:php.ext_pdo_odbc:extension=pdo_odbc}\n{setif:php.ext_sqlite3:extension=sqlite3}\n{setif:php.ext_pdo_sqlite:extension=pdo_sqlite}\n\n; ── 扩展 · 网络与邮件 ──\n{setif:php.ext_ftp:extension=ftp}\n{setiflt:8.4.0:{setif:php.ext_imap:extension=imap}}\n{setif:php.ext_ldap:extension=ldap}\n{setif:php.ext_snmp:extension=snmp}\n\n; ── 扩展 · 文档与编码 ──\n{setif:php.ext_soap:extension=soap}\n{setif:php.ext_xsl:extension=xsl}\n{setif:php.ext_tidy:extension=tidy}\n{setif:php.ext_gettext:extension=gettext}\n\n; ── 扩展 · 压缩与系统 ──\n{setif:php.ext_bz2:extension=bz2}\n{setif:php.ext_gmp:extension=gmp}\n{setif:php.ext_dba:extension=dba}\n{setif:php.ext_shmop:extension=shmop}\n{setif:php.ext_sysvshm:extension=sysvshm}\n{setif:php.ext_ffi:extension=ffi}\n{setif:php.ext_com_dotnet:extension=com_dotnet}\n{setif:php.ext_enchant:extension=enchant}\n"
       },
       {
         "action": "mkdir",
@@ -95,7 +95,7 @@
     "interval": 10
   },
   "config": {
-    "signature": "2026-10-23-ext35"
+    "signature": "2026-11-04-ext-all-on"
   },
   "settings": {
     "configFile": "php.ini",
@@ -200,7 +200,7 @@
             "key": "php.ext_mysqli",
             "label": "mysqli",
             "type": "switch",
-            "default": "0"
+            "default": "1"
           },
           {
             "key": "php.ext_fileinfo",
@@ -219,14 +219,14 @@
             "key": "php.ext_exif",
             "label": "exif",
             "type": "switch",
-            "default": "0",
+            "default": "1",
             "hint": "读取照片 EXIF"
           },
           {
             "key": "php.ext_intl",
             "label": "intl",
             "type": "switch",
-            "default": "0",
+            "default": "1",
             "hint": "国际化（ICU）"
           },
           {
@@ -240,21 +240,21 @@
             "key": "php.ext_sockets",
             "label": "sockets",
             "type": "switch",
-            "default": "0",
+            "default": "1",
             "hint": "套接字（SMTP / Workerman 等底层）"
           },
           {
             "key": "php.ext_sodium",
             "label": "sodium",
             "type": "switch",
-            "default": "0",
+            "default": "1",
             "hint": "libsodium 现代加密（Argon2）"
           },
           {
             "key": "php.ext_opcache",
             "label": "opcache",
             "type": "switch",
-            "default": "0",
+            "default": "1",
             "hint": "字节码缓存，生产环境建议开启"
           }
         ]
@@ -266,68 +266,68 @@
             "key": "php.ext_pgsql",
             "label": "pgsql",
             "type": "switch",
-            "default": "0",
+            "default": "1",
             "hint": "PostgreSQL 原生驱动"
           },
           {
             "key": "php.ext_pdo_pgsql",
             "label": "pdo_pgsql",
             "type": "switch",
-            "default": "0",
+            "default": "1",
             "hint": "PDO PostgreSQL"
           },
           {
             "key": "php.ext_odbc",
             "label": "odbc",
             "type": "switch",
-            "default": "0",
+            "default": "1",
             "hint": "ODBC 数据源"
           },
           {
             "key": "php.ext_pdo_odbc",
             "label": "pdo_odbc",
             "type": "switch",
-            "default": "0",
+            "default": "1",
             "hint": "PDO ODBC"
           },
           {
             "key": "php.ext_sqlite3",
             "label": "sqlite3",
             "type": "switch",
-            "default": "0"
+            "default": "1"
           },
           {
             "key": "php.ext_pdo_sqlite",
             "label": "pdo_sqlite",
             "type": "switch",
-            "default": "0"
+            "default": "1"
           },
           {
             "key": "php.ext_ftp",
             "label": "ftp",
             "type": "switch",
-            "default": "0",
+            "default": "1",
             "hint": "FTP 客户端函数"
           },
           {
             "key": "php.ext_imap",
             "label": "imap",
             "type": "switch",
-            "default": "0",
+            "default": "1",
             "hint": "IMAP 邮件（PHP 8.4 起官方包不再提供）"
           },
           {
             "key": "php.ext_ldap",
             "label": "ldap",
             "type": "switch",
-            "default": "0",
+            "default": "1",
             "hint": "LDAP 目录（AD 认证）"
           },
           {
             "key": "php.ext_snmp",
             "label": "snmp",
             "type": "switch",
-            "default": "0",
+            "default": "1",
             "hint": "SNMP 网络设备"
           }
         ]
@@ -339,84 +339,84 @@
             "key": "php.ext_soap",
             "label": "soap",
             "type": "switch",
-            "default": "0",
+            "default": "1",
             "hint": "SOAP Web Service"
           },
           {
             "key": "php.ext_xsl",
             "label": "xsl",
             "type": "switch",
-            "default": "0",
+            "default": "1",
             "hint": "XSLT 转换"
           },
           {
             "key": "php.ext_tidy",
             "label": "tidy",
             "type": "switch",
-            "default": "0",
+            "default": "1",
             "hint": "HTML 清理与修复"
           },
           {
             "key": "php.ext_gettext",
             "label": "gettext",
             "type": "switch",
-            "default": "0",
+            "default": "1",
             "hint": "gettext 多语言"
           },
           {
             "key": "php.ext_bz2",
             "label": "bz2",
             "type": "switch",
-            "default": "0",
+            "default": "1",
             "hint": "bzip2 压缩"
           },
           {
             "key": "php.ext_gmp",
             "label": "gmp",
             "type": "switch",
-            "default": "0",
+            "default": "1",
             "hint": "任意精度整数（大数/加密）"
           },
           {
             "key": "php.ext_dba",
             "label": "dba",
             "type": "switch",
-            "default": "0",
+            "default": "1",
             "hint": "DBA 抽象层（dbm 类文件库）"
           },
           {
             "key": "php.ext_shmop",
             "label": "shmop",
             "type": "switch",
-            "default": "0",
+            "default": "1",
             "hint": "共享内存段"
           },
           {
             "key": "php.ext_sysvshm",
             "label": "sysvshm",
             "type": "switch",
-            "default": "0",
+            "default": "1",
             "hint": "SysV 共享内存"
           },
           {
             "key": "php.ext_ffi",
             "label": "ffi",
             "type": "switch",
-            "default": "0",
+            "default": "1",
             "hint": "调用 C 库（仅信任代码使用）"
           },
           {
             "key": "php.ext_com_dotnet",
             "label": "com_dotnet",
             "type": "switch",
-            "default": "0",
+            "default": "1",
             "hint": "Windows COM/DCOM（Word/Excel 等）"
           },
           {
             "key": "php.ext_enchant",
             "label": "enchant",
             "type": "switch",
-            "default": "0",
+            "default": "1",
             "hint": "拼写检查"
           }
         ]

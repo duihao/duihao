@@ -14,15 +14,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/duihao/audit"
-	"github.com/ys-ll/uniterm/backend/duihao/instance"
-	"github.com/ys-ll/uniterm/backend/duihao/processd"
-	"github.com/ys-ll/uniterm/backend/duihao/site"
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd"
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/credentials"
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/hubusers"
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/store"
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/sysinfo"
+	"github.com/duihao/duihao/backend/duihao/audit"
+	"github.com/duihao/duihao/backend/duihao/instance"
+	"github.com/duihao/duihao/backend/duihao/processd"
+	"github.com/duihao/duihao/backend/duihao/site"
+	"github.com/duihao/duihao/backend/duihao/webdavd"
+	"github.com/duihao/duihao/backend/duihao/webdavd/credentials"
+	"github.com/duihao/duihao/backend/duihao/webdavd/hubusers"
+	"github.com/duihao/duihao/backend/duihao/webdavd/store"
+	"github.com/duihao/duihao/backend/duihao/webdavd/sysinfo"
 )
 
 // WebDavService 共享管理。

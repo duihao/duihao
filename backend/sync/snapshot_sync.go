@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/log"
-	"github.com/ys-ll/uniterm/backend/utils"
+	"github.com/duihao/duihao/backend/log"
+	"github.com/duihao/duihao/backend/utils"
 )
 
 // syncSnapshot runs one sync cycle against a snapshot backend. The

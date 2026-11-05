@@ -3,7 +3,7 @@ import type { AIAttachment, AIAttachmentKind } from '../types/ai'
 /**
  * Image / file attachments for the AI assistant.
  *
- * uniTerm is a model proxy: it does NOT run OCR, image recognition or any other
+ * Duihao is a model proxy: it does NOT run OCR, image recognition or any other
  * multimodal inference locally. Attachments are validated here and forwarded to
  * the upstream multimodal model, which does the actual understanding.
  *

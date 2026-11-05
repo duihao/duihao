@@ -6,11 +6,11 @@ export const SUPPORTED_LOCALES = [
 export type Locale = typeof SUPPORTED_LOCALES[number]
 export type Language = Locale | 'system'
 export type Theme = 'dark' | 'deep-blue' | 'duihao-red' | 'duihao-light' | 'light' | 'system'
-export type TerminalTheme = 'uniterm-dark' | 'uniterm-light' | 'duihao-dark' | 'duihao-night' | 'solarized-dark' | 'solarized-light' | 'monokai' | 'dracula' | 'molokai' | 'tomorrow-night' | 'tomorrow-night-bright' | 'tomorrow' | 'one-dark' | 'one-light' | 'github-dark' | 'github-light' | 'gotham' | 'hybrid' | 'nord' | 'gruvbox-dark' | 'gruvbox-light' | 'catppuccin-mocha' | 'catppuccin-latte' | 'tokyo-night' | 'tokyo-day' | 'rose-pine' | 'rose-pine-dawn' | 'everforest-dark' | 'everforest-light' | 'xshell-xterm' | 'xshell-ansi-black' | 'xshell-new-black' | 'mobaxterm-default' | 'mobaxterm-ubuntu' | 'finalshell-dark' | 'finalshell-light'
+export type TerminalTheme = 'duihao-dark' | 'duihao-light' | 'duihao-dark' | 'duihao-night' | 'solarized-dark' | 'solarized-light' | 'monokai' | 'dracula' | 'molokai' | 'tomorrow-night' | 'tomorrow-night-bright' | 'tomorrow' | 'one-dark' | 'one-light' | 'github-dark' | 'github-light' | 'gotham' | 'hybrid' | 'nord' | 'gruvbox-dark' | 'gruvbox-light' | 'catppuccin-mocha' | 'catppuccin-latte' | 'tokyo-night' | 'tokyo-day' | 'rose-pine' | 'rose-pine-dawn' | 'everforest-dark' | 'everforest-light' | 'xshell-xterm' | 'xshell-ansi-black' | 'xshell-new-black' | 'mobaxterm-default' | 'mobaxterm-ubuntu' | 'finalshell-dark' | 'finalshell-light'
 
 // Magic value for `AppSettings.terminal.theme`: the effective built-in theme
-// is derived from the current app theme (dark / deep-blue -> uniterm-dark,
-// light -> uniterm-light) instead of being fixed. Kept out of TERMINAL_THEMES
+// is derived from the current app theme (dark / deep-blue -> duihao-dark,
+// light -> duihao-light) instead of being fixed. Kept out of TERMINAL_THEMES
 // because it has no color palette of its own.
 export const FOLLOW_APP_THEME = 'follow-app'
 
@@ -89,7 +89,7 @@ export interface TerminalSettings {
   // readable. 1 = xterm's no-op default = disabled.
   minimumContrast: number
   // Override for the session output log directory. Empty means the
-  // OS default under ~/Documents/uniTerm/logs.
+  // OS default under ~/Documents/Duihao/logs.
   sessionLogDir: string
   // Default local directory for files received with ZMODEM sz. Empty keeps
   // the existing behavior of asking for a directory on every transfer.
@@ -130,7 +130,7 @@ export interface AIModelConfig {
 }
 
 export const USER_AGENT_PRESETS: { label: string; value: string }[] = [
-  { label: 'uniTerm', value: 'uniTerm' },
+  { label: 'Duihao', value: 'Duihao/1.0' },
   { label: 'Claude Code', value: 'claude-code/1.0' },
   { label: 'Cursor', value: 'Cursor/1.0' },
   { label: 'Cline', value: 'Cline/1.0' },
@@ -447,8 +447,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
 export interface TerminalThemeEntry { label: string; value: string; type: 'dark' | 'light' }
 export const TERMINAL_THEMES: TerminalThemeEntry[] = [
-  { label: 'uniTerm Dark', value: 'uniterm-dark', type: 'dark' },
-  { label: 'uniTerm Light', value: 'uniterm-light', type: 'light' },
+  { label: 'Duihao 深色', value: 'duihao-dark', type: 'dark' },
+  { label: 'Duihao 浅色', value: 'duihao-light', type: 'light' },
   { label: 'Duihao Dark', value: 'duihao-dark', type: 'dark' },
   { label: 'Duihao Night', value: 'duihao-night', type: 'dark' },
   { label: 'Solarized Dark', value: 'solarized-dark', type: 'dark' },

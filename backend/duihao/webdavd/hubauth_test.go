@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/hubusers"
+	"github.com/duihao/duihao/backend/duihao/webdavd/hubusers"
 )
 
 // NAS 多用户端到端：引导 admin → admin 进应用页 → 建成员 → 成员按权限进出

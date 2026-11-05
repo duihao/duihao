@@ -132,7 +132,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useI18n } from '../i18n'
-import { CreateInstance } from '../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/plugincenterservice'
+import { CreateInstance } from '../../bindings/github.com/duihao/duihao/backend/duihao/service/plugincenterservice'
 
 interface VersionInfo { version: string; url?: string; sha256?: string; size?: number; installed: boolean }
 interface PluginView {

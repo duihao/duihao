@@ -41,7 +41,7 @@ func localAgentClient() (agent.Agent, func(), error) {
 func localAgentSocket() (string, error) {
 	addr := strings.TrimSpace(os.Getenv("SSH_AUTH_SOCK"))
 	if addr == "" {
-		return "", fmt.Errorf("SSH_AUTH_SOCK is not set; start an SSH agent and expose its socket to uniTerm")
+		return "", fmt.Errorf("SSH_AUTH_SOCK is not set; start an SSH agent and expose its socket to Duihao")
 	}
 	return addr, nil
 }

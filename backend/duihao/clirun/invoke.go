@@ -13,7 +13,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/duihao/audit"
+	"github.com/duihao/duihao/backend/duihao/audit"
 )
 
 // CLISpec 一次 cli 调用的完整描述（entry 模板已由上层渲染为 Bin+Prefix）。

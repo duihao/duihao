@@ -1,4 +1,4 @@
-module github.com/ys-ll/uniterm
+module github.com/duihao/duihao
 
 go 1.26.2
 

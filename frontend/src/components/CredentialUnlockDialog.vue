@@ -24,7 +24,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from '../i18n'
-import { QuitApp } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { QuitApp } from '../../bindings/github.com/duihao/duihao/app'
 import { useCredentialStore } from '../stores/credentialStore'
 
 defineProps<{ visible: boolean }>()

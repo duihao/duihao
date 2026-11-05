@@ -12,9 +12,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/appkit"
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/childproc"
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/compkit"
+	"github.com/duihao/duihao/backend/duihao/webdavd/appkit"
+	"github.com/duihao/duihao/backend/duihao/webdavd/childproc"
+	"github.com/duihao/duihao/backend/duihao/webdavd/compkit"
 )
 
 // 下载引擎（aria2c 走 RPC 常驻）。

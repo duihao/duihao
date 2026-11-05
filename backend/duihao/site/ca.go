@@ -34,7 +34,7 @@ import (
 	"sync"
 	"time"
 
-	duihao "github.com/ys-ll/uniterm/backend/duihao"
+	duihao "github.com/duihao/duihao/backend/duihao"
 )
 
 // CACN 根证书的 CommonName / Organization（也是 certutil 查存储时的关键字）。

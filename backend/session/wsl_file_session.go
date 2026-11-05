@@ -17,7 +17,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/platform"
+	"github.com/duihao/duihao/backend/platform"
 )
 
 // The wsl.localhost 9P share cannot report Linux symbolic links: they surface

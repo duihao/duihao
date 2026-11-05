@@ -23,9 +23,9 @@ import (
 	"unsafe"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
-	"github.com/ys-ll/uniterm/backend/log"
-	"github.com/ys-ll/uniterm/backend/platform"
-	"github.com/ys-ll/uniterm/backend/session"
+	"github.com/duihao/duihao/backend/log"
+	"github.com/duihao/duihao/backend/platform"
+	"github.com/duihao/duihao/backend/session"
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/registry"
 )
@@ -113,7 +113,7 @@ func (a *App) GetAvailableShells() []string {
 	}
 	// Administrator variants ride on the detected cmd/powershell paths (UAC
 	// elevation via the broker in backend/session/local_admin_windows.go).
-	// Only offered when uniTerm itself is unelevated — as admin they would be
+	// Only offered when Duihao itself is unelevated — as admin they would be
 	// indistinguishable duplicates of the plain entries.
 	if !session.IsProcessElevated() {
 		for _, sh := range shells {
@@ -889,7 +889,7 @@ func systemPrefersDark() bool {
 	return val == 0
 }
 
-// waitForRelaunchParent and the UNITERM_RELAUNCH_PID handshake were removed:
+// waitForRelaunchParent and the DUIHAO_RELAUNCH_PID handshake were removed:
 // the relaunch is now quit-then-spawn (relaunchPending + spawnSuccessorProcess
 // in main.go), so the successor never sees the lock held.
 

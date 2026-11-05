@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/store"
+	"github.com/duihao/duihao/backend/duihao/webdavd/store"
 )
 
 // freshDB 打开一个跑完迁移的临时库（与线上同一套表结构）。

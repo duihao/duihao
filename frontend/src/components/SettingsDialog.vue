@@ -104,7 +104,7 @@ import { useI18n } from '../i18n'
 import {
   GetSettingsSchema, ApplySettings, ResetSettings,
   ReadInstanceFile, SaveInstanceFile,
-} from '../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/plugincenterservice'
+} from '../../bindings/github.com/duihao/duihao/backend/duihao/service/plugincenterservice'
 
 // schema 视图（与后端 instance.SettingsView 对应）
 interface SettingField {

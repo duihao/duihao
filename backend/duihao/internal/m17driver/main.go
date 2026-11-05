@@ -18,11 +18,11 @@ import (
 	"sync"
 	"time"
 
-	duihao "github.com/ys-ll/uniterm/backend/duihao"
-	"github.com/ys-ll/uniterm/backend/duihao/audit"
-	"github.com/ys-ll/uniterm/backend/duihao/instance"
-	"github.com/ys-ll/uniterm/backend/duihao/processd"
-	"github.com/ys-ll/uniterm/backend/duihao/site"
+	duihao "github.com/duihao/duihao/backend/duihao"
+	"github.com/duihao/duihao/backend/duihao/audit"
+	"github.com/duihao/duihao/backend/duihao/instance"
+	"github.com/duihao/duihao/backend/duihao/processd"
+	"github.com/duihao/duihao/backend/duihao/site"
 )
 
 var fails int

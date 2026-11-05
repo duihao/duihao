@@ -12,7 +12,7 @@ import (
 	"sort"
 	"strings"
 
-	duihao "github.com/ys-ll/uniterm/backend/duihao"
+	duihao "github.com/duihao/duihao/backend/duihao"
 )
 
 //go:embed embed/builtin/*.json

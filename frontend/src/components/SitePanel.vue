@@ -164,12 +164,12 @@ import { Browser } from '@wailsio/runtime'
 import { useI18n } from '../i18n'
 import SiteDialog from './SiteDialog.vue'
 import DeployDialog from './DeployDialog.vue'
-import { ListInstances } from '../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/plugincenterservice'
+import { ListInstances } from '../../bindings/github.com/duihao/duihao/backend/duihao/service/plugincenterservice'
 import {
   ListSites, DeleteSite, StartSite, StopSite,
   SiteLogs, OpenSite, HostsLine, WriteHosts, RebuildSite, SetSitePort, OpenSiteRoot,
   LocalCAStatus, InstallLocalCA, DiagnoseSitePort, AutoFixSitePort,
-} from '../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/siteservice'
+} from '../../bindings/github.com/duihao/duihao/backend/duihao/service/siteservice'
 
 interface InstanceView {
   id: string; plugin: string; version: string; name: string

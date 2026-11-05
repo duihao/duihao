@@ -14,20 +14,29 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 	"github.com/wailsapp/wails/v3/pkg/services/notifications"
-	duihao "github.com/ys-ll/uniterm/backend/duihao"
-	"github.com/ys-ll/uniterm/backend/duihao/audit"
-	"github.com/ys-ll/uniterm/backend/duihao/editionpkg"
-	"github.com/ys-ll/uniterm/backend/duihao/ftpd"
-	"github.com/ys-ll/uniterm/backend/duihao/instance"
-	plugincenter "github.com/ys-ll/uniterm/backend/duihao/service"
-	"github.com/ys-ll/uniterm/backend/duihao/site"
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd"
-	"github.com/ys-ll/uniterm/backend/log"
-	"github.com/ys-ll/uniterm/backend/session"
-	"github.com/ys-ll/uniterm/backend/store"
+	duihao "github.com/duihao/duihao/backend/duihao"
+	"github.com/duihao/duihao/backend/duihao/audit"
+	"github.com/duihao/duihao/backend/duihao/editionpkg"
+	"github.com/duihao/duihao/backend/duihao/ftpd"
+	"github.com/duihao/duihao/backend/duihao/instance"
+	plugincenter "github.com/duihao/duihao/backend/duihao/service"
+	"github.com/duihao/duihao/backend/duihao/site"
+	"github.com/duihao/duihao/backend/duihao/webdavd"
+	"github.com/duihao/duihao/backend/log"
+	"github.com/duihao/duihao/backend/session"
+	"github.com/duihao/duihao/backend/store"
 )
 
 var Version = "dev"
+
+// Build metadata, injected at build time via -ldflags "-X main.BuildCommit=...
+// -X main.BuildDate=..." (see Taskfile BUILD_COMMIT / BUILD_DATE). Both stay
+// empty in `wails dev` / bare `go build` builds; the About page only shows the
+// suffix when BuildCommit is non-empty so dev builds just display "dev".
+var (
+	BuildCommit = ""
+	BuildDate   = ""
+)
 
 // devBuild is true for `wails dev` (Version == "dev"); false for production
 // builds where `-ldflags '-X main.Version=...'` sets a real version string.
@@ -36,7 +45,7 @@ var Version = "dev"
 var devBuild = Version == "dev"
 
 // webview2DataPath returns the fixed WebView2 user-data folder:
-// %LOCALAPPDATA%\uniTerm\webview2, with a "-dev" suffix on dev builds. The
+// %LOCALAPPDATA%\Duihao\webview2, with a "-dev" suffix on dev builds. The
 // suffix keeps dev and release instances from contending for the same
 // folder — a WebView2 user-data folder only tolerates a single browser
 // process tree, and dev/release deliberately use distinct single-instance
@@ -137,7 +146,7 @@ func uniqueInstanceID() string {
 }
 
 func main() {
-	// Administrator-shell broker mode: an elevated copy of uniTerm launched
+	// Administrator-shell broker mode: an elevated copy of Duihao launched
 	// via the "runas" verb relays ConPTY I/O for admin local terminals (see
 	// backend/session/local_admin_windows.go). Must run before anything else
 	// so the broker never creates a window, webview or app store. It also
@@ -624,7 +633,7 @@ func main() {
 				}
 				time.Sleep(20 * time.Millisecond)
 			}
-			if os.Getenv("UNITERM_UPDATE_AUTOTEST") == "1" {
+			if os.Getenv("DUIHAO_UPDATE_AUTOTEST") == "1" {
 				return
 			}
 			app.placeNasWindow(nasWin)
@@ -874,7 +883,7 @@ func main() {
 
 	// Local end-to-end update test hook — inert unless the env var is set
 	// (see autotest_update.go).
-	if os.Getenv("UNITERM_UPDATE_AUTOTEST") == "1" {
+	if os.Getenv("DUIHAO_UPDATE_AUTOTEST") == "1" {
 		go app.autotestUpdate()
 	}
 

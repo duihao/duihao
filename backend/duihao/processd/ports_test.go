@@ -3,7 +3,7 @@ package processd
 import (
 	"testing"
 
-	duihao "github.com/ys-ll/uniterm/backend/duihao"
+	duihao "github.com/duihao/duihao/backend/duihao"
 )
 
 func TestProbeFreeAndOccupied(t *testing.T) {

@@ -77,11 +77,11 @@ import { ref, computed, watch, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Events } from '@wailsio/runtime'
 import { useI18n } from '../i18n'
-import { OpenMultipleFilesDialog, OpenDirectoryDialog } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { OpenMultipleFilesDialog, OpenDirectoryDialog } from '../../bindings/github.com/duihao/duihao/app'
 import {
   ListWebDavDir, PreviewWebDavFile, UploadToWebDav, DeleteWebDavEntry,
   CreateWebDavDir, OpenWebDavEntryDir,
-} from '../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/webdavservice'
+} from '../../bindings/github.com/duihao/duihao/backend/duihao/service/webdavservice'
 
 interface Entry {
   name: string; path: string; dir: boolean; size: number; modTime: string; ext?: string

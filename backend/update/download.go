@@ -17,7 +17,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/log"
+	"github.com/duihao/duihao/backend/log"
 )
 
 // downloadHTTPClient tolerates large assets: no overall timeout, but bounded
@@ -46,7 +46,7 @@ func updateCacheDir() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	dir = filepath.Join(dir, "uniTerm", "updates")
+	dir = filepath.Join(dir, "Duihao", "updates")
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return "", err
 	}
@@ -164,7 +164,7 @@ func downloadToFile(url, dest, label string, onProgress func(Progress)) error {
 	if err != nil {
 		return err
 	}
-	req.Header.Set("User-Agent", "uniTerm")
+	req.Header.Set("User-Agent", "Duihao")
 
 	resp, err := downloadHTTPClient().Do(req)
 	if err != nil {
@@ -253,7 +253,7 @@ func extractTarGzBinary(stage, tarPath string) (string, error) {
 			continue
 		}
 		name := filepath.Base(hdr.Name)
-		if strings.EqualFold(name, "uniterm") || strings.EqualFold(name, "uniterm.exe") {
+		if strings.EqualFold(name, "duihao") || strings.EqualFold(name, "duihao.exe") {
 			binaryPath = filepath.Join(stage, name)
 			out, err := os.OpenFile(binaryPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
 			if err != nil {
@@ -273,7 +273,7 @@ func extractTarGzBinary(stage, tarPath string) (string, error) {
 	return binaryPath, nil
 }
 
-// extractPortableZip extracts the Windows portable zip: uniTerm.exe plus the
+// extractPortableZip extracts the Windows portable zip: duihao.exe plus the
 // plugins/ directory (VcXsrv). Returns the extracted exe path.
 func extractPortableZip(stage, zipPath string) (string, error) {
 	zr, err := zip.OpenReader(zipPath)
@@ -293,9 +293,9 @@ func extractPortableZip(stage, zipPath string) (string, error) {
 		if strings.Contains(f.Name, "..") {
 			continue
 		}
-		// "uniterm.exe" is the Windows payload; a bare "uniterm" covers the
+		// "duihao.exe" is the Windows payload; a bare "duihao" covers the
 		// macOS zip and the executable inside a fallback .app-bundle zip.
-		if strings.EqualFold(base, "uniterm.exe") || strings.EqualFold(base, "uniterm") {
+		if strings.EqualFold(base, "duihao.exe") || strings.EqualFold(base, "duihao") {
 			binaryPath = dest
 		}
 		if err := os.MkdirAll(filepath.Dir(dest), 0755); err != nil {
@@ -318,7 +318,7 @@ func extractPortableZip(stage, zipPath string) (string, error) {
 		}
 	}
 	if binaryPath == "" {
-		return "", fmt.Errorf("uniterm executable not found in %s", zipPath)
+		return "", fmt.Errorf("duihao executable not found in %s", zipPath)
 	}
 	return binaryPath, nil
 }

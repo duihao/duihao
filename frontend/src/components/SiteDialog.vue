@@ -299,13 +299,13 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useI18n } from '../i18n'
-import { OpenDirectoryDialog } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { OpenDirectoryDialog } from '../../bindings/github.com/duihao/duihao/app'
 import {
   CreateSite, UpdateSite, WriteHosts, CreateSiteErrorPages, SiteDefaultRoot, SiteDefaultPorts,
-} from '../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/siteservice'
-import { ListInstances, ListPlugins, CreateInstance } from '../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/plugincenterservice'
-import { ListFTPAccounts, CreateFTPAccount } from '../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/ftpservice'
-import { CreateMySQLDatabase } from '../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/mysqlservice'
+} from '../../bindings/github.com/duihao/duihao/backend/duihao/service/siteservice'
+import { ListInstances, ListPlugins, CreateInstance } from '../../bindings/github.com/duihao/duihao/backend/duihao/service/plugincenterservice'
+import { ListFTPAccounts, CreateFTPAccount } from '../../bindings/github.com/duihao/duihao/backend/duihao/service/ftpservice'
+import { CreateMySQLDatabase } from '../../bindings/github.com/duihao/duihao/backend/duihao/service/mysqlservice'
 
 interface InstanceView {
   id: string; plugin: string; version: string; name: string

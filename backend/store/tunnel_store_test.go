@@ -3,7 +3,7 @@ package store
 import (
 	"testing"
 
-	"github.com/ys-ll/uniterm/backend/session"
+	"github.com/duihao/duihao/backend/session"
 )
 
 // TestTunnelStoreSyncRoundTrip pins the sync exchange contract for

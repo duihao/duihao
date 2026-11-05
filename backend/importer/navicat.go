@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ys-ll/uniterm/backend/session"
+	"github.com/duihao/duihao/backend/session"
 	"golang.org/x/crypto/blowfish"
 )
 
@@ -26,7 +26,7 @@ var (
 	navicatNcxIV  = []byte("libcciv libcciv ")
 )
 
-// navicatConnType maps NCX ConnType values directly onto uniterm database
+// navicatConnType maps NCX ConnType values directly onto Duihao database
 // targets (config type + dbType + default port).
 var navicatConnType = map[string]connTarget{
 	"MYSQL":      {Type: "database", DBType: "mysql", Port: 3306},

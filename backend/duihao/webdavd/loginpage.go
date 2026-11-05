@@ -9,7 +9,7 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/hubusers"
+	"github.com/duihao/duihao/backend/duihao/webdavd/hubusers"
 )
 
 // 登录页与登录/登出端点（/ -login /-logout /-q，下划线开头的保留路径不参与 DAV）。

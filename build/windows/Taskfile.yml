@@ -15,12 +15,21 @@ vars:
   CROSS_IMAGE: wails-cross
 
   # Release version injected into the binary via -ldflags "-X main.Version=...".
-  # Empty for dev builds (main.Version stays "dev").
-  VERSION: '{{.VERSION | default ""}}'
+  # Read from build/windows/VERSION (single source of truth, see
+  # build/windows/sync_version.py). Empty only for `wails dev`.
+  VERSION:
+    sh: cat build/windows/VERSION 2>/dev/null | tr -d '\r\n' || cat ../windows/VERSION 2>/dev/null | tr -d '\r\n' || echo ""
+
 
 tasks:
   build:
     summary: Builds the application for Windows
+    deps:
+      # Keep exe properties / installer / runtime version in lockstep with the
+      # single source build/windows/VERSION before anything consumes them
+      # (generate:syso reads info.json; makensis reads project.nsi defaults).
+      # Idempotent: no-ops when already in sync.
+      - task: version:sync
     cmds:
       # Auto-detect CGO: if CGO_ENABLED=1, use Docker; otherwise use native Go cross-compile
       - task: '{{if and (ne OS "windows") (eq .CGO_ENABLED "1")}}build:docker{{else}}build:native{{end}}'
@@ -31,10 +40,31 @@ tasks:
           OBFUSCATED: '{{.OBFUSCATED}}'
           GARBLE_ARGS: '{{.GARBLE_ARGS}}'
           VERSION: '{{.VERSION}}'
+          BUILD_COMMIT: '{{.BUILD_COMMIT}}'
+          BUILD_DATE: '{{.BUILD_DATE}}'
           INFO_JSON: '{{.INFO_JSON | default ""}}'
     vars:
       # Default to CGO_ENABLED=0 if not explicitly set
       CGO_ENABLED: '{{.CGO_ENABLED | default "0"}}'
+      # Fallback when this file's tasks are invoked directly
+      # (e.g. `wails3 task windows:create:nsis:installer`), bypassing the
+      # root Taskfile that normally reads build/windows/VERSION and forwards
+      # it here. Without this the binary would keep main.Version="dev"
+      # (devBuild=true → update downloads silently disabled).
+      VERSION:
+        sh: cat "{{.ROOT_DIR}}/build/windows/VERSION" 2>/dev/null | tr -d '\r\n' || echo ""
+      BUILD_COMMIT:
+        sh: cd "{{.ROOT_DIR}}" && git rev-parse --short HEAD 2>/dev/null | tr -d '\r\n' || echo ""
+      BUILD_DATE:
+        sh: date -u '+%Y-%m-%dT%H:%M' 2>/dev/null | tr -d '\r\n' || echo ""
+
+  version:sync:
+    summary: Syncs build/windows/VERSION into config.yml / info.json / project.nsi
+    cmds:
+      - cmd: python "{{.ROOT_DIR}}/build/windows/sync_version.py"
+        platforms: [windows]
+      - cmd: python3 "{{.ROOT_DIR}}/build/windows/sync_version.py"
+        platforms: [linux, darwin]
 
   build:native:
     summary: Builds the application using native Go cross-compilation
@@ -68,7 +98,7 @@ tasks:
       - cmd: rm -f *.syso
         platforms: [linux, darwin]
     vars:
-      BUILD_FLAGS: '{{if eq .DEV "true"}}{{if or .EXTRA_TAGS (eq .OBFUSCATED "true")}}-tags {{if eq .OBFUSCATED "true"}}wails_obfuscated{{if .EXTRA_TAGS}},{{end}}{{end}}{{.EXTRA_TAGS}} {{end}}-buildvcs=false -gcflags=all="-l"{{else}}-tags production{{if eq .OBFUSCATED "true"}},wails_obfuscated{{end}}{{if .EXTRA_TAGS}},{{.EXTRA_TAGS}}{{end}} -trimpath -buildvcs=false -ldflags="-w -s -H windowsgui{{if .VERSION}} -X main.Version={{.VERSION}}{{end}}"{{end}}'
+      BUILD_FLAGS: '{{if eq .DEV "true"}}{{if or .EXTRA_TAGS (eq .OBFUSCATED "true")}}-tags {{if eq .OBFUSCATED "true"}}wails_obfuscated{{if .EXTRA_TAGS}},{{end}}{{end}}{{.EXTRA_TAGS}} {{end}}-buildvcs=false -gcflags=all="-l"{{else}}-tags production{{if eq .OBFUSCATED "true"}},wails_obfuscated{{end}}{{if .EXTRA_TAGS}},{{.EXTRA_TAGS}}{{end}} -trimpath -buildvcs=false -ldflags="-w -s -H windowsgui{{if .VERSION}} -X main.Version={{.VERSION}}{{end}}{{if .BUILD_COMMIT}} -X main.BuildCommit={{.BUILD_COMMIT}}{{end}}{{if .BUILD_DATE}} -X main.BuildDate={{.BUILD_DATE}}{{end}}"{{end}}'
     env:
       GOOS: windows
       CGO_ENABLED: '{{.CGO_ENABLED | default "0"}}'

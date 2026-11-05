@@ -67,7 +67,7 @@ func syncMetaDir() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	dir := filepath.Join(cfgDir, "uniTerm")
+	dir := filepath.Join(cfgDir, "Duihao")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", err
 	}

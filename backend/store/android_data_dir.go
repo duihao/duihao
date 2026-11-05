@@ -16,7 +16,7 @@ func resolveAndroidDataDir(base string) (DataDir, error) {
 	if base == "" {
 		return DataDir{}, errors.New("android: storage path unavailable (bridge not attached)")
 	}
-	dir := filepath.Join(base, "uniTerm")
+	dir := filepath.Join(base, "Duihao")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return DataDir{}, err
 	}

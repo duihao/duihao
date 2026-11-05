@@ -14,7 +14,7 @@ import (
 	"strings"
 	"unicode/utf16"
 
-	"github.com/ys-ll/uniterm/backend/session"
+	"github.com/duihao/duihao/backend/session"
 	"golang.org/x/crypto/pbkdf2"
 )
 
@@ -173,7 +173,7 @@ func parseMRemoteNG(data []byte, opts ParseOptions) (*ImportResult, error) {
 		if typ == "rdp" {
 			conn.RdpDomain = values.Domain
 			// RdpProtocol maps these to ConnectToAdministerServer and EnableCredSspSupport,
-			// the same ActiveX properties used by uniTerm's RDP implementation.
+			// the same ActiveX properties used by Duihao's RDP implementation.
 			conn.RdpAdminSession = mRemoteNGTrue(values.ConnectToConsole)
 			conn.RdpEnableNLA = mRemoteNGTrue(values.UseCredSsp)
 		}

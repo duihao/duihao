@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/log"
-	"github.com/ys-ll/uniterm/licence"
+	"github.com/duihao/duihao/backend/log"
+	"github.com/duihao/duihao/licence"
 )
 
 // ─────────────────────────────────────────────────────────────

@@ -14,7 +14,7 @@ import (
 	"path/filepath"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
-	"github.com/ys-ll/uniterm/backend/utils"
+	"github.com/duihao/duihao/backend/utils"
 	"github.com/zalando/go-keyring"
 )
 
@@ -32,7 +32,7 @@ func syncMetaDir() (string, error) {
 	if base == "" {
 		return "", errors.New("android: storage path unavailable (bridge not attached)")
 	}
-	dir := filepath.Join(base, "uniTerm-sync-meta")
+	dir := filepath.Join(base, "Duihao-sync-meta")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", err
 	}

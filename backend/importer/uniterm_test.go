@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ys-ll/uniterm/backend/session"
+	"github.com/duihao/duihao/backend/session"
 )
 
 func sampleStore() session.ConnectionStoreData {

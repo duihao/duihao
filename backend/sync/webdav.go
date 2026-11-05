@@ -5,7 +5,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/ys-ll/uniterm/backend/session"
+	"github.com/duihao/duihao/backend/session"
 )
 
 // webdavFS adapts a WebDAV file session to RemoteFS, so WebDAV sync goes

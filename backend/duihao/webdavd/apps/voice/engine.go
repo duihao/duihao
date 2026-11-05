@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/credentials"
+	"github.com/duihao/duihao/backend/duihao/webdavd/credentials"
 )
 
 const (

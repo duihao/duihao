@@ -38,7 +38,7 @@
 import { ref, watch } from 'vue'
 import { useI18n } from '../i18n'
 import { useCredentialStore } from '../stores/credentialStore'
-import { OpenDirectoryDialog } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { OpenDirectoryDialog } from '../../bindings/github.com/duihao/duihao/app'
 
 const props = defineProps<{ visible: boolean; firstRun: boolean }>()
 const emit = defineEmits<{ (e: 'update:visible', v: boolean): void; (e: 'done', restart: boolean): void }>()

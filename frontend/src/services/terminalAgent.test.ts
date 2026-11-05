@@ -20,7 +20,7 @@ vi.mock('@wailsio/runtime', () => ({
   Events: { On: vi.fn(() => () => {}), Off: vi.fn() },
 }))
 
-vi.mock('../../bindings/github.com/ys-ll/uniterm/app', () => ({
+vi.mock('../../bindings/github.com/duihao/duihao/app', () => ({
   SessionWrite: mockSessionWrite,
   CaptureScreen: mockCaptureScreen,
   SendKey: mockSendKey,
@@ -262,8 +262,8 @@ describe('executeCommand', () => {
     const output = 'a'.repeat(65535) + '\u4e2d' + 'tail'
     // Supply the actual base64 wire pages, splitting the Chinese character.
     const bytes = new TextEncoder().encode(output)
-    const { PollForeground } = await import('../../bindings/github.com/ys-ll/uniterm/app')
-    const spy = vi.spyOn(await import('../../bindings/github.com/ys-ll/uniterm/app'), 'PollForeground')
+    const { PollForeground } = await import('../../bindings/github.com/duihao/duihao/app')
+    const spy = vi.spyOn(await import('../../bindings/github.com/duihao/duihao/app'), 'PollForeground')
     const encode = (b: Uint8Array) => btoa(Array.from(b, c => String.fromCharCode(c)).join(''))
     spy.mockResolvedValueOnce([encode(bytes.slice(0, 65536)), '', 0, 'exited'] as any)
       .mockResolvedValueOnce([encode(bytes.slice(65536)), '', 0, 'exited'] as any)

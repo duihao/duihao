@@ -282,17 +282,17 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from '../../i18n'
 import { Browser, Events } from '@wailsio/runtime'
-import { OpenAppWindow, OpenManageWindow, OpenITTool, OpenMembershipWindow, OpenV6Window, OpenFixIpWindow, LicenceState, LicenceLogout, OpenPathInExplorer, ShowITWindow, ClearAppCache } from '../../../bindings/github.com/ys-ll/uniterm/app'
+import { OpenAppWindow, OpenManageWindow, OpenITTool, OpenMembershipWindow, OpenV6Window, OpenFixIpWindow, LicenceState, LicenceLogout, OpenPathInExplorer, ShowITWindow, ClearAppCache } from '../../../bindings/github.com/duihao/duihao/app'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import WebDavManageDialog from '../../components/WebDavManageDialog.vue'
 import DavQuickDialog from '../../components/DavQuickDialog.vue'
 import UrlQrDialog from '../../components/UrlQrDialog.vue'
 import {
   ListInstances, CreateInstance, StartInstance, StopInstance, ListPlugins
-} from '../../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/plugincenterservice'
+} from '../../../bindings/github.com/duihao/duihao/backend/duihao/service/plugincenterservice'
 import {
   GetWebDavConnInfo, GetStorageStats, ListWebDavShares, EnableLanAccess, NASEntryURL
-} from '../../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/webdavservice'
+} from '../../../bindings/github.com/duihao/duihao/backend/duihao/service/webdavservice'
 
 const { t } = useI18n()
 

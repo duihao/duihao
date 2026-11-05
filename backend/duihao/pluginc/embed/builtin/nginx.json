@@ -14,6 +14,7 @@
       "platforms": {
         "windows-amd64": {
           "url": "https://nginx.org/download/nginx-1.15.11.zip",
+          "urls": ["https://mirrors.huaweicloud.com/nginx/nginx-1.15.11.zip"],
           "sha256": "",
           "size": 0
         }
@@ -72,7 +73,7 @@
       {
         "action": "write",
         "dst": "{dir}/nginx.conf",
-        "from": "worker_processes {set:nginx.worker_processes};\n# reload 后旧 worker 最多 2s 退出：Windows 下旧 worker 会继续接新连接，\n# 不设上限时\"改完配置刷新还是旧行为\"会持续很久\nworker_shutdown_timeout 2s;\npid {dir}/logs/nginx.pid;\nerror_log {dir}/logs/error.log {set:nginx.error_log_level};\n\nevents {\n    worker_connections {set:nginx.worker_connections};\n}\n\nhttp {\n    server_names_hash_bucket_size {set:nginx.server_names_hash};\n\n    # MIME 表取自运行时自带 conf/mime.types（否则 css/js/图片类型全错）\n    include {runtime}/conf/mime.types;\n    default_type application/octet-stream;\n\n    # 响应编码固定 UTF-8：不写这一行，中文页面会被浏览器按 GBK 猜成乱码\n    charset utf-8;\n\n    access_log {dir}/logs/access.log;\n    client_body_temp_path {dir}/temp/client_body_temp;\n    proxy_temp_path {dir}/temp/proxy_temp;\n    fastcgi_temp_path {dir}/temp/fastcgi_temp;\n    uwsgi_temp_path {dir}/temp/uwsgi_temp;\n    scgi_temp_path {dir}/temp/scgi_temp;\n\n    client_max_body_size {set:nginx.client_max_body_size}m;\n    keepalive_timeout {set:nginx.keepalive_timeout}s;\n    keepalive_requests {set:nginx.keepalive_requests};\n    sendfile {setonoff:nginx.sendfile};\n    tcp_nopush {setonoff:nginx.tcp_nopush};\n    tcp_nodelay {setonoff:nginx.tcp_nodelay};\n    reset_timedout_connection {setonoff:nginx.reset_timedout};\n\n    include {dir}/sites/*.conf;\n\n    server {\n        listen {port:http};\n        server_name localhost;\n        charset utf-8;\n        location / {\n            root {dir}/www;\n            index {set:nginx.index};\n        }\n    }\n}\n"
+        "from": "worker_processes {set:nginx.worker_processes};\n# reload 后旧 worker 最多 2s 退出：Windows 下旧 worker 会继续接新连接，\n# 不设上限时\"改完配置刷新还是旧行为\"会持续很久\nworker_shutdown_timeout 2s;\npid \"{dir}/logs/nginx.pid\";\nerror_log \"{dir}/logs/error.log\" {set:nginx.error_log_level};\n\nevents {\n    worker_connections {set:nginx.worker_connections};\n}\n\nhttp {\n    server_names_hash_bucket_size {set:nginx.server_names_hash};\n\n    # MIME 表取自运行时自带 conf/mime.types（否则 css/js/图片类型全错）\n    include \"{runtime}/conf/mime.types\";\n    default_type application/octet-stream;\n\n    # 响应编码固定 UTF-8：不写这一行，中文页面会被浏览器按 GBK 猜成乱码\n    charset utf-8;\n\n    access_log \"{dir}/logs/access.log\";\n    client_body_temp_path \"{dir}/temp/client_body_temp\";\n    proxy_temp_path \"{dir}/temp/proxy_temp\";\n    fastcgi_temp_path \"{dir}/temp/fastcgi_temp\";\n    uwsgi_temp_path \"{dir}/temp/uwsgi_temp\";\n    scgi_temp_path \"{dir}/temp/scgi_temp\";\n\n    client_max_body_size {set:nginx.client_max_body_size}m;\n    keepalive_timeout {set:nginx.keepalive_timeout}s;\n    keepalive_requests {set:nginx.keepalive_requests};\n    sendfile {setonoff:nginx.sendfile};\n    tcp_nopush {setonoff:nginx.tcp_nopush};\n    tcp_nodelay {setonoff:nginx.tcp_nodelay};\n    reset_timedout_connection {setonoff:nginx.reset_timedout};\n\n    include \"{dir}/sites/*.conf\";\n\n    server {\n        listen {port:http};\n        server_name localhost;\n        charset utf-8;\n        location / {\n            root \"{dir}/www\";\n            index {set:nginx.index};\n        }\n    }\n}\n"
       },
       {
         "action": "write",
@@ -103,7 +104,7 @@
         "reload"
       ]
     },
-    "signature": "2026-10-22-m10-sites-v1",
+    "signature": "2026-11-03-quote-paths",
     "reloadSettleMs": 600
   },
   "stop": {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ys-ll/uniterm/backend/utils"
+	"github.com/duihao/duihao/backend/utils"
 )
 
 // ConfigureRepoRemote sets up (or adopts) a snapshot remote for any of the

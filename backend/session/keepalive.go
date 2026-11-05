@@ -3,7 +3,7 @@ package session
 import (
 	"sync"
 
-	"github.com/ys-ll/uniterm/backend/log"
+	"github.com/duihao/duihao/backend/log"
 )
 
 // Foreground keepalive. On Android the app process is frozen a few seconds

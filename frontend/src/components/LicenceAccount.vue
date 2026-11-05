@@ -91,7 +91,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from '../i18n'
 import { Browser } from '@wailsio/runtime'
-import { LicenceLogin, LicenceLogout, LicenceSendCode, LicenceState } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { LicenceLogin, LicenceLogout, LicenceSendCode, LicenceState } from '../../bindings/github.com/duihao/duihao/app'
 
 const { t } = useI18n()
 

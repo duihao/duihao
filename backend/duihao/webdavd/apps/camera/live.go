@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/appkit"
+	"github.com/duihao/duihao/backend/duihao/webdavd/appkit"
 )
 
 // 实时预览：一路 ffmpeg 转 MJPEG，多个人看同一路只起一个进程（fan-out）。

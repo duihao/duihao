@@ -199,7 +199,7 @@ import { Browser, Window } from '@wailsio/runtime'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useI18n } from './i18n'
 import { useWindowDrag } from './composables/useWindowDrag'
-import { V6Probe, V6CheckOut, V6Enable, V6Disable, V6SaveDDNS, V6UpdateNow } from '../bindings/github.com/ys-ll/uniterm/app'
+import { V6Probe, V6CheckOut, V6Enable, V6Disable, V6SaveDDNS, V6UpdateNow } from '../bindings/github.com/duihao/duihao/app'
 
 interface V6State {
   enabled: boolean

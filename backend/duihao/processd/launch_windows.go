@@ -165,8 +165,12 @@ func procAlive(p *launchedProc) bool {
 }
 
 // buildCommandLine 按 Windows 规则拼接命令行（首参不转义，后续逐个转义）。
+// buildCommandLine 拼 argv[0]+args。argv[0] 必须 EscapeArg：安装到
+// "D:\Program Files\Duihao" 这类含空格路径时，不引号会让子进程把
+// `D:\Program` 当 argv[0]，余下 `Files\Duihao\...\nginx.exe` 变成第一个参数
+// （实测 nginx 报 `invalid option: "Files\Duihao\...\nginx.exe"`，mysqld 直接弃用配置）。
 func buildCommandLine(bin string, args []string) string {
-	line := bin
+	line := syscall.EscapeArg(bin)
 	if len(args) > 0 {
 		line += " " + escapeArgs(args)
 	}

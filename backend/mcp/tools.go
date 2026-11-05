@@ -47,9 +47,9 @@ func (s *Server) registerTools(srv *mcp.Server) {
 	if s.execMode() != ModeForeground {
 		mcp.AddTool(srv, &mcp.Tool{
 			Name: "exec_command",
-			Description: "Run a shell command on a remote host over an existing connected uniTerm SSH session (non-interactive; separate stdout/stderr; real exit code). " +
+			Description: "Run a shell command on a remote host over an existing connected Duihao SSH session (non-interactive; separate stdout/stderr; real exit code). " +
 				"Prefer this over writing into the user's terminal. Long-running commands (longer than ~20s) return a commandId you can poll with get_command_output. " +
-				"Each command may require user approval in the uniTerm window.",
+				"Each command may require user approval in the Duihao window.",
 		}, s.toolExecCommand)
 
 		mcp.AddTool(srv, &mcp.Tool{
@@ -64,7 +64,7 @@ func (s *Server) registerTools(srv *mcp.Server) {
 	}
 
 	// ── Files group (SFTP over the session's connection) ─────────────
-	// ── Unified async-job group (uniterm_exec / result / interrupt) ──
+	// ── Unified async-job group (duihao_exec / result / interrupt) ──
 	s.registerJobTools(srv)
 
 	s.registerFileTools(srv)

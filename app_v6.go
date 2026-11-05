@@ -33,11 +33,11 @@ import (
 
 	_ "modernc.org/sqlite"
 
-	"github.com/ys-ll/uniterm/backend/log"
+	"github.com/duihao/duihao/backend/log"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/apps/remote"
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/credentials"
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/sysinfo"
+	"github.com/duihao/duihao/backend/duihao/webdavd/apps/remote"
+	"github.com/duihao/duihao/backend/duihao/webdavd/credentials"
+	"github.com/duihao/duihao/backend/duihao/webdavd/sysinfo"
 )
 
 // V6State IPv6 直连弹窗一次渲染所需的全部状态。

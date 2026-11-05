@@ -1,4 +1,4 @@
-// Package mcp exposes uniTerm as an MCP (Model Context Protocol) server so
+// Package mcp exposes Duihao as an MCP (Model Context Protocol) server so
 // external AI agents (Claude Code, Codex CLI, Kimi CLI, ...) can run commands
 // on the user's saved / live SSH connections without ever seeing a password
 // or private key: the app holds the credentials, executes through its own
@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"github.com/ys-ll/uniterm/backend/log"
+	"github.com/duihao/duihao/backend/log"
 )
 
 // DefaultPort is the MCP endpoint's listen port. Uncommon on purpose; the
@@ -102,7 +102,7 @@ type Env struct {
 	ResolveLocalPath func(path string) (resolved string, err error)
 	// Foreground runs a command in the live terminal PTY as an async job and
 	// completes on idle-settle / EOF rather than an end marker. When nil the
-	// unified uniterm_exec tool reports foreground mode unsupported; background
+	// unified duihao_exec tool reports foreground mode unsupported; background
 	// mode still works over Sessions/Commands.
 	Foreground ForegroundJobs
 	// ExecMode returns the user-selected execution mode: "background" (SSH
@@ -113,11 +113,11 @@ type Env struct {
 	ExecMode func() string
 	// Capture snapshots a live session's terminal screen (redraw-resolved,
 	// like what the user sees). Used by the foreground toolset's
-	// uniterm_capture; nil disables the tool.
+	// duihao_capture; nil disables the tool.
 	Capture func(sessionID string, tailLines int) (string, error)
 	// SendKey types text or a control key into a live session's terminal.
 	// text is typed verbatim (sendEnter appends the shell newline); control
-	// is "ctrl_c" | "ctrl_d" | "enter". Used by uniterm_send_key; nil
+	// is "ctrl_c" | "ctrl_d" | "enter". Used by duihao_send_key; nil
 	// disables the tool.
 	SendKey func(sessionID, text, control string, sendEnter bool) error
 	// Collect starts read-only output observation using the foreground job engine.
@@ -226,7 +226,7 @@ type AuditEntry struct {
 	Error    string `json:"error,omitempty"`
 }
 
-// Server is the uniTerm MCP server: HTTP listener + SDK server + token auth.
+// Server is the Duihao MCP server: HTTP listener + SDK server + token auth.
 type Server struct {
 	env Env
 
@@ -238,7 +238,7 @@ type Server struct {
 	port    int
 	started bool
 	// finishedBg caches sync-completed background results for the unified
-	// uniterm_exec_result poll path (keyed by bg- jobId).
+	// duihao_exec_result poll path (keyed by bg- jobId).
 	finishedBg       map[string]finishedBackground
 	foregroundOutput map[string]terminalOutputOptions
 }
@@ -281,7 +281,7 @@ func (s *Server) Start(port int) error {
 	s.Stop()
 
 	srv := mcp.NewServer(&mcp.Implementation{
-		Name:    "uniterm",
+		Name:    "Duihao",
 		Version: "1.0.0",
 	}, nil)
 	s.registerTools(srv)
@@ -353,7 +353,7 @@ func (s *Server) authMiddleware(next http.Handler) http.Handler {
 			info, ok := s.tokens[key]
 			s.mu.Unlock()
 			if !ok {
-				w.Header().Set("WWW-Authenticate", `Bearer realm="uniterm"`)
+				w.Header().Set("WWW-Authenticate", `Bearer realm="duihao"`)
 				http.Error(w, "invalid or missing token", http.StatusUnauthorized)
 				return
 			}

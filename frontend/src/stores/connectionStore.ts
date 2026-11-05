@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { SaveConnections, LoadConnections } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { SaveConnections, LoadConnections } from '../../bindings/github.com/duihao/duihao/app'
 import { Events } from '@wailsio/runtime'
 import type { ConnectionConfig, ConnectionGroup } from '../types/session'
 

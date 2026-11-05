@@ -2,7 +2,7 @@
 package service
 
 import (
-	"github.com/ys-ll/uniterm/backend/duihao/instance"
+	"github.com/duihao/duihao/backend/duihao/instance"
 )
 
 // GetSettingsSchema 设置对话框数据：分组字段定义 + 当前值 + 生效方式。

@@ -12,14 +12,14 @@ export function resolveTerminalThemeName(
   terminalTheme: string | undefined,
   appTheme: 'dark' | 'light'
 ): string {
-  if (terminalTheme !== FOLLOW_APP_THEME) return terminalTheme || 'uniterm-dark'
-  return appTheme === 'light' ? 'uniterm-light' : 'uniterm-dark'
+  if (terminalTheme !== FOLLOW_APP_THEME) return terminalTheme || 'duihao-dark'
+  return appTheme === 'light' ? 'duihao-light' : 'duihao-dark'
 }
 
 /**
  * Resolve the real background color for an xterm theme.
  *
- * When the user enables a custom background image, uniterm previously set
+ * When the user enables a custom background image, Duihao previously set
  * `theme.background = 'rgba(0,0,0,0)'` so the canvas would show the image
  * through. xterm.js however parses that string and stores `rgb:0/0/0` as the
  * background — which means OSC 11 (background query) responses also report

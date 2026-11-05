@@ -9,10 +9,10 @@ import (
 	"strings"
 	"sync"
 
-	duihao "github.com/ys-ll/uniterm/backend/duihao"
-	"github.com/ys-ll/uniterm/backend/duihao/audit"
-	"github.com/ys-ll/uniterm/backend/duihao/deploy"
-	"github.com/ys-ll/uniterm/backend/duihao/site"
+	duihao "github.com/duihao/duihao/backend/duihao"
+	"github.com/duihao/duihao/backend/duihao/audit"
+	"github.com/duihao/duihao/backend/duihao/deploy"
+	"github.com/duihao/duihao/backend/duihao/site"
 )
 
 // DeployEventName 部署进度事件名（前端 EventsOn 监听）。

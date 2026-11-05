@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/ys-ll/uniterm/backend/kdf"
+	"github.com/duihao/duihao/backend/kdf"
 )
 
 type fakeKeychain struct {

@@ -326,7 +326,7 @@ import {
   EsOpenIndex,
   EsCloseIndex,
   EsRest,
-} from '../../bindings/github.com/ys-ll/uniterm/app'
+} from '../../bindings/github.com/duihao/duihao/app'
 import type { EsIndexInfo, EsClusterHealth as EsHealth, EsClusterInfo as EsInfo, EsRestResult } from '../types/elasticsearch'
 
 const props = defineProps<{ sessionId: string }>()

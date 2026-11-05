@@ -100,7 +100,7 @@ import { useSettingsStore } from '../stores/settingsStore'
 import { useI18n } from '../i18n'
 import type { CustomTerminalTheme, TerminalThemeColors } from '../types/settings'
 import { parseItermColors, buildItermColors } from '../composables/itermcolorsParser'
-import { OpenFileDialogFiltered, SaveFileDialogFiltered, ReadFileBase64, WriteFileBase64 } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { OpenFileDialogFiltered, SaveFileDialogFiltered, ReadFileBase64, WriteFileBase64 } from '../../bindings/github.com/duihao/duihao/app'
 
 const props = defineProps<{
   modelValue: boolean

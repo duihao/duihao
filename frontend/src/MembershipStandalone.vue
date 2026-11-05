@@ -298,7 +298,7 @@ import {
   LicenceState,
   LicenceWechatPoll,
   LicenceWechatQR,
-} from '../bindings/github.com/ys-ll/uniterm/app'
+} from '../bindings/github.com/duihao/duihao/app'
 
 const { t } = useI18n()
 const { onDragDown } = useWindowDrag()

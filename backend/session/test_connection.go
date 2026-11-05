@@ -31,7 +31,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/ys-ll/uniterm/backend/database"
+	"github.com/duihao/duihao/backend/database"
 )
 
 // ProbeConnection dispatches a connectivity probe by config.Type.

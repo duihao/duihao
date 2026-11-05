@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { LoadProxies, SaveProxies } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { LoadProxies, SaveProxies } from '../../bindings/github.com/duihao/duihao/app'
 import { Events } from '@wailsio/runtime'
 import type { Proxy, ProxyStoreData } from '../types/proxy'
 

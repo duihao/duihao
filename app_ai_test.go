@@ -13,7 +13,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ys-ll/uniterm/backend/store"
+	"github.com/duihao/duihao/backend/store"
 )
 
 // TestLLMProxyEnvFallback verifies that llmProxy resolves proxies declared

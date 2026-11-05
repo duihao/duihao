@@ -5,7 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 
-	"github.com/ys-ll/uniterm/backend/credentials"
+	"github.com/duihao/duihao/backend/credentials"
 	"golang.org/x/crypto/pbkdf2"
 )
 

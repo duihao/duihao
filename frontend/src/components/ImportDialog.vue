@@ -8,7 +8,7 @@
     <el-form label-width="6.25rem">
       <el-form-item :label="t('importExport.importType')">
         <el-select v-model="format" style="width:100%">
-          <el-option label="uniTerm (.utm)" value="uniterm" />
+          <el-option label="Duihao (.utm)" value="duihao" />
           <el-option label="MobaXterm (.mxtsessions)" value="mobaxterm" />
           <el-option label="mRemoteNG (confCons.xml)" value="mremoteng" />
           <el-option label="OpenSSH config (~/.ssh/config)" value="openssh" />
@@ -32,7 +32,7 @@
           <el-button @click="pickDBeaverDir">{{ t('importExport.chooseFile') }}</el-button>
         </div>
       </el-form-item>
-      <el-form-item v-if="format === 'uniterm' || format === 'windterm' || format === 'mremoteng'" :label="t('importExport.importPassword')">
+      <el-form-item v-if="format === 'duihao' || format === 'windterm' || format === 'mremoteng'" :label="t('importExport.importPassword')">
         <el-input v-model="password" type="password" show-password />
       </el-form-item>
     </el-form>
@@ -47,19 +47,19 @@
 import { ref, watch } from 'vue'
 import { useI18n } from '../i18n'
 import { msg } from '../services/message'
-import { ParseImportFile, ApplyImport, OpenFileDialogFiltered, OpenDirectoryDialog } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { ParseImportFile, ApplyImport, OpenFileDialogFiltered, OpenDirectoryDialog } from '../../bindings/github.com/duihao/duihao/app'
 
 const props = defineProps<{ visible: boolean }>()
 const emit = defineEmits<{ (e: 'update:visible', v: boolean): void; (e: 'done', count: number): void }>()
 
 const { t } = useI18n()
-const format = ref('uniterm')
+const format = ref('duihao')
 const srcPath = ref('')
 const password = ref('')
 const importing = ref(false)
 
 const FILTERS: Record<string, { display: string; pattern: string }> = {
-  uniterm: { display: 'uniTerm (*.utm)', pattern: '*.utm' },
+  duihao: { display: 'Duihao (*.utm)', pattern: '*.utm' },
   xshell: { display: 'Xshell (*.xts)', pattern: '*.xts' },
   mobaxterm: { display: 'MobaXterm (*.mxtsessions)', pattern: '*.mxtsessions' },
   mremoteng: { display: 'mRemoteNG (confCons.xml)', pattern: '*.xml' },
@@ -70,7 +70,7 @@ const FILTERS: Record<string, { display: string; pattern: string }> = {
 }
 
 watch(() => props.visible, (v) => {
-  if (v) { format.value = 'uniterm'; srcPath.value = ''; password.value = '' }
+  if (v) { format.value = 'duihao'; srcPath.value = ''; password.value = '' }
 })
 
 function onCancel() { emit('update:visible', false) }
@@ -93,7 +93,7 @@ async function onImport() {
     // DBeaver with an empty path means "auto-detect the default workspace".
     const path = (format.value === 'dbeaver' && !srcPath.value) ? '' : srcPath.value
     const result = await ParseImportFile(format.value, path,
-      (format.value === 'uniterm' || format.value === 'windterm' || format.value === 'mremoteng') ? password.value : '')
+      (format.value === 'duihao' || format.value === 'windterm' || format.value === 'mremoteng') ? password.value : '')
     await ApplyImport({ groups: result.groups || [], connections: result.connections || [] } as any)
     const count = (result.connections || []).length
     if (result.warnings && result.warnings.length) {

@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd"
+	"github.com/duihao/duihao/backend/duihao/webdavd"
 )
 
 // DavEntry 共享里的一个条目。

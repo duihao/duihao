@@ -13,7 +13,7 @@ import (
 	"strings"
 	stdsync "sync"
 
-	"github.com/ys-ll/uniterm/backend/kdf"
+	"github.com/duihao/duihao/backend/kdf"
 )
 
 // Keychain is the subset of sync.Keychain this package needs.

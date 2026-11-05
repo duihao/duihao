@@ -23,7 +23,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { Window } from '@wailsio/runtime'
-import { HideFloatMenu, PaletteToggle, ShowFloatMenu } from '../bindings/github.com/ys-ll/uniterm/app'
+import { HideFloatMenu, PaletteToggle, ShowFloatMenu } from '../bindings/github.com/duihao/duihao/app'
 
 const el = ref<HTMLDivElement | null>(null)
 const dragging = ref(false)

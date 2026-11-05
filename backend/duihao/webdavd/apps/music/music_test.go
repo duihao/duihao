@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/appkit"
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/store"
+	"github.com/duihao/duihao/backend/duihao/webdavd/appkit"
+	"github.com/duihao/duihao/backend/duihao/webdavd/store"
 )
 
 // ─── 造测试文件 ───

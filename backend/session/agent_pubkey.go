@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ys-ll/uniterm/backend/utils"
+	"github.com/duihao/duihao/backend/utils"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
 )

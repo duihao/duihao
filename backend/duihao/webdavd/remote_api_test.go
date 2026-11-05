@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/apps/remote"
+	"github.com/duihao/duihao/backend/duihao/webdavd/apps/remote"
 )
 
 // 远程访问 HTTP 层：状态结构 / DDNS 保存（令牌只进不出）/ frpc 可视化配置

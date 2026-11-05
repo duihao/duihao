@@ -14,7 +14,7 @@ vi.mock('@wailsio/runtime', () => ({
 // panelStore imports Wails app bindings, which pull in @wailsio/runtime
 // exports beyond Events (Create/Models...) that the mock above omits. Mock the
 // bindings module outright (same pattern as utils/quickConnect.test.ts).
-vi.mock('../../bindings/github.com/ys-ll/uniterm/app', () => ({
+vi.mock('../../bindings/github.com/duihao/duihao/app', () => ({
   DisableSessionOutputLog: vi.fn(),
   RegisterSessionForPanel: vi.fn(),
   UnregisterSession: vi.fn(),

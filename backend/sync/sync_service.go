@@ -16,9 +16,9 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing"
 	ggittransport "github.com/go-git/go-git/v5/plumbing/transport"
-	"github.com/ys-ll/uniterm/backend/log"
-	"github.com/ys-ll/uniterm/backend/session"
-	"github.com/ys-ll/uniterm/backend/utils"
+	"github.com/duihao/duihao/backend/log"
+	"github.com/duihao/duihao/backend/session"
+	"github.com/duihao/duihao/backend/utils"
 )
 
 var ErrWrongSyncPassword = errors.New("WRONG_SYNC_PASSWORD")
@@ -582,7 +582,7 @@ func (s *SyncService) pushLocalConfig(repo *GitRepo, encKey []byte, username, to
 		s.updateLastSyncResult("failed", fmt.Sprintf("encrypt files: %v", err))
 		return nil, fmt.Errorf("encrypt files: %w", err)
 	}
-	if _, err := repo.StageAndCommitFiles(commitMsg("uniTerm config sync"), files); err != nil {
+	if _, err := repo.StageAndCommitFiles(commitMsg("Duihao config sync"), files); err != nil {
 		s.updateLastSyncResult("failed", fmt.Sprintf("commit: %v", err))
 		return nil, fmt.Errorf("commit: %w", err)
 	}
@@ -725,7 +725,7 @@ func (s *SyncService) ResolveConflict(useLocal bool) (*SyncResult, error) {
 		if err := encryptStoresScoped(s.stores, files, s.repoPath, encKey, nil); err != nil {
 			return nil, fmt.Errorf("encrypt files: %w", err)
 		}
-		if _, err := repo.StageAndCommitFiles(commitMsg("uniTerm config sync (resolve conflict)"), files); err != nil {
+		if _, err := repo.StageAndCommitFiles(commitMsg("Duihao config sync (resolve conflict)"), files); err != nil {
 			return nil, fmt.Errorf("commit: %w", err)
 		}
 		if err := repo.Push(username, token); err != nil {
@@ -958,7 +958,7 @@ func (s *SyncService) ConfigureRepo(repoURL, username, token, masterPassword str
 		return nil, fmt.Errorf("encrypt files: %w", err)
 	}
 
-	if _, err := repo.StageAndCommitFiles(commitMsg("uniTerm config sync"), files); err != nil {
+	if _, err := repo.StageAndCommitFiles(commitMsg("Duihao config sync"), files); err != nil {
 		return nil, fmt.Errorf("commit: %w", err)
 	}
 

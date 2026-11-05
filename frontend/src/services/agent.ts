@@ -8,7 +8,7 @@ import { usePanelStore } from '../stores/panelStore'
 import { useSessionStore } from '../stores/sessionStore'
 import { useSkillStore } from '../stores/skillStore'
 import { loadRemoteMCPTools, toAgentToolEntry, callRemoteMCPTool, isRemoteMCPTool } from './mcpTools'
-import { GetSkillFile, ListSkillFiles } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { GetSkillFile, ListSkillFiles } from '../../bindings/github.com/duihao/duihao/app'
 import type { AIAttachment, AIMessage } from '../types/ai'
 import { Events } from '@wailsio/runtime'
 import {
@@ -424,7 +424,7 @@ function buildSkillIndex(): string {
  *
  * `attachments` are the images / text files the user attached in the sidebar.
  * They are validated by the caller (services/attachments.ts) and forwarded to
- * the model unchanged — uniTerm does not interpret them itself.
+ * the model unchanged — Duihao does not interpret them itself.
  */
 export async function runAgent(userInput: string, skillName?: string, skillBody?: string, commandBody?: string, attachments?: AIAttachment[]) {
   const store = useAIStore()

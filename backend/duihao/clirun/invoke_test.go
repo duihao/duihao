@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/duihao/audit"
+	"github.com/duihao/duihao/backend/duihao/audit"
 )
 
 const phpstudyPHP = `D:/phpstudy_pro/Extensions/php/php8.2.9nts/php.exe`

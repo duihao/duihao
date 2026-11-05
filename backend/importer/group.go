@@ -3,7 +3,7 @@ package importer
 import (
 	"strings"
 
-	"github.com/ys-ll/uniterm/backend/session"
+	"github.com/duihao/duihao/backend/session"
 )
 
 // ensureGroupPath find-or-creates a nested group for `path` (ordered ancestor→leaf

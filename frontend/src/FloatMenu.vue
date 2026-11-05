@@ -17,7 +17,7 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
-import { FloatMenuAction, HideFloatMenu } from '../bindings/github.com/ys-ll/uniterm/app'
+import { FloatMenuAction, HideFloatMenu } from '../bindings/github.com/duihao/duihao/app'
 
 function pick(cmd: number) {
   void FloatMenuAction(cmd)

@@ -188,7 +188,7 @@ export interface ConnectionConfig {
   // X11 Desktop (type: 'x11-desktop') — carries its own SSH credentials
   // (host, port, user, authType, password, keyPath) for direct connection.
   // X11 forwarding is forced on automatically. The actual desktop is
-  // rendered by the local X server (VcXsrv/XQuartz/Xorg), not inside uniTerm.
+  // rendered by the local X server (VcXsrv/XQuartz/Xorg), not inside Duihao.
   x11DesktopDesktopType?: 'gnome' | 'kde' | 'xfce' | 'mate' | 'cinnamon' | 'openbox' | 'custom'
   // Custom desktop command (only used when desktopType === 'custom').
   // Passed to sshd verbatim, so it goes through /bin/sh -c on the remote.

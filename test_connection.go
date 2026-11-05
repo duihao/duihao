@@ -16,9 +16,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ys-ll/uniterm/backend/container"
-	"github.com/ys-ll/uniterm/backend/k8s"
-	"github.com/ys-ll/uniterm/backend/session"
+	"github.com/duihao/duihao/backend/container"
+	"github.com/duihao/duihao/backend/k8s"
+	"github.com/duihao/duihao/backend/session"
 )
 
 // TestConnection returns a short human-readable description on success, or a

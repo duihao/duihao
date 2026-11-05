@@ -202,7 +202,7 @@ import {
   MongoListIndexes,
   MongoCreateIndex,
   MongoDropIndex,
-} from '../../bindings/github.com/ys-ll/uniterm/app'
+} from '../../bindings/github.com/duihao/duihao/app'
 import type { MongoIndexInfo, MongoQueryResult } from '../types/mongodb'
 import SyntaxEditor from './SyntaxEditor.vue'
 

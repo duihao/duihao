@@ -26,7 +26,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/appkit"
+	"github.com/duihao/duihao/backend/duihao/webdavd/appkit"
 )
 
 const videoRoot = "_appfiles/video" // 网盘根下的影视目录（模块附件区 video 子目录）

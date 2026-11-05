@@ -11,10 +11,10 @@ import (
 	"sync"
 	"time"
 
-	duihao "github.com/ys-ll/uniterm/backend/duihao"
-	"github.com/ys-ll/uniterm/backend/duihao/audit"
-	"github.com/ys-ll/uniterm/backend/duihao/instance"
-	"github.com/ys-ll/uniterm/backend/duihao/processd"
+	duihao "github.com/duihao/duihao/backend/duihao"
+	"github.com/duihao/duihao/backend/duihao/audit"
+	"github.com/duihao/duihao/backend/duihao/instance"
+	"github.com/duihao/duihao/backend/duihao/processd"
 )
 
 // Manager 站点管理器。
@@ -287,6 +287,8 @@ func (m *Manager) Create(opts CreateOpts) (*Record, error) {
 	if err := os.MkdirAll(root, 0o755); err != nil {
 		return nil, fmt.Errorf("创建根目录失败: %w", err)
 	}
+	// 空根目录生成默认 index.html（失败不阻塞建站）。
+	_ = ensureDefaultIndex(root)
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -1038,6 +1040,8 @@ func (m *Manager) applyUpdate(id string, opts UpdateOpts) error {
 	if err := os.MkdirAll(root, 0o755); err != nil {
 		return fmt.Errorf("创建根目录失败: %w", err)
 	}
+	// 换到的新根目录若为空也补一个默认首页（失败不阻塞保存）。
+	_ = ensureDefaultIndex(root)
 
 	// —— 渲染并应用（失败回滚）——
 	updated := *rec
@@ -1227,5 +1231,56 @@ func firstNonEmpty(a, b string) string {
 // DirSiteFragments 站点片段目录名（相对 web 实例数据目录）。
 const DirSiteFragments = "sites"
 
-// RootDir 站点根（用户目录默认值提示用）。
-func RootDir() string { return filepath.Join(duihao.DataRoot(), "www") }
+// RootDir 新建站点的默认根目录（数据目录下的 sites，域名作子目录）。
+func RootDir() string { return filepath.Join(duihao.DataRoot(), "sites") }
+
+// defaultIndexHTML 新建站点的默认首页（仅当根目录没有任何首页文件时生成）。
+const defaultIndexHTML = `<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>恭喜，站点创建成功！</title>
+<style>
+.container {
+width: 60%;
+margin: 10% auto 0;
+background-color: #f0f0f0;
+padding: 2% 5%;
+border-radius: 10px
+}
+ul {
+padding-left: 20px;
+}
+ul li {
+line-height: 2.3
+}
+a {
+color: #20a53a
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>恭喜, 站点创建成功！</h1>
+<h3>这是默认index.html，本页面由对号自动生成</h3>
+<ul>
+<li>本页面在站点根目录下的index.html</li>
+<li>您可以修改、删除或覆盖本页面</li>
+<li>站点相关信息，请到「对号 IT工具 &gt; 站点管理」查看</li>
+</ul>
+</div>
+</body>
+</html>
+`
+
+// ensureDefaultIndex 根目录还没有任何首页文件时生成默认 index.html，
+// 让新建站点立刻有东西可看。已有首页（含 index.php 等）一律不动——
+// 用户内容优先。失败不阻塞建站（尽力而为）。
+func ensureDefaultIndex(root string) error {
+	for _, name := range []string{"index.html", "index.htm", "index.php", "default.html", "default.htm"} {
+		if _, err := os.Stat(filepath.Join(root, name)); err == nil {
+			return nil
+		}
+	}
+	return os.WriteFile(filepath.Join(root, "index.html"), []byte(defaultIndexHTML), 0o644)
+}

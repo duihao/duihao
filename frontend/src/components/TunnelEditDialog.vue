@@ -139,7 +139,7 @@ import { useConnectionStore } from '../stores/connectionStore'
 import { useI18n } from '../i18n'
 import { msg } from '../services/message'
 import { useTunnelCredentials } from '../composables/useTunnelCredentials'
-import { TestTunnel } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { TestTunnel } from '../../bindings/github.com/duihao/duihao/app'
 
 const { t } = useI18n()
 const store = useTunnelStore()

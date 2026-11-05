@@ -28,7 +28,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	duihao "github.com/ys-ll/uniterm/backend/duihao"
+	duihao "github.com/duihao/duihao/backend/duihao"
 )
 
 //go:embed apps.json

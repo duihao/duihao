@@ -1,4 +1,4 @@
-import { CaptureScreen, SendKey, StartForegroundCapture, InterruptForeground, PollForeground, StartForeground } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { CaptureScreen, SendKey, StartForegroundCapture, InterruptForeground, PollForeground, StartForeground } from '../../bindings/github.com/duihao/duihao/app'
 import { useTabStore } from '../stores/tabStore'
 import { usePanelStore } from '../stores/panelStore'
 import { useSessionStore } from '../stores/sessionStore'

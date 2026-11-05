@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	duihao "github.com/ys-ll/uniterm/backend/duihao"
+	duihao "github.com/duihao/duihao/backend/duihao"
 )
 
 // ProbeFree 探测端口是否可 bind（分配前探测，结果不落盘由调用方持久化）。

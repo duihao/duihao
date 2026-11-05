@@ -386,7 +386,7 @@ func Truncate(b []byte, max int) []byte {
 	if max <= 0 || len(b) <= max {
 		return b
 	}
-	const marker = "\n…[uniterm: output truncated]"
+	const marker = "\n…[duihao: output truncated]"
 	trunc := b[:max]
 	if i := strings.LastIndexByte(string(trunc), '\n'); i > max/2 {
 		trunc = trunc[:i]

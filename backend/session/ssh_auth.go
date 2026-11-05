@@ -3,8 +3,8 @@ package session
 import (
 	"os"
 
-	"github.com/ys-ll/uniterm/backend/credentials"
-	"github.com/ys-ll/uniterm/backend/utils"
+	"github.com/duihao/duihao/backend/credentials"
+	"github.com/duihao/duihao/backend/utils"
 	"golang.org/x/crypto/ssh"
 )
 

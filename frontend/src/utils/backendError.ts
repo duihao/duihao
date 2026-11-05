@@ -1,10 +1,10 @@
 import { t } from '../i18n'
 
-// Backend coded errors arrive as "unitermerr:<code>[|<arg>...]" (see
+// Backend coded errors arrive as "duihaoerr:<code>[|<arg>...]" (see
 // backend/utils/apperr.go). Wrapper layers may prepend context before the
 // marker, so search anywhere in the message. The code maps to an i18n key
 // backendErrors.<code> with args interpolated at {0}, {1}, ...
-const MARKER = 'unitermerr:'
+const MARKER = 'duihaoerr:'
 
 // Render a caught JS error (Wails bindings reject with Error) as localized text.
 export function backendErrorText(e: unknown): string {

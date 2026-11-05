@@ -2,6 +2,7 @@
   <div
     class="app-header"
     :class="[`platform-${platform}`, { 'is-compact': props.compact }]"
+    @mousedown="onDragDown"
     @dblclick="onDblClick"
   >
     <!-- macOS: custom traffic lights (Wails frameless hides the native ones) -->
@@ -159,6 +160,7 @@ import { useSettingsStore } from '../stores/settingsStore'
 import { formatKeyBinding } from '../composables/useKeyboardShortcuts'
 import { useLocalStateStore } from '../stores/localStateStore'
 import { useUpdateCheck } from '../composables/useUpdateCheck'
+import { useWindowDrag } from '../composables/useWindowDrag'
 import { LANGUAGE_OPTIONS, TERMINAL_THEMES, FOLLOW_APP_THEME } from '../types/settings'
 import type { AppSettings, ShortcutAction } from '../types/settings'
 import { detectPlatformSync, isMobilePlatform } from '../utils/platform'
@@ -171,7 +173,7 @@ import MenuItem from './MenuItem.vue'
 import MenuSubmenu from './MenuSubmenu.vue'
 import MenuDivider from './MenuDivider.vue'
 import { Screens, System, Window } from '@wailsio/runtime'
-import { SaveWindowState } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { SaveWindowState } from '../../bindings/github.com/duihao/duihao/app'
 
 const { t } = useI18n()
 const settingsStore = useSettingsStore()
@@ -290,6 +292,15 @@ function menuShortcut(action: ShortcutAction): string {
 // M19 插件化产品线：compact = 专有版「单品」模式（主页面 = 插件首页）。
 // 隐藏 Tab 条、连接按钮与 AI 侧栏入口，顶栏只留窗口控制 / 设置菜单。
 const props = defineProps<{ compact?: boolean }>()
+
+// 顶栏拖动：走 JS 增量定位（useWindowDrag），与 NAS 主窗同一套实现。
+// tab 条自己也吃鼠标（HTML5 拖拽排序），必须排除，否则拖 tab 会带动整窗。
+// 注意：不能把整个 .header-tabs 排除掉 —— tab 条右侧是 flex 空白，用户按住
+// 那里就是想拖窗口（实测把 .header-tabs 排除后，顶栏几乎没有可拖的地方，
+// 表现就是「顶栏按住纹丝不动」）。只排除 tab 本体与按钮。
+const { onDragDown } = useWindowDrag(
+  'button, .el-button, input, a, .tab-item, .tab-more, .settings-wrap, .window-controls'
+)
 
 const emit = defineEmits<{
   'toggle-ai': []
@@ -436,7 +447,9 @@ onUnmounted(() => {
   flex-shrink: 0;
   position: relative;
   z-index: 10;
-  --wails-draggable: drag;
+  /* 拖动全走 JS（useWindowDrag）——Wails 原生 startDrag 在 WebView2 子窗口
+     占着鼠标时 ReleaseCapture 会失败，表现就是顶栏按住纹丝不动。 */
+  --wails-draggable: no-drag;
 }
 
 .header-tabs {
@@ -516,7 +529,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.4375rem;
   padding-right: 0.5rem;
-  --wails-draggable: drag;
+  --wails-draggable: no-drag;
   user-select: none;
 }
 .brand-mark {

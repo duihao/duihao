@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/duihao/audit"
-	"github.com/ys-ll/uniterm/backend/duihao/ftpd"
-	"github.com/ys-ll/uniterm/backend/duihao/instance"
-	"github.com/ys-ll/uniterm/backend/duihao/processd"
-	"github.com/ys-ll/uniterm/backend/duihao/site"
+	"github.com/duihao/duihao/backend/duihao/audit"
+	"github.com/duihao/duihao/backend/duihao/ftpd"
+	"github.com/duihao/duihao/backend/duihao/instance"
+	"github.com/duihao/duihao/backend/duihao/processd"
+	"github.com/duihao/duihao/backend/duihao/site"
 )
 
 // FTPService FTP 账号管理。

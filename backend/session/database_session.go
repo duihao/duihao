@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/database"
-	"github.com/ys-ll/uniterm/backend/log"
+	"github.com/duihao/duihao/backend/database"
+	"github.com/duihao/duihao/backend/log"
 )
 
 type DatabaseSession struct {

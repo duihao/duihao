@@ -20,7 +20,7 @@ import (
 // C:\Windows\Fonts. Other apps see such fonts via the GDI/DirectWrite system
 // font enumeration APIs, which cover both scopes; our hand-rolled registry
 // walk needs to check both explicitly or it silently misses user-installed
-// fonts (https://github.com/ys-ll/uniterm/issues/145).
+// fonts (https://github.com/duihao/duihao/issues/145).
 func getSystemFonts() ([]fontFamily, error) {
 	var families []fontFamily
 	var firstErr error

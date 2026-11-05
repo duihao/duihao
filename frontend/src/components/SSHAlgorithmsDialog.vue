@@ -62,7 +62,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { useI18n } from '../i18n'
-import { GetSupportedSSHAlgorithms } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { GetSupportedSSHAlgorithms } from '../../bindings/github.com/duihao/duihao/app'
 import type { SSHAlgoConfig } from '../types/session'
 import { Trash2 } from '@lucide/vue'
 

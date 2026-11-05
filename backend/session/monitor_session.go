@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/log"
+	"github.com/duihao/duihao/backend/log"
 	"golang.org/x/crypto/ssh"
 )
 

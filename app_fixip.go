@@ -19,9 +19,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ys-ll/uniterm/backend/log"
+	"github.com/duihao/duihao/backend/log"
 
-	"github.com/ys-ll/uniterm/backend/duihao/webdavd/sysinfo"
+	"github.com/duihao/duihao/backend/duihao/webdavd/sysinfo"
 )
 
 // fixIpHint 上一次读取时用的线索（NAS 的访问地址）：多网卡时用它定位

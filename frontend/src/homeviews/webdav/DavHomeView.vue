@@ -46,8 +46,8 @@ import { useI18n } from '../../i18n'
 import { Browser } from '@wailsio/runtime'
 import { ElMessage } from 'element-plus'
 import WebDavManageDialog from '../../components/WebDavManageDialog.vue'
-import { ListPlugins, ListInstances, CreateInstance, StartInstance, StopInstance } from '../../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/plugincenterservice'
-import { GetWebDavConnInfo } from '../../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/webdavservice'
+import { ListPlugins, ListInstances, CreateInstance, StartInstance, StopInstance } from '../../../bindings/github.com/duihao/duihao/backend/duihao/service/plugincenterservice'
+import { GetWebDavConnInfo } from '../../../bindings/github.com/duihao/duihao/backend/duihao/service/webdavservice'
 
 const { t } = useI18n()
 

@@ -97,10 +97,10 @@ import { ref, watch, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Events } from '@wailsio/runtime'
 import { useI18n } from '../i18n'
-import { OpenFileDialogFiltered } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { OpenFileDialogFiltered } from '../../bindings/github.com/duihao/duihao/app'
 import {
   ListDeployApps, DeployApp, OpenDeployPkgDir, OpenDeploySetup,
-} from '../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/deployservice'
+} from '../../bindings/github.com/duihao/duihao/backend/duihao/service/deployservice'
 
 interface SiteLite {
   id: string; domains: string[]; sitePort: number; root: string

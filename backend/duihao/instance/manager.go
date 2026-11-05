@@ -12,13 +12,13 @@ import (
 	"sync"
 	"time"
 
-	duihao "github.com/ys-ll/uniterm/backend/duihao"
-	"github.com/ys-ll/uniterm/backend/duihao/audit"
-	"github.com/ys-ll/uniterm/backend/duihao/clirun"
-	"github.com/ys-ll/uniterm/backend/duihao/hostreq"
-	"github.com/ys-ll/uniterm/backend/duihao/pluginc"
-	"github.com/ys-ll/uniterm/backend/duihao/processd"
-	"github.com/ys-ll/uniterm/backend/duihao/runtimepkg"
+	duihao "github.com/duihao/duihao/backend/duihao"
+	"github.com/duihao/duihao/backend/duihao/audit"
+	"github.com/duihao/duihao/backend/duihao/clirun"
+	"github.com/duihao/duihao/backend/duihao/hostreq"
+	"github.com/duihao/duihao/backend/duihao/pluginc"
+	"github.com/duihao/duihao/backend/duihao/processd"
+	"github.com/duihao/duihao/backend/duihao/runtimepkg"
 )
 
 // Manager 实例管理器。

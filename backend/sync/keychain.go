@@ -4,10 +4,10 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/ys-ll/uniterm/backend/kdf"
+	"github.com/duihao/duihao/backend/kdf"
 )
 
-var keychainService = "uniTerm"
+var keychainService = "Duihao"
 
 type Keychain struct{}
 

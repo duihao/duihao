@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ys-ll/uniterm/backend/session"
+	"github.com/duihao/duihao/backend/session"
 )
 
 // FormatDBeaver imports DBeaver connections straight from a workspace's
@@ -24,7 +24,7 @@ const FormatDBeaver = "dbeaver"
 // decrypted block discarded — the file's real IV is recovered that way).
 var dbeaverAesKey, _ = hex.DecodeString("babb4a9f774ab853c96c2d653dfe544a")
 
-// dbeaverConnType maps DBeaver providers directly onto uniterm database
+// dbeaverConnType maps DBeaver providers directly onto Duihao database
 // targets (config type + dbType + default port).
 var dbeaverConnType = map[string]connTarget{
 	"mysql":         {Type: "database", DBType: "mysql", Port: 3306},

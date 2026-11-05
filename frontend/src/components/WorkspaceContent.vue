@@ -46,7 +46,7 @@ import { useConnectionStore } from '../stores/connectionStore'
 import type { WorkspaceTab } from '../types/workspace'
 import { useDuplicateSession } from '../composables/useDuplicateSession'
 import PanelGrid from './PanelGrid.vue'
-import { CloseSession } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { CloseSession } from '../../bindings/github.com/duihao/duihao/app'
 import { ElMessageBox } from 'element-plus'
 import { useI18n } from '../i18n'
 

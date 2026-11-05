@@ -12,8 +12,8 @@ import (
 	"fmt"
 	"path/filepath"
 
-	duihao "github.com/ys-ll/uniterm/backend/duihao"
-	"github.com/ys-ll/uniterm/backend/duihao/pluginc"
+	duihao "github.com/duihao/duihao/backend/duihao"
+	"github.com/duihao/duihao/backend/duihao/pluginc"
 )
 
 // embeddedLogPath 内置服务日志与 process 类同路径（UI「日志」按钮不用分叉）。

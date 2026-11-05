@@ -84,7 +84,7 @@
 import { ref, reactive, watch } from 'vue'
 import { useI18n } from '../i18n'
 import { ElMessage } from 'element-plus'
-import { OpenFileDialog, OpenPrivateKeyFile } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { OpenFileDialog, OpenPrivateKeyFile } from '../../bindings/github.com/duihao/duihao/app'
 import { backendErrorText } from '../utils/backendError'
 import { FolderOpen, Eye, EyeOff } from '@lucide/vue'
 import { useIdentityStore } from '../stores/identityStore'

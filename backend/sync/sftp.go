@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/pkg/sftp"
-	"github.com/ys-ll/uniterm/backend/session"
+	"github.com/duihao/duihao/backend/session"
 )
 
 // sftpFS adapts an SFTP session to the sync engine's RemoteFS. Paths are

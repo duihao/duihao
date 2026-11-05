@@ -270,14 +270,14 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useI18n } from '../i18n'
-import { OpenFileDialogFiltered } from '../../bindings/github.com/ys-ll/uniterm/app'
+import { OpenFileDialogFiltered } from '../../bindings/github.com/duihao/duihao/app'
 import {
   MySQLStatus, ListMySQLDatabases, CreateMySQLDatabase, SetMySQLDatabasePassword,
   SetMySQLRootPassword, GetMySQLPrivileges, SetMySQLPrivileges, MySQLPrivilegeNames,
   DropMySQLDatabase, BackupMySQLDatabase, ListMySQLBackups, DeleteMySQLBackup,
   RestoreMySQLBackup, ImportMySQLSQL, TestMySQLCredential, SaveMySQLCredential,
   MySQLConnectionInfo, SaveMySQLDbUser,
-} from '../../bindings/github.com/ys-ll/uniterm/backend/duihao/service/mysqlservice'
+} from '../../bindings/github.com/duihao/duihao/backend/duihao/service/mysqlservice'
 import { launchConnection } from '../composables/connectionLauncher'
 import InstancePower from './InstancePower.vue'
 import type { ConnectionConfig } from '../types/session'

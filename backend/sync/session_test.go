@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/pkg/sftp"
-	"github.com/ys-ll/uniterm/backend/session"
+	"github.com/duihao/duihao/backend/session"
 )
 
 // fakeSession records the file-session calls the remote shims make.

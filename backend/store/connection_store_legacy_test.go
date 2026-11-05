@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ys-ll/uniterm/backend/credentials"
-	"github.com/ys-ll/uniterm/backend/session"
+	"github.com/duihao/duihao/backend/credentials"
+	"github.com/duihao/duihao/backend/session"
 )
 
 // fakeLegacyKC is a LegacyPasswordSource keyed by connection ID, mimicking the

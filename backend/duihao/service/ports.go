@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/ys-ll/uniterm/backend/duihao/processd"
+	"github.com/duihao/duihao/backend/duihao/processd"
 )
 
 // PortDiagnosisView 端口诊断结果（站点与实例共用一套结构）。

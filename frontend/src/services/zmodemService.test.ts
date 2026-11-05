@@ -60,7 +60,7 @@ vi.mock('@wailsio/runtime', () => ({
   },
 }))
 
-vi.mock('../../bindings/github.com/ys-ll/uniterm/app', () => ({
+vi.mock('../../bindings/github.com/duihao/duihao/app', () => ({
   AppendFileBase64: mockAppendFileBase64,
   FileSize: mockFileSize,
   OpenDirectoryDialog: mockOpenDirectoryDialog,

@@ -72,7 +72,7 @@ import { useWindowDrag } from './composables/useWindowDrag'
 import { useI18n } from './i18n'
 import { useSettingsStore } from './stores/settingsStore'
 import type { AppSettings } from './types/settings'
-import { GetAppInfo } from '../bindings/github.com/ys-ll/uniterm/app'
+import { GetAppInfo } from '../bindings/github.com/duihao/duihao/app'
 
 const { t } = useI18n()
 const settingsStore = useSettingsStore()
