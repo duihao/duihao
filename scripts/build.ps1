@@ -7,8 +7,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$root = Split-Path -Parent $PSScriptRoot   # 对号主工程 app/ 的上级（E:/workbudy/duihao）
-$app  = Join-Path $root 'app'
+$app  = Split-Path -Parent $PSScriptRoot   # 对号主工程 app/（本脚本位于 app/scripts/）
+$root = Split-Path -Parent $app            # 仓库根（E:/workbudy/duihao）
 
 # 工具链（与 M0 实测路径一致）
 $go     = 'C:\Users\HUAWEI\.workbuddy\binaries\go\go\bin'

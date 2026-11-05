@@ -12,7 +12,7 @@ info:
   copyright: "(c) Duihao"
   comments: "对号 Duihao"
   # 生成物：版本号由 sync_version.py 维护（真源 build/windows/VERSION），勿手改
-  version: "1.0.0"
+  version: "1.0.1"
   # cfBundleIconName: "appicon" # The macOS icon name in Assets.car icon bundles (optional)
   #                               # Should match the name of your .icon file without the extension
   #                               # If not set and Assets.car exists, defaults to "appicon"

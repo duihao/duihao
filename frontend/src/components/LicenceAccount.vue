@@ -11,7 +11,7 @@
         </div>
         <div class="lic-row lic-sub">
           <span class="lic-k">{{ t('licence.account') }}</span>
-          <span>{{ maskMobile(state.sub) }}</span>
+          <span>{{ displayName }}</span>
         </div>
         <div class="lic-row lic-sub">
           <span class="lic-k">{{ t('licence.tokenExpire') }}</span>
@@ -27,7 +27,7 @@
       </div>
       <div class="lic-actions">
         <el-button size="small" @click="handleLogout">{{ t('licence.logout') }}</el-button>
-        <el-button size="small" type="primary" link @click="openBuy">
+        <el-button class="buy-link" size="small" type="primary" link @click="openBuy">
           {{ t('licence.buy') }}
         </el-button>
       </div>
@@ -81,7 +81,7 @@
       </el-form>
       <div class="lic-login-foot">
         <span>{{ t('licence.agree') }}</span>
-        <el-button size="small" type="primary" link @click="openBuy">{{ t('licence.buy') }}</el-button>
+        <el-button class="buy-link" size="small" type="primary" link @click="openBuy">{{ t('licence.buy') }}</el-button>
       </div>
     </template>
   </div>
@@ -90,8 +90,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from '../i18n'
-import { Browser } from '@wailsio/runtime'
-import { LicenceLogin, LicenceLogout, LicenceSendCode, LicenceState } from '../../bindings/github.com/duihao/duihao/app'
+import { LicenceLogin, LicenceLogout, LicenceSendCode, LicenceState, OpenMembershipWindow } from '../../bindings/github.com/duihao/duihao/app'
 
 const { t } = useI18n()
 
@@ -102,6 +101,8 @@ interface LicenceStateShape {
   ent: number
   tokenExp: number
   sub: string
+  nickname?: string
+  mobile?: string
   reason: string
 }
 
@@ -153,6 +154,9 @@ function maskMobile(s: string): string {
   return s || '—'
 }
 
+// 展示优先级：用户名（昵称）> 打码手机号 > 账号 ID。
+const displayName = computed(() => state.value.nickname || state.value.mobile || maskMobile(state.value.sub))
+
 function startCountdown() {
   countdown.value = 60
   if (countdownTimer) clearInterval(countdownTimer)
@@ -199,8 +203,12 @@ async function handleLogout() {
   } catch { /* 清理失败不提示：下次 Verify 会重新折叠 */ }
 }
 
+// 购买会员：直接弹出应用内的会员中心独立窗（不再跳外部浏览器）。
 function openBuy() {
-  Browser.OpenURL('https://duihao.cn/pricing')
+  OpenMembershipWindow().catch(() => {
+    // 打开失败兜底：退回外部浏览器打开定价页
+    import('@wailsio/runtime').then(({ Browser }) => Browser.OpenURL('https://duihao.cn/pricing'))
+  })
 }
 
 // Go 侧错误形如 "发送太频繁 (HTTP 429)"；前端只展示文本。
@@ -284,6 +292,16 @@ defineExpose({ refresh })
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+/* 购买会员：link 态默认取 accent 蓝，用户要求文字用主题主文字色（暗底白字） */
+.lic-actions .buy-link,
+.lic-login-foot .buy-link {
+  color: var(--text-primary, #fff);
+}
+.lic-actions .buy-link:hover,
+.lic-login-foot .buy-link:hover {
+  color: var(--text-primary, #fff);
+  opacity: 0.8;
 }
 .lic-login-hint {
   font-size: 0.8125rem;

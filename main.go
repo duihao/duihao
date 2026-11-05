@@ -244,10 +244,13 @@ func main() {
 	if savedX != 0 || savedY != 0 {
 		startPos = application.WindowXY
 	}
+	// 主窗口恒以 Normal 状态创建，哪怕上次是最大化 —— 见 showMainWindow 的
+	// 说明：以 WindowStateMaximised 创建 + Hidden 时，Wails 在创建阶段就执行
+	// SW_MAXIMIZE，窗口被标记为「已可见」，之后的 Show() 在 wails 内部是空操作，
+	// 结果 WebView2 内容永远不显示（窗口一片空白，看起来像打不开）。最大化的
+	// 恢复改到首次显示时调 window.Maximise() 完成。
 	startState := application.WindowStateNormal
-	if savedMaxed {
-		startState = application.WindowStateMaximised
-	}
+	restoreMaximised = savedMaxed
 
 	// M23：主窗口恒为「IT 工具」窗口（侧栏 + 标签页 + 终端那套），几何按上次
 	// 记忆恢复；NAS 是独立主窗（下方 nasWin），不再靠主窗口换身份实现。
@@ -981,8 +984,35 @@ var trayLabels = map[string][6]string{
 	"vi":    {"Hiện cửa sổ chính", "Ẩn vào khay hệ thống", "Đặt lại vị trí cửa sổ IT", "Cài đặt", "Giới thiệu", "Thoát"},
 }
 
+// trayLanguage maps the persisted language setting to a trayLabels key.
+// Exact codes hit directly; "system" (the default) and unknown codes resolve
+// to the OS UI language — same rules as the frontend's i18n resolver:
+// zh* splits to zh-CN / zh-TW (tw/hk/mo), other languages match by prefix,
+// anything else falls back to English.
+func trayLanguage(lang string) string {
+	if _, ok := trayLabels[lang]; ok {
+		return lang
+	}
+	sys := systemUILanguage()
+	if sys != "" {
+		lower := strings.ToLower(sys)
+		if strings.HasPrefix(lower, "zh") {
+			if strings.Contains(lower, "tw") || strings.Contains(lower, "hk") || strings.Contains(lower, "mo") {
+				return "zh-TW"
+			}
+			return "zh-CN"
+		}
+		for code := range trayLabels {
+			if code != "zh-CN" && code != "zh-TW" && strings.HasPrefix(lower, strings.ToLower(code)) {
+				return code
+			}
+		}
+	}
+	return "en"
+}
+
 func trayLabel(lang string, idx int) string {
-	if labels, ok := trayLabels[lang]; ok {
+	if labels, ok := trayLabels[trayLanguage(lang)]; ok {
 		return labels[idx]
 	}
 	return trayLabels["en"][idx]
@@ -1053,6 +1083,14 @@ func setupTray(w3app *application.App, app *App, window *application.WebviewWind
 	tray.Show()
 }
 
+// restoreMaximised 记住「上次退出时主窗口是最大化」，由 showMainWindow 在
+// 首次真正显示出窗口后补一次 Maximise()（见创建窗口处的注释：最大化状态
+// 不能在窗口创建阶段恢复，否则 WebView2 内容不显示）。置 true 后只消费一次。
+var (
+	restoreMaximisedMu sync.Mutex
+	restoreMaximised   bool
+)
+
 // showMainWindow brings the window back from hidden/minimised state and
 // gives it focus. Safe to call from any goroutine — the wails v3 window
 // methods dispatch to the main thread internally.
@@ -1060,11 +1098,17 @@ func showMainWindow(window *application.WebviewWindow) {
 	if window == nil {
 		return
 	}
-	if !window.IsVisible() {
-		window.Show()
-	}
+	window.Show()
 	window.UnMinimise()
 	window.Focus()
+	// 首次显示后补最大化（创建时不能用 StartState 恢复，见创建处注释）。
+	restoreMaximisedMu.Lock()
+	max := restoreMaximised
+	restoreMaximised = false
+	restoreMaximisedMu.Unlock()
+	if max && !window.IsMaximised() {
+		window.Maximise()
+	}
 }
 
 // toggleMainWindow shows the window when hidden (or minimised), hides it

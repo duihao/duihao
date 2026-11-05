@@ -978,13 +978,26 @@
         <div class="about-content">
           <div class="about-appname">对号</div>
           <p class="about-desc">{{ t('settings.aboutDesc') }}</p>
+          <p class="about-desc about-it-desc">{{ t('settings.aboutITDesc') }}</p>
           <div class="about-version">
             {{ t('settings.version') }}: {{ updateCheck.updateInfo?.current || '...' }}<template v-if="updateCheck.buildCommit"><span class="about-buildinfo"> ({{ updateCheck.buildCommit }}<template v-if="updateCheck.buildDate"> · {{ updateCheck.buildDate }}</template>)</span></template>
           </div>
           <div class="about-links">
+            <a href="#" class="about-link" @click.prevent="Browser.OpenURL('https://duihao.com')">
+              <Globe :size="'0.875rem'" class="about-link-icon" />
+              {{ t('settings.siteProduct') }}
+            </a>
             <a href="#" class="about-link" @click.prevent="Browser.OpenURL('https://duihao.cn')">
               <Globe :size="'0.875rem'" class="about-link-icon" />
-              {{ t('settings.homepage') }}
+              {{ t('settings.siteCompany') }}
+            </a>
+            <a href="#" class="about-link" @click.prevent="Browser.OpenURL('https://gitee.com/duihao/duihao')">
+              <Code2 :size="'0.875rem'" class="about-link-icon" />
+              {{ t('settings.siteGitee') }}
+            </a>
+            <a href="#" class="about-link" @click.prevent="Browser.OpenURL('https://github.com/duihao/duihao')">
+              <GitBranch :size="'0.875rem'" class="about-link-icon" />
+              {{ t('settings.siteGithub') }}
             </a>
           </div>
           <!-- In-app update download is desktop-only; mobile updates via APK -->
@@ -1632,7 +1645,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, watch, computed, onMounted, onUnmounted, onActivated } from 'vue'
-import { Settings, Monitor, MessageCircleMore, Info, RefreshCw, Pencil, Trash2, Globe, Keyboard, Plus, BookOpen, Wrench, FolderOpen, Key, Network, ArrowRightLeft, ChevronLeft, ChevronRight, Plug, Server, UserRound } from '@lucide/vue'
+import { Settings, Monitor, MessageCircleMore, Info, RefreshCw, Pencil, Trash2, Globe, Keyboard, Plus, BookOpen, Wrench, FolderOpen, Key, Network, ArrowRightLeft, ChevronLeft, ChevronRight, Plug, Server, UserRound, Code2, GitBranch } from '@lucide/vue'
 import { msg } from '../services/message'
 import { FetchModels, ChatCompletion, GetPlatform, GetAllFonts, GetDefaultSessionLogDir, OpenDirectoryDialog, OpenFileDialogFiltered, SetBackgroundImage, ClearBackgroundImage, GetBackgroundImage, RelaunchApp, ListExternalEditors, GenerateMCPToken, RevokeMCPToken, ListMCPTokens, GetMCPStatus, ListMCPClients, SaveMCPClient, UpdateMCPClient, RemoveMCPClient, TestMCPClient, MCPClientStatuses } from '../../bindings/github.com/duihao/duihao/app'
 import { useSettingsStore } from '../stores/settingsStore'
@@ -3433,6 +3446,11 @@ async function onToggleSystemTitleBar(v: boolean) {
   margin: 0 0 1.5rem 0;
   line-height: 1.6;
   max-width: 25rem;
+}
+/* IT 工具简介：紧随主介绍之后的次级段落 */
+.about-it-desc {
+  font-size: 0.8125rem;
+  margin: -0.75rem 0 1.5rem 0;
 }
 .about-version {
   font-size: 0.75rem;

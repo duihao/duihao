@@ -36,7 +36,7 @@ ManifestDPIAware true
 !define WEBVIEW2_REGKEY "SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
 ; 生成物：以下版本号由 sync_version.py 维护（真源 build/windows/VERSION），勿手改
 !ifndef VERSION
-  !define VERSION "1.0.0"
+  !define VERSION "1.0.1"
 !endif
 ; Optional bundled plugins: build with `makensis -DINCLUDE_VCXSRV` only when
 ; plugins\vcxsrv exists (it is .gitignored upstream, so OFF by default).
@@ -102,7 +102,7 @@ UninstallIcon "..\icon.ico"
 ; 安装器文件属性（右键 > 属性 > 详细信息）。VIProductVersion 必须是
 ; 四段数字；正式发版可用 -DINSTALLER_FILEVERSION=1.2.0.0 覆盖。
 !ifndef INSTALLER_FILEVERSION
-  !define INSTALLER_FILEVERSION "1.0.0.0"
+  !define INSTALLER_FILEVERSION "1.0.1.0"
 !endif
 VIProductVersion "${INSTALLER_FILEVERSION}"
 VIAddVersionKey "ProductName" "${PRODUCT_NAME}"
