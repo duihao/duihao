@@ -29,6 +29,9 @@ import (
 
 var Version = "dev"
 
+// 让 NAS 的客户端接口（/-api/v1/me）能报出版本号：桌面端与手机端据此做兼容提示。
+func init() { webdavd.BuildVersion = Version }
+
 // Build metadata, injected at build time via -ldflags "-X main.BuildCommit=...
 // -X main.BuildDate=..." (see Taskfile BUILD_COMMIT / BUILD_DATE). Both stay
 // empty in `wails dev` / bare `go build` builds; the About page only shows the

@@ -42,6 +42,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/net/webdav"
 
+	"github.com/duihao/duihao/backend/duihao/webdavd/apiv1"
 	"github.com/duihao/duihao/backend/duihao/webdavd/appkit"
 	"github.com/duihao/duihao/backend/duihao/webdavd/apps/camera"
 	"github.com/duihao/duihao/backend/duihao/webdavd/apps/download"
@@ -81,6 +82,9 @@ type Config struct {
 
 	// InstanceDir 实例数据目录（共享根目录里的 {dir} token 用它展开）。
 	InstanceDir string
+
+	// Version 服务端版本（客户端 /-api/v1/me 用来提示兼容性；空 = 不报）。
+	Version string
 }
 
 // Server 一个 WebDAV 服务实例（一实例一 Server）。
@@ -101,11 +105,13 @@ type Server struct {
 	statCache map[string]*volStat // 共享根目录 → 存储统计（stats.go）
 
 	// 个人空间（单端口多应用 + 单库）：库按需惰性打开，Stop 时关闭并允许重开。
-	apps      *appkit.Registry
-	hubOnce   sync.Once
-	bootOnce  sync.Once // NAS 账号引导只跑一次
-	hubStore  *store.Store
-	hubErr    error
+	apps     *appkit.Registry
+	hubOnce  sync.Once
+	bootOnce sync.Once // NAS 账号引导只跑一次
+	hubStore *store.Store
+	hubErr   error
+
+	api *apiv1.Handler // 客户端契约层 /-api/v1/*（无状态，一个实例一份）
 
 	voiceOnce sync.Once // 语音提醒调度器只起一次（Start/Stop 可重复调）
 }
@@ -187,7 +193,7 @@ func New(cfg Config) (*Server, error) {
 		}
 	}
 	webui.SetNav(nav)
-	return &Server{cfg: cfg, sessKey: sessKey, statCache: map[string]*volStat{}, apps: apps}, nil
+	return &Server{cfg: cfg, sessKey: sessKey, statCache: map[string]*volStat{}, apps: apps, api: apiv1.New()}, nil
 }
 
 // hub 惰性打开单库（InstanceDir 不可用时返回 nil，页面接口统一 503）。
@@ -554,6 +560,30 @@ func (s *Server) guard(logger *slog.Logger, dav *webdav.Handler) http.Handler {
 			s.handleThemeStream(w, r)
 			return
 		}
+		// 6.7) 客户端契约（移动端 / 第三方）：/-api/v1/*，只读 GET/HEAD。
+		//      必须放在 appkit 之前分流 —— appkit 只认注册过的 app id，"v1"
+		//      不在其中，会一路落到 WebDAV handler 上变成 405。
+		//      权限口径与 /-search 一致：没有「网盘」读权限就进不来。
+		if apiv1.Match(r.URL.Path) {
+			if s.api == nil {
+				http.Error(w, "客户端接口未就绪", http.StatusServiceUnavailable)
+				return
+			}
+			if hubRole != "" && !hubusers.Can(hubRole, hubPerms, "files", "r") {
+				http.Error(w, "没有「网盘」的访问权限", http.StatusForbidden)
+				return
+			}
+			s.api.Serve(w, r, apiv1.Ctx{
+				User:     uid,
+				Role:     hubRole,
+				Perms:    hubPerms,
+				Root:     root,
+				DataDir:  s.cfg.InstanceDir,
+				Writable: !readonly && (hubRole == "" || hubusers.Can(hubRole, hubPerms, "files", "w")),
+				Version:  s.cfg.Version,
+			})
+			return
+		}
 		if s.apps != nil && strings.HasPrefix(r.URL.Path, "/-") {
 			hctx := appkit.Context{User: uid, Root: root, Writable: !readonly, Role: hubRole, Perms: hubPerms}
 			if st := s.hub(); st != nil {
@@ -836,6 +866,7 @@ func writeNoPermPage(w http.ResponseWriter, user, role string, perms map[string]
 	w.Header().Set("Cache-Control", "no-store")
 	_, _ = io.WriteString(w, b.String())
 }
+
 // acctScript 顶栏账号下拉的脚本（改密码弹窗）。davCSS 之外单独一份静态文件：
 // 模板页（layout.html）也引它，两边共用同一份实现。
 const acctScript = `<script src="/-ui/acct.js" defer></script>`
@@ -1409,6 +1440,10 @@ var dummyHash = func() string {
 	return string(h)
 }()
 
+// BuildVersion 主程序注入的版本号（main.Version）。空 = 不对外报版本，
+// 客户端 /-api/v1/me 也就拿不到 —— 只影响兼容性提示，不影响功能。
+var BuildVersion = ""
+
 // FromValues 按实例设置构建服务（main 注入的 EmbeddedFactory 直接用它）。
 // values 是「清单默认值 + 用户 override」合并后的表；{dir} token 在此展开。
 func FromValues(dir, logPath string, ports map[string]int, values map[string]string) (*Server, error) {
@@ -1442,6 +1477,7 @@ func FromValues(dir, logPath string, ports map[string]int, values map[string]str
 		MaxBodyMB:   atoi("dav.maxbody_mb", 1024),
 		LogPath:     firstNonEmpty2(logPath, filepath.Join(dir, "logs", "webdav.log")),
 		InstanceDir: dir,
+		Version:     get("app.version", BuildVersion),
 	})
 }
 
